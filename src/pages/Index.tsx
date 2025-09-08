@@ -1,389 +1,982 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { useFichaTecnica } from "@/hooks/useFichaTecnica";
-import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
-import { FotoUpload } from "@/components/FichaTecnica/FotoUpload";
 import { VoiceRecognition } from "@/components/FichaTecnica/VoiceRecognition";
+import { FotoUpload } from "@/components/FichaTecnica/FotoUpload";
+import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
 import { CalculosSummary } from "@/components/FichaTecnica/CalculosSummary";
 import { ActionButtons } from "@/components/FichaTecnica/ActionButtons";
+import { useFichaTecnica } from "@/hooks/useFichaTecnica";
+import { clientesPredefinidos } from "@/types/ficha-tecnica";
+import { formatCurrency } from "@/utils/calculations";
+import { Calendar, FileText, Settings, Calculator } from "lucide-react";
 
 export default function Index() {
   const {
     formData,
-    updateFormData,
     materiais,
+    fotos,
+    calculos,
+    numeroFTC,
+    dataAtual,
+    updateFormData,
     addMaterial,
     updateMaterial,
     removeMaterial,
-    fotos,
     addFoto,
     removeFoto,
-    calculos,
-    numeroFTC,
-    dataAtual
   } = useFichaTecnica();
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <Card>
-          <CardHeader className="text-center bg-primary text-primary-foreground">
-            <CardTitle className="text-2xl font-bold">FICHA TÉCNICA DE COTAÇÃO (FTC)</CardTitle>
-            <div className="flex justify-between text-sm mt-2">
-              <span>Nº {numeroFTC}</span>
-              <span>{dataAtual}</span>
+        <Card className="mb-6 bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-left">
+                <div className="text-sm text-muted-foreground">Data: {dataAtual}</div>
+                <div className="text-lg font-bold text-primary">Nº FTC: {numeroFTC}</div>
+              </div>
+              <CardTitle className="text-2xl md:text-3xl text-center">
+                FICHA TÉCNICA DE COTAÇÃO - FTC
+              </CardTitle>
+              <div className="w-32"></div>
             </div>
           </CardHeader>
         </Card>
 
-        {/* Dados da Obra */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              DADOS DA OBRA
-              <VoiceRecognition fieldId="cliente" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente</Label>
-              <div className="flex gap-2">
-                <Select onValueChange={(value) => updateFormData('cliente', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PREFEITURA MUNICIPAL DE PETROLÂNDIA">PREFEITURA MUNICIPAL DE PETROLÂNDIA</SelectItem>
-                    <SelectItem value="PREFEITURA MUNICIPAL DE TACARATU">PREFEITURA MUNICIPAL DE TACARATU</SelectItem>
-                    <SelectItem value="PREFEITURA MUNICIPAL DE JATOBÁ">PREFEITURA MUNICIPAL DE JATOBÁ</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  id="cliente"
-                  value={formData.cliente}
-                  onChange={(e) => updateFormData('cliente', e.target.value)}
-                  placeholder="Ou digite o nome do cliente"
-                />
+        <form className="space-y-6">
+          {/* Dados do Cliente */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                DADOS DO CLIENTE
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label htmlFor="cliente">CLIENTE:</Label>
+                  <div className="flex gap-2">
+                    <Select 
+                      value={formData.cliente}
+                      onValueChange={(value) => {
+                        if (value && value !== "manual") {
+                          updateFormData("cliente", value);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="🖊️ Digitar manualmente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manual">🖊️ Digitar manualmente</SelectItem>
+                        {clientesPredefinidos.map((cliente) => (
+                          <SelectItem key={cliente} value={cliente}>
+                            {cliente}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={formData.cliente}
+                      onChange={(e) => updateFormData("cliente", e.target.value)}
+                      placeholder="Digite o nome do cliente"
+                      className="flex-2"
+                      required
+                    />
+                    <VoiceRecognition 
+                      fieldId="cliente" 
+                      onResult={(text) => updateFormData("cliente", text)} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="solicitante">SOLICITANTE:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.solicitante}
+                      onChange={(e) => updateFormData("solicitante", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="solicitante" 
+                      onResult={(text) => updateFormData("solicitante", text)} 
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="obra">Obra</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="obra"
-                  value={formData.obra}
-                  onChange={(e) => updateFormData('obra', e.target.value)}
-                  placeholder="Nome da obra"
-                />
-                <VoiceRecognition fieldId="obra" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="fone_email">FONE/EMAIL:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.fone_email}
+                      onChange={(e) => updateFormData("fone_email", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="fone_email" 
+                      onResult={(text) => updateFormData("fone_email", text)} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="data_visita">DATA DA VISITA:</Label>
+                  <Input
+                    type="date"
+                    value={formData.data_visita}
+                    onChange={(e) => updateFormData("data_visita", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="data_entrega">ENTREGAR PEÇA OU SERVIÇO NO DIA:</Label>
+                  <Input
+                    type="date"
+                    value={formData.data_entrega}
+                    onChange={(e) => updateFormData("data_entrega", e.target.value)}
+                    className="border-2 border-primary"
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="endereco">Endereço</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="endereco"
-                  value={formData.endereco}
-                  onChange={(e) => updateFormData('endereco', e.target.value)}
-                  placeholder="Endereço da obra"
-                />
-                <VoiceRecognition fieldId="endereco" />
+          {/* Dados da Peça/Equipamento */}
+          <Card>
+            <CardHeader>
+              <CardTitle>DADOS DA PEÇA/EQUIPAMENTO</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label htmlFor="nome_peca">NOME DA PEÇA / EQUIPAMENTO:</Label>
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={formData.nome_peca}
+                      onChange={(e) => updateFormData("nome_peca", e.target.value)}
+                      rows={2}
+                    />
+                    <VoiceRecognition 
+                      fieldId="nome_peca" 
+                      onResult={(text) => updateFormData("nome_peca", text)} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quantidade">QUANTIDADE:</Label>
+                  <Input
+                    type="number"
+                    value={formData.quantidade}
+                    onChange={(e) => updateFormData("quantidade", e.target.value)}
+                    min="1"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="responsavel">Responsável</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="responsavel"
-                  value={formData.responsavel}
-                  onChange={(e) => updateFormData('responsavel', e.target.value)}
-                  placeholder="Nome do responsável"
-                />
-                <VoiceRecognition fieldId="responsavel" />
+              <div className="space-y-2 mb-6">
+                <Label htmlFor="servico">SERVIÇO A SER REALIZADO:</Label>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={formData.servico}
+                    onChange={(e) => updateFormData("servico", e.target.value)}
+                    rows={3}
+                  />
+                  <VoiceRecognition 
+                    fieldId="servico" 
+                    onResult={(text) => updateFormData("servico", text)} 
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="telefone">Telefone</Label>
-              <Input
-                id="telefone"
-                value={formData.telefone}
-                onChange={(e) => updateFormData('telefone', e.target.value)}
-                placeholder="Telefone de contato"
+              <FotoUpload 
+                fotos={fotos} 
+                onAddFoto={addFoto} 
+                onRemoveFoto={removeFoto} 
               />
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => updateFormData('email', e.target.value)}
-                placeholder="E-mail de contato"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Dados da Peça/Equipamento */}
-        <Card>
-          <CardHeader>
-            <CardTitle>DADOS DA PEÇA/EQUIPAMENTO</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="equipamento">Equipamento</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="equipamento"
-                  value={formData.equipamento}
-                  onChange={(e) => updateFormData('equipamento', e.target.value)}
-                  placeholder="Tipo de equipamento"
-                />
-                <VoiceRecognition fieldId="equipamento" />
+          {/* Material para Cotação */}
+          <Card>
+            <CardHeader>
+              <CardTitle>MATERIAL PARA COTAÇÃO</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label>VALOR POR PEÇA (Calculado):</Label>
+                  <Input
+                    value={formatCurrency(calculos.materialPorPeca)}
+                    readOnly
+                    className="bg-muted border-2 border-muted-foreground font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>VALOR TODAS AS PEÇAS (Calculado):</Label>
+                  <Input
+                    value={formatCurrency(calculos.materialTodasPecas)}
+                    readOnly
+                    className="bg-muted border-2 border-muted-foreground font-bold"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="modelo">Modelo</Label>
-              <Input
-                id="modelo"
-                value={formData.modelo}
-                onChange={(e) => updateFormData('modelo', e.target.value)}
-                placeholder="Modelo do equipamento"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="marca">Marca</Label>
-              <Input
-                id="marca"
-                value={formData.marca}
-                onChange={(e) => updateFormData('marca', e.target.value)}
-                placeholder="Marca do equipamento"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="numeroSerie">Nº de Série</Label>
-              <Input
-                id="numeroSerie"
-                value={formData.numeroSerie}
-                onChange={(e) => updateFormData('numeroSerie', e.target.value)}
-                placeholder="Número de série"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ano">Ano</Label>
-              <Input
-                id="ano"
-                value={formData.ano}
-                onChange={(e) => updateFormData('ano', e.target.value)}
-                placeholder="Ano de fabricação"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="horimetro">Horímetro</Label>
-              <Input
-                id="horimetro"
-                value={formData.horimetro}
-                onChange={(e) => updateFormData('horimetro', e.target.value)}
-                placeholder="Horas de uso"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Material para Cotação */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>MATERIAL PARA COTAÇÃO</CardTitle>
-            <Button onClick={addMaterial} variant="outline" size="sm">
-              + Adicionar Material
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="overflow-x-auto">
-              <div className="grid grid-cols-8 gap-2 text-sm font-medium mb-2 min-w-[800px]">
-                <div>Item</div>
-                <div>Qtd.</div>
-                <div>Unid.</div>
-                <div>Descrição</div>
-                <div>Valor Unit.</div>
-                <div>Total</div>
-                <div>Ações</div>
+              <div className="space-y-4">
+                {materiais.map((material) => (
+                  <MaterialItem
+                    key={material.id}
+                    material={material}
+                    onUpdate={updateMaterial}
+                    onRemove={removeMaterial}
+                  />
+                ))}
               </div>
-              {materiais.map((material) => (
-                <MaterialItem
-                  key={material.id}
-                  material={material}
-                  onUpdate={updateMaterial}
-                  onRemove={removeMaterial}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Execução e Detalhes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>EXECUÇÃO E DETALHES</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="servico">Serviço</Label>
-              <div className="flex gap-2">
-                <Textarea
-                  id="servico"
-                  value={formData.servico}
-                  onChange={(e) => updateFormData('servico', e.target.value)}
-                  placeholder="Descrição do serviço a ser executado"
-                  rows={3}
-                />
-                <VoiceRecognition fieldId="servico" />
+              <Button
+                type="button"
+                onClick={addMaterial}
+                className="mt-4 bg-gradient-to-r from-info to-info/80"
+              >
+                ➕ Adicionar Material
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Execução e Detalhes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>EXECUÇÃO E DETALHES</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label>SERÁ EXECUTADO EM:</Label>
+                  <RadioGroup
+                    value={formData.execucao}
+                    onValueChange={(value) => updateFormData("execucao", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="HMC" id="exec_hmc" />
+                      <Label htmlFor="exec_hmc">HMC</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="CLIENTE" id="exec_cliente" />
+                      <Label htmlFor="exec_cliente">CLIENTE</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>VISITA TÉCNICA:</Label>
+                  <RadioGroup
+                    value={formData.visita_tecnica}
+                    onValueChange={(value) => updateFormData("visita_tecnica", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="visita_sim" />
+                      <Label htmlFor="visita_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="visita_nao" />
+                      <Label htmlFor="visita_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="visita_horas">HORAS VISITA:</Label>
+                  <Input
+                    type="number"
+                    value={formData.visita_horas}
+                    onChange={(e) => updateFormData("visita_horas", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="observacoes">Observações</Label>
-              <div className="flex gap-2">
-                <Textarea
-                  id="observacoes"
-                  value={formData.observacoes}
-                  onChange={(e) => updateFormData('observacoes', e.target.value)}
-                  placeholder="Observações adicionais"
-                  rows={3}
-                />
-                <VoiceRecognition fieldId="observacoes" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label>TEM PEÇA DE AMOSTRA:</Label>
+                  <RadioGroup
+                    value={formData.tem_peca_amostra}
+                    onValueChange={(value) => updateFormData("tem_peca_amostra", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="amostra_sim" />
+                      <Label htmlFor="amostra_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="amostra_nao" />
+                      <Label htmlFor="amostra_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="comprimento">COMPRIMENTO (mm):</Label>
+                  <Input
+                    type="number"
+                    value={formData.comprimento}
+                    onChange={(e) => updateFormData("comprimento", e.target.value)}
+                    step="0.1"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="largura">LARGURA (mm):</Label>
+                  <Input
+                    type="number"
+                    value={formData.largura}
+                    onChange={(e) => updateFormData("largura", e.target.value)}
+                    step="0.1"
+                  />
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Tratamentos e Acabamentos */}
-        <Card>
-          <CardHeader>
-            <CardTitle>TRATAMENTOS E ACABAMENTOS</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="solda">Solda</Label>
-              <Input
-                id="solda"
-                value={formData.solda}
-                onChange={(e) => updateFormData('solda', e.target.value)}
-                placeholder="Tipo de solda"
-              />
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label htmlFor="altura">ALTURA (mm):</Label>
+                  <Input
+                    type="number"
+                    value={formData.altura}
+                    onChange={(e) => updateFormData("altura", e.target.value)}
+                    step="0.1"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="pintura">Pintura</Label>
-              <Input
-                id="pintura"
-                value={formData.pintura}
-                onChange={(e) => updateFormData('pintura', e.target.value)}
-                placeholder="Tipo de pintura"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="diametro_externo">Ø EXTERNO (mm):</Label>
+                  <Input
+                    type="number"
+                    value={formData.diametro_externo}
+                    onChange={(e) => updateFormData("diametro_externo", e.target.value)}
+                    step="0.1"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="usinagem">Usinagem</Label>
-              <Input
-                id="usinagem"
-                value={formData.usinagem}
-                onChange={(e) => updateFormData('usinagem', e.target.value)}
-                placeholder="Tipo de usinagem"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="diametro_interno">Ø INTERNO (mm):</Label>
+                  <Input
+                    type="number"
+                    value={formData.diametro_interno}
+                    onChange={(e) => updateFormData("diametro_interno", e.target.value)}
+                    step="0.1"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="outros">Outros</Label>
-              <Input
-                id="outros"
-                value={formData.outros}
-                onChange={(e) => updateFormData('outros', e.target.value)}
-                placeholder="Outros tratamentos"
-              />
-            </div>
-          </CardContent>
-        </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="peso">PESO (Kg):</Label>
+                  <Input
+                    type="number"
+                    value={formData.peso}
+                    onChange={(e) => updateFormData("peso", e.target.value)}
+                    step="0.1"
+                  />
+                </div>
+              </div>
 
-        {/* Horas de Serviço */}
-        <Card>
-          <CardHeader>
-            <CardTitle>HORAS DE SERVIÇO</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="horasMecanico">Horas Mecânico</Label>
-              <Input
-                id="horasMecanico"
-                type="number"
-                value={formData.horasMecanico}
-                onChange={(e) => updateFormData('horasMecanico', e.target.value)}
-                placeholder="0"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="observacoes">OBSERVAÇÕES:</Label>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={formData.observacoes}
+                    onChange={(e) => updateFormData("observacoes", e.target.value)}
+                    rows={3}
+                  />
+                  <VoiceRecognition 
+                    fieldId="observacoes" 
+                    onResult={(text) => updateFormData("observacoes", text)} 
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="valorHoraMecanico">Valor/Hora Mecânico</Label>
-              <Input
-                id="valorHoraMecanico"
-                type="number"
-                step="0.01"
-                value={formData.valorHoraMecanico}
-                onChange={(e) => updateFormData('valorHoraMecanico', e.target.value)}
-                placeholder="0,00"
-              />
-            </div>
+          {/* Tratamentos e Acabamentos */}
+          <Card>
+            <CardHeader>
+              <CardTitle>TRATAMENTOS E ACABAMENTOS</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label>PINTURA:</Label>
+                  <RadioGroup
+                    value={formData.pintura}
+                    onValueChange={(value) => updateFormData("pintura", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="pintura_sim" />
+                      <Label htmlFor="pintura_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="pintura_nao" />
+                      <Label htmlFor="pintura_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="horasSoldador">Horas Soldador</Label>
-              <Input
-                id="horasSoldador"
-                type="number"
-                value={formData.horasSoldador}
-                onChange={(e) => updateFormData('horasSoldador', e.target.value)}
-                placeholder="0"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cor_pintura">COR:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.cor_pintura}
+                      onChange={(e) => updateFormData("cor_pintura", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="cor_pintura" 
+                      onResult={(text) => updateFormData("cor_pintura", text)} 
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="valorHoraSoldador">Valor/Hora Soldador</Label>
-              <Input
-                id="valorHoraSoldador"
-                type="number"
-                step="0.01"
-                value={formData.valorHoraSoldador}
-                onChange={(e) => updateFormData('valorHoraSoldador', e.target.value)}
-                placeholder="0,00"
-              />
-            </div>
-          </CardContent>
-        </Card>
+                <div className="space-y-2">
+                  <Label>GALVANIZAÇÃO:</Label>
+                  <RadioGroup
+                    value={formData.galvanizacao}
+                    onValueChange={(value) => updateFormData("galvanizacao", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="galv_sim" />
+                      <Label htmlFor="galv_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="galv_nao" />
+                      <Label htmlFor="galv_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
 
-        {/* Fotos */}
-        <FotoUpload fotos={fotos} onAddFoto={addFoto} onRemoveFoto={removeFoto} />
+                <div className="space-y-2">
+                  <Label htmlFor="peso_peca_galv">PESO PÇ (Galv):</Label>
+                  <Input
+                    type="number"
+                    value={formData.peso_peca_galv}
+                    onChange={(e) => updateFormData("peso_peca_galv", e.target.value)}
+                    step="0.1"
+                  />
+                </div>
+              </div>
 
-        {/* Cálculos e Resumo */}
-        <CalculosSummary calculos={calculos} />
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label>TRATAMENTO TÉRMICO:</Label>
+                  <RadioGroup
+                    value={formData.tratamento_termico}
+                    onValueChange={(value) => updateFormData("tratamento_termico", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="trat_term_sim" />
+                      <Label htmlFor="trat_term_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="trat_term_nao" />
+                      <Label htmlFor="trat_term_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
 
-        {/* Botões de Ação */}
-        <ActionButtons formData={formData} materiais={materiais} fotos={fotos} />
+                <div className="space-y-2">
+                  <Label htmlFor="peso_peca_trat">PESO PÇ (Trat):</Label>
+                  <Input
+                    type="number"
+                    value={formData.peso_peca_trat}
+                    onChange={(e) => updateFormData("peso_peca_trat", e.target.value)}
+                    step="0.1"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tempera_reven">TEMPERA / REVEN:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.tempera_reven}
+                      onChange={(e) => updateFormData("tempera_reven", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="tempera_reven" 
+                      onResult={(text) => updateFormData("tempera_reven", text)} 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cementacao">CEMENTAÇÃO:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.cementacao}
+                      onChange={(e) => updateFormData("cementacao", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="cementacao" 
+                      onResult={(text) => updateFormData("cementacao", text)} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label htmlFor="dureza">DUREZA:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.dureza}
+                      onChange={(e) => updateFormData("dureza", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="dureza" 
+                      onResult={(text) => updateFormData("dureza", text)} 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>TESTE DE LP:</Label>
+                  <RadioGroup
+                    value={formData.teste_lp}
+                    onValueChange={(value) => updateFormData("teste_lp", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="teste_lp_sim" />
+                      <Label htmlFor="teste_lp_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="teste_lp_nao" />
+                      <Label htmlFor="teste_lp_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="balanceamento_campo">BALANCEAMENTO:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.balanceamento_campo}
+                      onChange={(e) => updateFormData("balanceamento_campo", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="balanceamento_campo" 
+                      onResult={(text) => updateFormData("balanceamento_campo", text)} 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="rotacao">ROTAÇÃO:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.rotacao}
+                      onChange={(e) => updateFormData("rotacao", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="rotacao" 
+                      onResult={(text) => updateFormData("rotacao", text)} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label>FORNECIMENTO DE DESENHO:</Label>
+                  <RadioGroup
+                    value={formData.fornecimento_desenho}
+                    onValueChange={(value) => updateFormData("fornecimento_desenho", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="forn_desenho_sim" />
+                      <Label htmlFor="forn_desenho_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="forn_desenho_nao" />
+                      <Label htmlFor="forn_desenho_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>FOTOS PARA RELATÓRIO:</Label>
+                  <RadioGroup
+                    value={formData.fotos_relatorio}
+                    onValueChange={(value) => updateFormData("fotos_relatorio", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="fotos_sim" />
+                      <Label htmlFor="fotos_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="fotos_nao" />
+                      <Label htmlFor="fotos_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>RELATÓRIO TÉCNICO:</Label>
+                  <RadioGroup
+                    value={formData.relatorio_tecnico}
+                    onValueChange={(value) => updateFormData("relatorio_tecnico", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="relatorio_sim" />
+                      <Label htmlFor="relatorio_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="relatorio_nao" />
+                      <Label htmlFor="relatorio_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>EMISSÃO DE ART:</Label>
+                  <RadioGroup
+                    value={formData.emissao_art}
+                    onValueChange={(value) => updateFormData("emissao_art", value)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="SIM" id="art_sim" />
+                      <Label htmlFor="art_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="art_nao" />
+                      <Label htmlFor="art_nao">NÃO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="servicos_terceirizados">SERVIÇOS TERCEIRIZADOS:</Label>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={formData.servicos_terceirizados}
+                    onChange={(e) => updateFormData("servicos_terceirizados", e.target.value)}
+                    rows={2}
+                  />
+                  <VoiceRecognition 
+                    fieldId="servicos_terceirizados" 
+                    onResult={(text) => updateFormData("servicos_terceirizados", text)} 
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Horas de Serviço */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                PRÉVIA DE HORAS PARA REALIZAR O SERVIÇO / PEÇA
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label>HORAS POR PEÇA (Calculado):</Label>
+                  <Input
+                    value={calculos.horasPorPeca.toFixed(1)}
+                    readOnly
+                    className="bg-muted border-2 border-muted-foreground font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>HORAS TODAS AS PEÇAS (Calculado):</Label>
+                  <Input
+                    value={calculos.horasTodasPecas.toFixed(1)}
+                    readOnly
+                    className="bg-muted border-2 border-muted-foreground font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label htmlFor="torno_grande">TORNO GRANDE:</Label>
+                  <Input
+                    type="number"
+                    value={formData.torno_grande}
+                    onChange={(e) => updateFormData("torno_grande", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="torno_pequeno">TORNO PEQUENO:</Label>
+                  <Input
+                    type="number"
+                    value={formData.torno_pequeno}
+                    onChange={(e) => updateFormData("torno_pequeno", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cnc_tf">CNC T/F:</Label>
+                  <Input
+                    type="number"
+                    value={formData.cnc_tf}
+                    onChange={(e) => updateFormData("cnc_tf", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fresa_furad">FRESA/FURAD:</Label>
+                  <Input
+                    type="number"
+                    value={formData.fresa_furad}
+                    onChange={(e) => updateFormData("fresa_furad", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label htmlFor="plasma_oxicorte">PLASMA/OXICORTE:</Label>
+                  <Input
+                    type="number"
+                    value={formData.plasma_oxicorte}
+                    onChange={(e) => updateFormData("plasma_oxicorte", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dobra">DOBRA:</Label>
+                  <Input
+                    type="number"
+                    value={formData.dobra}
+                    onChange={(e) => updateFormData("dobra", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="calandra">CALANDRA:</Label>
+                  <Input
+                    type="number"
+                    value={formData.calandra}
+                    onChange={(e) => updateFormData("calandra", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="macarico_solda">MAÇARICO/SOLDA:</Label>
+                  <Input
+                    type="number"
+                    value={formData.macarico_solda}
+                    onChange={(e) => updateFormData("macarico_solda", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label htmlFor="des_montg">DES/MONTG:</Label>
+                  <Input
+                    type="number"
+                    value={formData.des_montg}
+                    onChange={(e) => updateFormData("des_montg", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="balanceamento">BALANCEAMENTO:</Label>
+                  <Input
+                    type="number"
+                    value={formData.balanceamento}
+                    onChange={(e) => updateFormData("balanceamento", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mandrilhamento">MANDRILHAMENTO CAMPO:</Label>
+                  <Input
+                    type="number"
+                    value={formData.mandrilhamento}
+                    onChange={(e) => updateFormData("mandrilhamento", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tratamento">TRATAMENTO:</Label>
+                  <Input
+                    type="number"
+                    value={formData.tratamento}
+                    onChange={(e) => updateFormData("tratamento", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="pintura_horas">PINTURA:</Label>
+                  <Input
+                    type="number"
+                    value={formData.pintura_horas}
+                    onChange={(e) => updateFormData("pintura_horas", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lavagem_acab">LAVAGEM/ACAB:</Label>
+                  <Input
+                    type="number"
+                    value={formData.lavagem_acab}
+                    onChange={(e) => updateFormData("lavagem_acab", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="programacao_cam">PROGRAMAÇÃO CAM:</Label>
+                  <Input
+                    type="number"
+                    value={formData.programacao_cam}
+                    onChange={(e) => updateFormData("programacao_cam", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eng_tec">ENG / TEC:</Label>
+                  <Input
+                    type="number"
+                    value={formData.eng_tec}
+                    onChange={(e) => updateFormData("eng_tec", e.target.value)}
+                    step="0.5"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Controle */}
+          <Card>
+            <CardHeader>
+              <CardTitle>CONTROLE</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="num_orcamento">Nº do orçamento:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.num_orcamento}
+                      onChange={(e) => updateFormData("num_orcamento", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="num_orcamento" 
+                      onResult={(text) => updateFormData("num_orcamento", text)} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="num_os">Nº da O.S:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.num_os}
+                      onChange={(e) => updateFormData("num_os", e.target.value)}
+                      placeholder="Número da Ordem de Serviço"
+                      className="border-2 border-success bg-success/5"
+                    />
+                    <VoiceRecognition 
+                      fieldId="num_os" 
+                      onResult={(text) => updateFormData("num_os", text)} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="num_nf_remessa">Nº da NF DE REMESSA DO CLIENTE:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.num_nf_remessa}
+                      onChange={(e) => updateFormData("num_nf_remessa", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="num_nf_remessa" 
+                      onResult={(text) => updateFormData("num_nf_remessa", text)} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Resumo dos Totais */}
+          <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-center flex items-center justify-center gap-2">
+                <Calculator className="h-5 w-5" />
+                RESUMO DOS TOTAIS
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="bg-background border border-primary/20">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-sm text-muted-foreground mb-1">HORAS POR PEÇA</div>
+                    <div className="text-lg font-bold text-primary">
+                      {calculos.horasPorPeca.toFixed(1)} h
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-background border border-primary/20">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-sm text-muted-foreground mb-1">HORAS TODAS AS PEÇAS</div>
+                    <div className="text-lg font-bold text-primary">
+                      {calculos.horasTodasPecas.toFixed(1)} h
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-background border border-primary/20">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-sm text-muted-foreground mb-1">MATERIAL POR PEÇA</div>
+                    <div className="text-lg font-bold text-primary">
+                      {formatCurrency(calculos.materialPorPeca)}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-background border border-primary/20">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-sm text-muted-foreground mb-1">MATERIAL TODAS AS PEÇAS</div>
+                    <div className="text-lg font-bold text-primary">
+                      {formatCurrency(calculos.materialTodasPecas)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <ActionButtons 
+            formData={formData} 
+            materiais={materiais} 
+            fotos={fotos} 
+          />
+        </form>
       </div>
     </div>
   );
