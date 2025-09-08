@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { VoiceRecognition } from "@/components/FichaTecnica/VoiceRecognition";
-import { FotoUpload } from "@/components/FichaTecnica/FotoUpload";
+
 import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
 import { CalculosSummary } from "@/components/FichaTecnica/CalculosSummary";
 import { ActionButtons } from "@/components/FichaTecnica/ActionButtons";
@@ -197,11 +197,36 @@ export default function Index() {
                 </div>
               </div>
 
-              <FotoUpload 
-                fotos={fotos} 
-                onAddFoto={addFoto} 
-                onRemoveFoto={removeFoto} 
-              />
+              <Button
+                type="button"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.multiple = true;
+                  input.onchange = (e) => {
+                    const files = Array.from((e.target as HTMLInputElement).files || []);
+                    files.forEach((file) => {
+                      const reader = new FileReader();
+                      reader.onload = (e) => {
+                        const foto = {
+                          id: Date.now() + Math.random(),
+                          file,
+                          preview: e.target?.result as string,
+                          name: file.name,
+                          size: file.size,
+                        };
+                        addFoto(foto);
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                  };
+                  input.click();
+                }}
+                className="mt-4 bg-gradient-to-r from-info to-info/80"
+              >
+                📷 Adicionar Foto
+              </Button>
             </CardContent>
           </Card>
 
