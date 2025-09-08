@@ -237,24 +237,6 @@ export default function Index() {
               <CardTitle>MATERIAL PARA COTAÇÃO</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label>VALOR POR PEÇA (Calculado):</Label>
-                  <Input
-                    value={formatCurrency(calculos.materialPorPeca)}
-                    readOnly
-                    className="bg-muted border-2 border-muted-foreground font-bold"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>VALOR TODAS AS PEÇAS (Calculado):</Label>
-                  <Input
-                    value={formatCurrency(calculos.materialTodasPecas)}
-                    readOnly
-                    className="bg-muted border-2 border-muted-foreground font-bold"
-                  />
-                </div>
-              </div>
 
               <div className="space-y-4">
                 {materiais.map((material) => (
@@ -732,24 +714,6 @@ export default function Index() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label>HORAS POR PEÇA (Calculado):</Label>
-                  <Input
-                    value={calculos.horasPorPeca.toFixed(1)}
-                    readOnly
-                    className="bg-muted border-2 border-muted-foreground font-bold"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>HORAS TODAS AS PEÇAS (Calculado):</Label>
-                  <Input
-                    value={calculos.horasTodasPecas.toFixed(1)}
-                    readOnly
-                    className="bg-muted border-2 border-muted-foreground font-bold"
-                  />
-                </div>
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div className="space-y-2">
