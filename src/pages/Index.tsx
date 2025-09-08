@@ -843,14 +843,6 @@ export default function Index() {
                     onVoiceResult={(text) => updateFormData("num_nf_remessa", text)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="num_nf_entrega">Nº da NF ENTREGA:</Label>
-                  <InputWithVoice
-                    value={formData.num_nf_entrega}
-                    onChange={(e) => updateFormData("num_nf_entrega", e.target.value)}
-                    onVoiceResult={(text) => updateFormData("num_nf_entrega", text)}
-                  />
-                </div>
               </div>
             </CardContent>
           </Card>

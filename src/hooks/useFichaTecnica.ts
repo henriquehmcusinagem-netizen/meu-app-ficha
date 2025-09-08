@@ -74,7 +74,6 @@ const initialFormData: FormData = {
   num_orcamento: "",
   num_os: "",
   num_nf_remessa: "",
-  num_nf_entrega: "",
 };
 
 export function useFichaTecnica() {

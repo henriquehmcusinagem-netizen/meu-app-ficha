@@ -69,7 +69,6 @@ export interface FormData {
   num_orcamento: string;
   num_os: string;
   num_nf_remessa: string;
-  num_nf_entrega: string;
 }
 
 export interface Material {
