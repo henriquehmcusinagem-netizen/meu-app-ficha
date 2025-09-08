@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
-import Index from "./Index";
+import FichaTecnicaForm from "./FichaTecnicaForm";
 
 export default function NovaFicha() {
   const navigate = useNavigate();
@@ -34,8 +34,8 @@ export default function NovaFicha() {
           <h1 className="text-xl font-semibold text-muted-foreground">Nova Ficha Técnica</h1>
         </div>
         
-        {/* Render the original Index component */}
-        <Index />
+        {/* Render the original FichaTecnicaForm component */}
+        <FichaTecnicaForm />
       </div>
     </div>
   );

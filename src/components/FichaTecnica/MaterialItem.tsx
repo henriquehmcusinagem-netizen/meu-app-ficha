@@ -93,22 +93,23 @@ export function MaterialItem({ material, onUpdate, onRemove }: MaterialItemProps
         
         <div className="space-y-2">
           <Label className="text-xs font-bold">VALOR TOTAL</Label>
-          <div className="flex gap-2">
-            <Input
-              value={`R$ ${material.valor_total}`}
-              readOnly
-              className="bg-muted font-medium text-sm border-2"
-            />
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={() => onRemove(material.id)}
-              className="px-3"
-            >
-              ✕
-            </Button>
-          </div>
+          <Input
+            value={`R$ ${material.valor_total}`}
+            readOnly
+            className="bg-muted font-medium text-sm border-2"
+          />
+        </div>
+        
+        <div className="flex items-end">
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => onRemove(material.id)}
+            className="px-3"
+          >
+            ✕
+          </Button>
         </div>
       </div>
     </Card>
