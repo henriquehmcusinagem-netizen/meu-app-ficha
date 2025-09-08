@@ -103,3 +103,175 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Print styles for A4 single page layout */
+@media print {
+  @page {
+    size: A4;
+    margin: 0.5cm;
+  }
+
+  body {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  /* Hide non-essential elements for print */
+  .no-print,
+  .sidebar,
+  button:not(.print-only),
+  .toast,
+  .tooltip,
+  [role="dialog"],
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  /* Make sure print layout is visible */
+  .print-layout {
+    display: block !important;
+  }
+
+  /* Container adjustments */
+  .print-container {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Compact spacing */
+  .print-section {
+    margin-bottom: 8px !important;
+    padding: 4px !important;
+    border: 1px solid #333 !important;
+    border-radius: 3px !important;
+    page-break-inside: avoid;
+  }
+
+  .print-title {
+    font-size: 11px !important;
+    font-weight: bold !important;
+    margin-bottom: 3px !important;
+    background: #f0f0f0 !important;
+    padding: 2px 4px !important;
+    border-bottom: 1px solid #333 !important;
+  }
+
+  .print-grid {
+    display: grid !important;
+    gap: 4px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .print-grid-2 { grid-template-columns: 1fr 1fr !important; }
+  .print-grid-3 { grid-template-columns: 1fr 1fr 1fr !important; }
+  .print-grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr !important; }
+  .print-grid-6 { grid-template-columns: repeat(6, 1fr) !important; }
+
+  .print-field {
+    font-size: 9px !important;
+    padding: 1px 3px !important;
+    border: 1px solid #ccc !important;
+    background: white !important;
+  }
+
+  .print-label {
+    font-size: 8px !important;
+    font-weight: bold !important;
+    margin-bottom: 1px !important;
+  }
+
+  .print-value {
+    font-size: 9px !important;
+    min-height: 12px !important;
+  }
+
+  /* Table styles for materials */
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8px !important;
+    margin: 4px 0 !important;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 1px solid #333 !important;
+    padding: 2px !important;
+    text-align: left !important;
+  }
+
+  .print-table th {
+    background: #f0f0f0 !important;
+    font-weight: bold !important;
+  }
+
+  /* Header section */
+  .print-header {
+    text-align: center !important;
+    margin-bottom: 8px !important;
+    padding: 6px !important;
+    border: 2px solid black !important;
+    background: #f8f8f8 !important;
+  }
+
+  .print-header h1 {
+    font-size: 14px !important;
+    font-weight: bold !important;
+    margin: 0 !important;
+  }
+
+  .print-header .header-info {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: 4px !important;
+    font-size: 10px !important;
+  }
+
+  /* Compact radio/checkbox display */
+  .print-radio-group,
+  .print-checkbox-group {
+    display: flex !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .print-radio-item,
+  .print-checkbox-item {
+    font-size: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+  }
+
+  /* Summary totals styling */
+  .print-totals {
+    background: #f0f0f0 !important;
+    border: 2px solid #333 !important;
+    padding: 4px !important;
+    margin-top: 8px !important;
+  }
+
+  .print-totals .total-item {
+    text-align: center !important;
+    padding: 2px !important;
+    border: 1px solid #666 !important;
+    font-weight: bold !important;
+  }
+
+  /* Force page break if needed */
+  .page-break {
+    page-break-before: always !important;
+  }
+
+  /* Hide screen-only content */
+  .screen-only {
+    display: none !important;
+  }
+}

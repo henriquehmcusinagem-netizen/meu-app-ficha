@@ -15,6 +15,7 @@ import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
 import { CalculosSummary } from "@/components/FichaTecnica/CalculosSummary";
 import { ActionButtons } from "@/components/FichaTecnica/ActionButtons";
 import { SaveButton } from "@/components/FichaTecnica/SaveButton";
+import { PrintLayout } from "@/components/FichaTecnica/PrintLayout";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
 import { clientesPredefinidos } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/calculations";
@@ -939,12 +940,24 @@ export default function Index() {
             </CardContent>
           </Card>
 
-          {/* Action Buttons */}
-          <ActionButtons 
+        {/* Action Buttons */}
+        <div className="screen-only">
+          <ActionButtons
             formData={formData}
             materiais={materiais}
             fotos={fotos}
           />
+        </div>
+
+        {/* Print Layout - Hidden on screen, visible only when printing */}
+        <PrintLayout
+          formData={formData}
+          materiais={materiais}
+          fotos={fotos}
+          calculos={calculos}
+          numeroFTC={numeroFTC}
+          dataAtual={dataAtual}
+        />
         </form>
       </div>
     </div>
