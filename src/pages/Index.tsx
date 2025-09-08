@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { InputWithVoice } from "@/components/ui/input-with-voice";
+import { TextareaWithVoice } from "@/components/ui/textarea-with-voice";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -8,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { VoiceRecognition } from "@/components/FichaTecnica/VoiceRecognition";
 
 import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
 import { CalculosSummary } from "@/components/FichaTecnica/CalculosSummary";
@@ -87,47 +88,34 @@ export default function Index() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Input
+                    <InputWithVoice
                       value={formData.cliente}
                       onChange={(e) => updateFormData("cliente", e.target.value)}
+                      onVoiceResult={(text) => updateFormData("cliente", text)}
                       placeholder="Digite o nome do cliente"
                       className="flex-2"
                       required
-                    />
-                    <VoiceRecognition 
-                      fieldId="cliente" 
-                      onResult={(text) => updateFormData("cliente", text)} 
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="solicitante">SOLICITANTE:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.solicitante}
-                      onChange={(e) => updateFormData("solicitante", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="solicitante" 
-                      onResult={(text) => updateFormData("solicitante", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.solicitante}
+                    onChange={(e) => updateFormData("solicitante", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("solicitante", text)}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="fone_email">FONE/EMAIL:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.fone_email}
-                      onChange={(e) => updateFormData("fone_email", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="fone_email" 
-                      onResult={(text) => updateFormData("fone_email", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.fone_email}
+                    onChange={(e) => updateFormData("fone_email", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("fone_email", text)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="data_visita">DATA DA VISITA:</Label>
@@ -160,17 +148,12 @@ export default function Index() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="space-y-2">
                   <Label htmlFor="nome_peca">NOME DA PEÇA / EQUIPAMENTO:</Label>
-                  <div className="flex gap-2">
-                    <Textarea
-                      value={formData.nome_peca}
-                      onChange={(e) => updateFormData("nome_peca", e.target.value)}
-                      rows={2}
-                    />
-                    <VoiceRecognition 
-                      fieldId="nome_peca" 
-                      onResult={(text) => updateFormData("nome_peca", text)} 
-                    />
-                  </div>
+                  <TextareaWithVoice
+                    value={formData.nome_peca}
+                    onChange={(e) => updateFormData("nome_peca", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("nome_peca", text)}
+                    rows={2}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="quantidade">QUANTIDADE:</Label>
@@ -185,17 +168,12 @@ export default function Index() {
 
               <div className="space-y-2 mb-6">
                 <Label htmlFor="servico">SERVIÇO A SER REALIZADO:</Label>
-                <div className="flex gap-2">
-                  <Textarea
-                    value={formData.servico}
-                    onChange={(e) => updateFormData("servico", e.target.value)}
-                    rows={3}
-                  />
-                  <VoiceRecognition 
-                    fieldId="servico" 
-                    onResult={(text) => updateFormData("servico", text)} 
-                  />
-                </div>
+                <TextareaWithVoice
+                  value={formData.servico}
+                  onChange={(e) => updateFormData("servico", e.target.value)}
+                  onVoiceResult={(text) => updateFormData("servico", text)}
+                  rows={3}
+                />
               </div>
 
               <Button
@@ -305,19 +283,13 @@ export default function Index() {
 
                 <div className="space-y-2">
                   <Label htmlFor="visita_horas">HORAS VISITA:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="visita_horas"
-                      type="number"
-                      value={formData.visita_horas}
-                      onChange={(e) => updateFormData("visita_horas", e.target.value)}
-                      step="0.5"
-                    />
-                    <VoiceRecognition 
-                      fieldId="visita_horas" 
-                      onResult={(text) => updateFormData("visita_horas", text)} 
-                    />
-                  </div>
+                  <Input
+                    id="visita_horas"
+                    type="number"
+                    value={formData.visita_horas}
+                    onChange={(e) => updateFormData("visita_horas", e.target.value)}
+                    step="0.5"
+                  />
                 </div>
               </div>
 
@@ -453,16 +425,11 @@ export default function Index() {
 
                 <div className="space-y-2">
                   <Label htmlFor="cor_pintura">COR:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.cor_pintura}
-                      onChange={(e) => updateFormData("cor_pintura", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="cor_pintura" 
-                      onResult={(text) => updateFormData("cor_pintura", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.cor_pintura}
+                    onChange={(e) => updateFormData("cor_pintura", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("cor_pintura", text)}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -525,46 +492,31 @@ export default function Index() {
 
                 <div className="space-y-2">
                   <Label htmlFor="tempera_reven">TEMPERA / REVEN:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.tempera_reven}
-                      onChange={(e) => updateFormData("tempera_reven", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="tempera_reven" 
-                      onResult={(text) => updateFormData("tempera_reven", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.tempera_reven}
+                    onChange={(e) => updateFormData("tempera_reven", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("tempera_reven", text)}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="cementacao">CEMENTAÇÃO:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.cementacao}
-                      onChange={(e) => updateFormData("cementacao", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="cementacao" 
-                      onResult={(text) => updateFormData("cementacao", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.cementacao}
+                    onChange={(e) => updateFormData("cementacao", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("cementacao", text)}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div className="space-y-2">
                   <Label htmlFor="dureza">DUREZA:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.dureza}
-                      onChange={(e) => updateFormData("dureza", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="dureza" 
-                      onResult={(text) => updateFormData("dureza", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.dureza}
+                    onChange={(e) => updateFormData("dureza", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("dureza", text)}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -587,30 +539,20 @@ export default function Index() {
 
                 <div className="space-y-2">
                   <Label htmlFor="balanceamento_campo">BALANCEAMENTO:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.balanceamento_campo}
-                      onChange={(e) => updateFormData("balanceamento_campo", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="balanceamento_campo" 
-                      onResult={(text) => updateFormData("balanceamento_campo", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.balanceamento_campo}
+                    onChange={(e) => updateFormData("balanceamento_campo", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("balanceamento_campo", text)}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="rotacao">ROTAÇÃO:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.rotacao}
-                      onChange={(e) => updateFormData("rotacao", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="rotacao" 
-                      onResult={(text) => updateFormData("rotacao", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.rotacao}
+                    onChange={(e) => updateFormData("rotacao", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("rotacao", text)}
+                  />
                 </div>
               </div>
 
@@ -690,17 +632,12 @@ export default function Index() {
 
               <div className="space-y-2">
                 <Label htmlFor="servicos_terceirizados">SERVIÇOS TERCEIRIZADOS:</Label>
-                <div className="flex gap-2">
-                  <Textarea
-                    value={formData.servicos_terceirizados}
-                    onChange={(e) => updateFormData("servicos_terceirizados", e.target.value)}
-                    rows={2}
-                  />
-                  <VoiceRecognition 
-                    fieldId="servicos_terceirizados" 
-                    onResult={(text) => updateFormData("servicos_terceirizados", text)} 
-                  />
-                </div>
+                <TextareaWithVoice
+                  value={formData.servicos_terceirizados}
+                  onChange={(e) => updateFormData("servicos_terceirizados", e.target.value)}
+                  onVoiceResult={(text) => updateFormData("servicos_terceirizados", text)}
+                  rows={2}
+                />
               </div>
             </CardContent>
           </Card>
@@ -882,57 +819,37 @@ export default function Index() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="num_orcamento">Nº do orçamento:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.num_orcamento}
-                      onChange={(e) => updateFormData("num_orcamento", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="num_orcamento" 
-                      onResult={(text) => updateFormData("num_orcamento", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.num_orcamento}
+                    onChange={(e) => updateFormData("num_orcamento", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("num_orcamento", text)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="num_os">Nº da O.S:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.num_os}
-                      onChange={(e) => updateFormData("num_os", e.target.value)}
-                      placeholder="Número da Ordem de Serviço"
-                      className="border-2 border-success bg-success/5"
-                    />
-                    <VoiceRecognition 
-                      fieldId="num_os" 
-                      onResult={(text) => updateFormData("num_os", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.num_os}
+                    onChange={(e) => updateFormData("num_os", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("num_os", text)}
+                    placeholder="Número da Ordem de Serviço"
+                    className="border-2 border-success bg-success/5"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="num_nf_remessa">Nº da NF DE REMESSA DO CLIENTE:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.num_nf_remessa}
-                      onChange={(e) => updateFormData("num_nf_remessa", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="num_nf_remessa" 
-                      onResult={(text) => updateFormData("num_nf_remessa", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.num_nf_remessa}
+                    onChange={(e) => updateFormData("num_nf_remessa", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("num_nf_remessa", text)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="num_nf_entrega">Nº da NF ENTREGA:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.num_nf_entrega}
-                      onChange={(e) => updateFormData("num_nf_entrega", e.target.value)}
-                    />
-                    <VoiceRecognition 
-                      fieldId="num_nf_entrega" 
-                      onResult={(text) => updateFormData("num_nf_entrega", text)} 
-                    />
-                  </div>
+                  <InputWithVoice
+                    value={formData.num_nf_entrega}
+                    onChange={(e) => updateFormData("num_nf_entrega", e.target.value)}
+                    onVoiceResult={(text) => updateFormData("num_nf_entrega", text)}
+                  />
                 </div>
               </div>
             </CardContent>

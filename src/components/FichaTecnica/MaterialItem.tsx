@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputWithVoice } from "@/components/ui/input-with-voice";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { VoiceRecognition } from "./VoiceRecognition";
 import { Material } from "@/types/ficha-tecnica";
 
 interface MaterialItemProps {
@@ -36,18 +36,13 @@ export function MaterialItem({ material, onUpdate, onRemove }: MaterialItemProps
       <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
         <div className="md:col-span-2 space-y-2">
           <Label className="text-xs font-bold">MATERIAL</Label>
-          <div className="flex gap-2">
-            <Input
-              value={material.descricao}
-              onChange={(e) => updateField('descricao', e.target.value)}
-              placeholder="Descrição do material"
-              className="text-sm"
-            />
-            <VoiceRecognition 
-              fieldId={`descricao-${material.id}`}
-              onResult={(text) => updateField('descricao', text)} 
-            />
-          </div>
+          <InputWithVoice
+            value={material.descricao}
+            onChange={(e) => updateField('descricao', e.target.value)}
+            onVoiceResult={(text) => updateField('descricao', text)}
+            placeholder="Descrição do material"
+            className="text-sm"
+          />
         </div>
         
         <div className="space-y-2">
@@ -76,9 +71,10 @@ export function MaterialItem({ material, onUpdate, onRemove }: MaterialItemProps
         
         <div className="space-y-2">
           <Label className="text-xs font-bold">FORNECEDOR</Label>
-          <Input
+          <InputWithVoice
             value={material.fornecedor}
             onChange={(e) => updateField('fornecedor', e.target.value)}
+            onVoiceResult={(text) => updateField('fornecedor', text)}
             placeholder="Fornecedor"
             className="text-sm"
           />
@@ -86,9 +82,10 @@ export function MaterialItem({ material, onUpdate, onRemove }: MaterialItemProps
         
         <div className="space-y-2">
           <Label className="text-xs font-bold">CLIENTE INTERNO</Label>
-          <Input
+          <InputWithVoice
             value={material.cliente_interno}
             onChange={(e) => updateField('cliente_interno', e.target.value)}
+            onVoiceResult={(text) => updateField('cliente_interno', text)}
             placeholder="Cliente interno"
             className="text-sm"
           />
