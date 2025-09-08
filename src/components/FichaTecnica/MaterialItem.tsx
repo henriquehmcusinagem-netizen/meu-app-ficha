@@ -33,9 +33,9 @@ export function MaterialItem({ material, onUpdate, onRemove }: MaterialItemProps
 
   return (
     <Card className="p-4 bg-muted/30 border border-muted-foreground/20">
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
         <div className="md:col-span-2 space-y-2">
-          <Label className="text-xs font-bold">DESCRIÇÃO</Label>
+          <Label className="text-xs font-bold">MATERIAL</Label>
           <div className="flex gap-2">
             <Input
               value={material.descricao}
@@ -63,28 +63,7 @@ export function MaterialItem({ material, onUpdate, onRemove }: MaterialItemProps
         </div>
         
         <div className="space-y-2">
-          <Label className="text-xs font-bold">UNID</Label>
-          <Select
-            value={material.unidade}
-            onValueChange={(value) => updateField('unidade', value)}
-          >
-            <SelectTrigger className="text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="PC">PC</SelectItem>
-              <SelectItem value="UN">UN</SelectItem>
-              <SelectItem value="M">M</SelectItem>
-              <SelectItem value="M²">M²</SelectItem>
-              <SelectItem value="KG">KG</SelectItem>
-              <SelectItem value="L">L</SelectItem>
-              <SelectItem value="CJ">CJ</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label className="text-xs font-bold">VALOR UNIT.</Label>
+          <Label className="text-xs font-bold">PREÇO UNIT</Label>
           <Input
             type="number"
             value={material.valor_unitario}
@@ -96,7 +75,27 @@ export function MaterialItem({ material, onUpdate, onRemove }: MaterialItemProps
         </div>
         
         <div className="space-y-2">
-          <Label className="text-xs font-bold">TOTAL</Label>
+          <Label className="text-xs font-bold">FORNECEDOR</Label>
+          <Input
+            value={material.fornecedor}
+            onChange={(e) => updateField('fornecedor', e.target.value)}
+            placeholder="Fornecedor"
+            className="text-sm"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label className="text-xs font-bold">CLIENTE INTERNO</Label>
+          <Input
+            value={material.cliente_interno}
+            onChange={(e) => updateField('cliente_interno', e.target.value)}
+            placeholder="Cliente interno"
+            className="text-sm"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label className="text-xs font-bold">VALOR TOTAL</Label>
           <div className="flex gap-2">
             <Input
               value={`R$ ${material.valor_total}`}

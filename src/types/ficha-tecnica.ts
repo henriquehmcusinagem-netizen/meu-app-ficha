@@ -78,6 +78,8 @@ export interface Material {
   quantidade: string;
   unidade: string;
   valor_unitario: string;
+  fornecedor: string;
+  cliente_interno: string;
   valor_total: string;
 }
 

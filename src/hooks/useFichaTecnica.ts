@@ -96,6 +96,8 @@ export function useFichaTecnica() {
       quantidade: '',
       unidade: '',
       valor_unitario: '',
+      fornecedor: '',
+      cliente_interno: '',
       valor_total: '0',
     }));
     
@@ -116,6 +118,8 @@ export function useFichaTecnica() {
       quantidade: '',
       unidade: '',
       valor_unitario: '',
+      fornecedor: '',
+      cliente_interno: '',
       valor_total: '0',
     };
     setMateriais(prev => [...prev, newMaterial]);
