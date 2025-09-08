@@ -90,7 +90,7 @@ export function useFichaTecnica() {
     setDataAtual(getCurrentDate());
     
     // Add initial materials
-    const initialMaterials: Material[] = Array.from({ length: 3 }, (_, index) => ({
+    const initialMaterials: Material[] = Array.from({ length: 1 }, (_, index) => ({
       id: Date.now() + index,
       descricao: '',
       quantidade: '',
