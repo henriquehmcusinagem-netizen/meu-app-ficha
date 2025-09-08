@@ -6,7 +6,7 @@ import {
   salvarFicha, 
   carregarFicha, 
   validarCamposObrigatorios 
-} from '@/utils/localStorage';
+} from '@/utils/supabaseStorage';
 
 const initialFormData: FormData = {
   // Dados do Cliente
@@ -186,8 +186,8 @@ export function useFichaTecnica() {
       // Calculate totals for saving
       const calculos = calculateTotals(materiais, formData);
       
-      // Save to localStorage
-      const result = salvarFicha(formData, materiais, fotos, calculos, numeroFTC, fichaId || undefined);
+      // Save to Supabase
+      const result = await salvarFicha(formData, materiais, fotos, calculos, numeroFTC, fichaId || undefined);
       
       if (result.success) {
         setFichaId(result.id!);
@@ -206,8 +206,8 @@ export function useFichaTecnica() {
   }, [formData, materiais, fotos, numeroFTC, fichaId]);
 
   // Load ficha function
-  const carregarFichaTecnica = useCallback((id: string) => {
-    const ficha = carregarFicha(id);
+  const carregarFichaTecnica = useCallback(async (id: string) => {
+    const ficha = await carregarFicha(id);
     
     if (ficha) {
       setFichaId(ficha.id);

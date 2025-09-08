@@ -14,7 +14,217 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fichas_tecnicas: {
+        Row: {
+          cliente: string
+          contato: string | null
+          data_criacao: string
+          data_entrega: string | null
+          data_ultima_edicao: string
+          data_visita: string | null
+          desenho_finalizado: string | null
+          dureza: string | null
+          ensaio_lp: string | null
+          galvanizacao: string | null
+          horas_fresa: number | null
+          horas_furadeira: number | null
+          horas_montagem: number | null
+          horas_outros: number | null
+          horas_pintura: number | null
+          horas_solda: number | null
+          horas_torno: number | null
+          id: string
+          nome_peca: string
+          numero_ftc: string
+          numero_nf: string | null
+          numero_orcamento: string | null
+          numero_os: string | null
+          origem_projeto: string | null
+          peca_amostra: string | null
+          pintura: string | null
+          quantidade: string
+          servico: string
+          solda: string | null
+          solicitante: string
+          status: string
+          tipo_execucao: string | null
+          total_horas_servico: number | null
+          total_material_peca: number | null
+          total_material_todas_pecas: number | null
+          transporte: string | null
+          tratamento_termico: string | null
+          usinagem: string | null
+          visita_tecnica: string | null
+        }
+        Insert: {
+          cliente: string
+          contato?: string | null
+          data_criacao?: string
+          data_entrega?: string | null
+          data_ultima_edicao?: string
+          data_visita?: string | null
+          desenho_finalizado?: string | null
+          dureza?: string | null
+          ensaio_lp?: string | null
+          galvanizacao?: string | null
+          horas_fresa?: number | null
+          horas_furadeira?: number | null
+          horas_montagem?: number | null
+          horas_outros?: number | null
+          horas_pintura?: number | null
+          horas_solda?: number | null
+          horas_torno?: number | null
+          id?: string
+          nome_peca: string
+          numero_ftc: string
+          numero_nf?: string | null
+          numero_orcamento?: string | null
+          numero_os?: string | null
+          origem_projeto?: string | null
+          peca_amostra?: string | null
+          pintura?: string | null
+          quantidade: string
+          servico: string
+          solda?: string | null
+          solicitante: string
+          status?: string
+          tipo_execucao?: string | null
+          total_horas_servico?: number | null
+          total_material_peca?: number | null
+          total_material_todas_pecas?: number | null
+          transporte?: string | null
+          tratamento_termico?: string | null
+          usinagem?: string | null
+          visita_tecnica?: string | null
+        }
+        Update: {
+          cliente?: string
+          contato?: string | null
+          data_criacao?: string
+          data_entrega?: string | null
+          data_ultima_edicao?: string
+          data_visita?: string | null
+          desenho_finalizado?: string | null
+          dureza?: string | null
+          ensaio_lp?: string | null
+          galvanizacao?: string | null
+          horas_fresa?: number | null
+          horas_furadeira?: number | null
+          horas_montagem?: number | null
+          horas_outros?: number | null
+          horas_pintura?: number | null
+          horas_solda?: number | null
+          horas_torno?: number | null
+          id?: string
+          nome_peca?: string
+          numero_ftc?: string
+          numero_nf?: string | null
+          numero_orcamento?: string | null
+          numero_os?: string | null
+          origem_projeto?: string | null
+          peca_amostra?: string | null
+          pintura?: string | null
+          quantidade?: string
+          servico?: string
+          solda?: string | null
+          solicitante?: string
+          status?: string
+          tipo_execucao?: string | null
+          total_horas_servico?: number | null
+          total_material_peca?: number | null
+          total_material_todas_pecas?: number | null
+          transporte?: string | null
+          tratamento_termico?: string | null
+          usinagem?: string | null
+          visita_tecnica?: string | null
+        }
+        Relationships: []
+      }
+      fotos: {
+        Row: {
+          ficha_id: string
+          id: string
+          name: string
+          size: number
+          type: string
+          uploaded_at: string
+        }
+        Insert: {
+          ficha_id: string
+          id?: string
+          name: string
+          size: number
+          type?: string
+          uploaded_at?: string
+        }
+        Update: {
+          ficha_id?: string
+          id?: string
+          name?: string
+          size?: number
+          type?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotos_ficha_id_fkey"
+            columns: ["ficha_id"]
+            isOneToOne: false
+            referencedRelation: "fichas_tecnicas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiais: {
+        Row: {
+          cliente_interno: string | null
+          created_at: string
+          descricao: string
+          ficha_id: string
+          fornecedor: string | null
+          id: string
+          ordem: number
+          quantidade: string
+          unidade: string | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          cliente_interno?: string | null
+          created_at?: string
+          descricao: string
+          ficha_id: string
+          fornecedor?: string | null
+          id?: string
+          ordem: number
+          quantidade: string
+          unidade?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          cliente_interno?: string | null
+          created_at?: string
+          descricao?: string
+          ficha_id?: string
+          fornecedor?: string | null
+          id?: string
+          ordem?: number
+          quantidade?: string
+          unidade?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_ficha_id_fkey"
+            columns: ["ficha_id"]
+            isOneToOne: false
+            referencedRelation: "fichas_tecnicas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

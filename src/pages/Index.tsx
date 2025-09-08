@@ -14,12 +14,13 @@ import { Separator } from "@/components/ui/separator";
 import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
 import { CalculosSummary } from "@/components/FichaTecnica/CalculosSummary";
 import { ActionButtons } from "@/components/FichaTecnica/ActionButtons";
+import { FichasList } from "@/components/FichaTecnica/FichasList";
 import { SaveButton } from "@/components/FichaTecnica/SaveButton";
 import { PrintLayout } from "@/components/FichaTecnica/PrintLayout";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
 import { clientesPredefinidos } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/calculations";
-import { Calendar, FileText, Settings, Calculator } from "lucide-react";
+import { Calendar, FileText, Settings, Calculator, Plus } from "lucide-react";
 
 export default function Index() {
   const {
@@ -884,12 +885,24 @@ export default function Index() {
           </Card>
 
           {/* Botão Salvar Ficha */}
-          <SaveButton
-            isSaved={isSaved}
-            isModified={isModified}
-            isSaving={isSaving}
-            onSave={salvarFichaTecnica}
-          />
+          <div className="flex justify-center gap-4 my-6">
+            <SaveButton 
+              isSaved={isSaved}
+              isModified={isModified}
+              isSaving={isSaving}
+              onSave={salvarFichaTecnica}
+            />
+            <FichasList onLoadFicha={carregarFichaTecnica} />
+            <Button 
+              onClick={criarNovaFicha}
+              variant="outline"
+              size="lg"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              Nova Ficha
+            </Button>
+          </div>
 
           {/* Resumo dos Totais */}
           <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
