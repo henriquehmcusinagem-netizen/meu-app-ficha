@@ -18,12 +18,14 @@ export type Database = {
         Row: {
           cliente: string
           contato: string | null
+          criado_por: string | null
           data_criacao: string
           data_entrega: string | null
           data_ultima_edicao: string
           data_visita: string | null
           desenho_finalizado: string | null
           dureza: string | null
+          editado_por: string | null
           ensaio_lp: string | null
           galvanizacao: string | null
           horas_fresa: number | null
@@ -59,12 +61,14 @@ export type Database = {
         Insert: {
           cliente: string
           contato?: string | null
+          criado_por?: string | null
           data_criacao?: string
           data_entrega?: string | null
           data_ultima_edicao?: string
           data_visita?: string | null
           desenho_finalizado?: string | null
           dureza?: string | null
+          editado_por?: string | null
           ensaio_lp?: string | null
           galvanizacao?: string | null
           horas_fresa?: number | null
@@ -100,12 +104,14 @@ export type Database = {
         Update: {
           cliente?: string
           contato?: string | null
+          criado_por?: string | null
           data_criacao?: string
           data_entrega?: string | null
           data_ultima_edicao?: string
           data_visita?: string | null
           desenho_finalizado?: string | null
           dureza?: string | null
+          editado_por?: string | null
           ensaio_lp?: string | null
           galvanizacao?: string | null
           horas_fresa?: number | null
@@ -142,6 +148,7 @@ export type Database = {
       }
       fotos: {
         Row: {
+          criado_por: string | null
           ficha_id: string
           id: string
           name: string
@@ -150,6 +157,7 @@ export type Database = {
           uploaded_at: string
         }
         Insert: {
+          criado_por?: string | null
           ficha_id: string
           id?: string
           name: string
@@ -158,6 +166,7 @@ export type Database = {
           uploaded_at?: string
         }
         Update: {
+          criado_por?: string | null
           ficha_id?: string
           id?: string
           name?: string
@@ -179,6 +188,7 @@ export type Database = {
         Row: {
           cliente_interno: string | null
           created_at: string
+          criado_por: string | null
           descricao: string
           ficha_id: string
           fornecedor: string | null
@@ -192,6 +202,7 @@ export type Database = {
         Insert: {
           cliente_interno?: string | null
           created_at?: string
+          criado_por?: string | null
           descricao: string
           ficha_id: string
           fornecedor?: string | null
@@ -205,6 +216,7 @@ export type Database = {
         Update: {
           cliente_interno?: string | null
           created_at?: string
+          criado_por?: string | null
           descricao?: string
           ficha_id?: string
           fornecedor?: string | null
@@ -225,12 +237,42 @@ export type Database = {
           },
         ]
       }
+      usuarios_autorizados: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          email: string | null
+          id: string
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          email?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_user_authorized: {
+        Args: { user_email?: string; user_phone?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
