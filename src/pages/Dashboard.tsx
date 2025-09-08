@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { FileText, Search, Plus, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -105,15 +104,7 @@ export default function Dashboard() {
               </p>
             </CardHeader>
             <CardContent className="text-center">
-              <Button 
-                onClick={() => navigate('/nova-ficha')}
-                size="lg" 
-                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-              >
-                <Plus className="mr-2 h-5 w-5" />
-                Criar Nova Ficha
-              </Button>
-              <div className="mt-4 text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground">
                 Preencha dados do cliente, materiais e serviços
               </div>
             </CardContent>
@@ -131,43 +122,11 @@ export default function Dashboard() {
               </p>
             </CardHeader>
             <CardContent className="text-center">
-              <Button 
-                onClick={() => navigate('/consultar-fichas')}
-                size="lg" 
-                variant="secondary"
-                className="w-full bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70"
-              >
-                <Search className="mr-2 h-5 w-5" />
-                Consultar Fichas
-              </Button>
-              <div className="mt-4 text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground">
                 Busque, filtre e gerencie suas fichas salvas
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-12 text-center">
-          <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Ações Rápidas</h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/nova-ficha')}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Nova FTC
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/consultar-fichas')}
-              className="flex items-center gap-2"
-            >
-              <Search className="h-4 w-4" />
-              Buscar Fichas
-            </Button>
-          </div>
         </div>
       </div>
     </div>
