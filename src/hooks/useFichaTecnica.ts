@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FormData, Material, Foto, Calculos } from '@/types/ficha-tecnica';
+import { FormData, Material, Foto, Calculos, FichaSalva } from '@/types/ficha-tecnica';
 import { calculateTotals } from '@/utils/calculations';
 import { generateFTCNumber, getCurrentDate } from '@/utils/helpers';
+import { 
+  salvarFicha, 
+  carregarFicha, 
+  validarCamposObrigatorios 
+} from '@/utils/localStorage';
 
 const initialFormData: FormData = {
   // Dados do Cliente
@@ -83,6 +88,12 @@ export function useFichaTecnica() {
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [numeroFTC, setNumeroFTC] = useState('');
   const [dataAtual, setDataAtual] = useState('');
+  
+  // Save state management
+  const [fichaId, setFichaId] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isModified, setIsModified] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Initialize FTC number and date
   useEffect(() => {
@@ -109,6 +120,8 @@ export function useFichaTecnica() {
       ...prev,
       [field]: value
     }));
+    setIsModified(true);
+    setIsSaved(false);
   }, []);
 
   const addMaterial = useCallback(() => {
@@ -141,6 +154,8 @@ export function useFichaTecnica() {
       }
       return material;
     }));
+    setIsModified(true);
+    setIsSaved(false);
   }, []);
 
   const removeMaterial = useCallback((id: number) => {
@@ -155,10 +170,84 @@ export function useFichaTecnica() {
     setFotos(prev => prev.filter(foto => foto.id !== id));
   }, []);
 
+  // Save ficha function
+  const salvarFichaTecnica = useCallback(async (): Promise<{ success: boolean; errors?: string[] }> => {
+    setIsSaving(true);
+    
+    try {
+      // Validate required fields
+      const erros = validarCamposObrigatorios(formData, materiais);
+      
+      if (erros.length > 0) {
+        setIsSaving(false);
+        return { success: false, errors: erros };
+      }
+      
+      // Calculate totals for saving
+      const calculos = calculateTotals(materiais, formData);
+      
+      // Save to localStorage
+      const result = salvarFicha(formData, materiais, fotos, calculos, numeroFTC, fichaId || undefined);
+      
+      if (result.success) {
+        setFichaId(result.id!);
+        setIsSaved(true);
+        setIsModified(false);
+        setIsSaving(false);
+        return { success: true };
+      } else {
+        setIsSaving(false);
+        return { success: false, errors: [result.error || 'Erro ao salvar'] };
+      }
+    } catch (error) {
+      setIsSaving(false);
+      return { success: false, errors: ['Erro inesperado ao salvar'] };
+    }
+  }, [formData, materiais, fotos, numeroFTC, fichaId]);
+
+  // Load ficha function
+  const carregarFichaTecnica = useCallback((id: string) => {
+    const ficha = carregarFicha(id);
+    
+    if (ficha) {
+      setFichaId(ficha.id);
+      setFormData(ficha.formData);
+      setMateriais(ficha.materiais);
+      setNumeroFTC(ficha.numeroFTC);
+      
+      // Clear fotos since they don't persist
+      setFotos([]);
+      
+      setIsSaved(true);
+      setIsModified(false);
+    }
+  }, []);
+
+  // Create new ficha function
+  const criarNovaFicha = useCallback(() => {
+    setFichaId(null);
+    setFormData(initialFormData);
+    setMateriais([{
+      id: Date.now(),
+      descricao: '',
+      quantidade: '',
+      unidade: '',
+      valor_unitario: '',
+      fornecedor: '',
+      cliente_interno: '',
+      valor_total: '0',
+    }]);
+    setFotos([]);
+    setNumeroFTC(generateFTCNumber());
+    setIsSaved(false);
+    setIsModified(false);
+  }, []);
+
   // Calculate totals
   const calculos: Calculos = calculateTotals(materiais, formData);
 
   return {
+    // Original data
     formData,
     updateFormData,
     materiais,
@@ -171,5 +260,14 @@ export function useFichaTecnica() {
     calculos,
     numeroFTC,
     dataAtual,
+    
+    // Save functionality
+    fichaId,
+    isSaved,
+    isModified,
+    isSaving,
+    salvarFichaTecnica,
+    carregarFichaTecnica,
+    criarNovaFicha,
   };
 }

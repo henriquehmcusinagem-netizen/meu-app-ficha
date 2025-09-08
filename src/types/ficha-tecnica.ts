@@ -106,3 +106,22 @@ export const clientesPredefinidos = [
   "CONSUMIDOR", "STERN", "COIMBRA - USIT", "MARIMEX", "KEPLER", 
   "ELDORADO"
 ];
+
+// Interface for saved fichas
+export interface FichaSalva {
+  id: string;
+  numeroFTC: string;
+  dataCriacao: string;
+  dataUltimaEdicao: string;
+  status: 'rascunho' | 'finalizada';
+  formData: FormData;
+  materiais: Material[];
+  fotos: Omit<Foto, 'file' | 'preview'>[]; // Only metadata, no files
+  calculos: Calculos;
+  resumo: {
+    cliente: string;
+    servico: string;
+    quantidade: string;
+    valorTotal: number;
+  };
+}

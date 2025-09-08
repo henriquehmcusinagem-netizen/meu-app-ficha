@@ -33,6 +33,14 @@ export default function Index() {
     removeMaterial,
     addFoto,
     removeFoto,
+    // Save functionality
+    fichaId,
+    isSaved,
+    isModified,
+    isSaving,
+    salvarFichaTecnica,
+    carregarFichaTecnica,
+    criarNovaFicha,
   } = useFichaTecnica();
 
   return (
@@ -44,7 +52,19 @@ export default function Index() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="text-left">
                 <div className="text-sm text-muted-foreground">Data: {dataAtual}</div>
-                <div className="text-lg font-bold text-primary">Nº FTC: {numeroFTC}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-lg font-bold text-primary">Nº FTC: {numeroFTC}</div>
+                  {isSaved && !isModified && (
+                    <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
+                      SALVO
+                    </span>
+                  )}
+                  {isModified && (
+                    <span className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded-full">
+                      MODIFICADO
+                    </span>
+                  )}
+                </div>
               </div>
               <CardTitle className="text-2xl md:text-3xl text-center">
                 FICHA TÉCNICA DE COTAÇÃO - FTC
@@ -912,9 +932,13 @@ export default function Index() {
 
           {/* Action Buttons */}
           <ActionButtons 
-            formData={formData} 
-            materiais={materiais} 
-            fotos={fotos} 
+            formData={formData}
+            materiais={materiais}
+            fotos={fotos}
+            isSaved={isSaved}
+            isModified={isModified}
+            isSaving={isSaving}
+            onSave={salvarFichaTecnica}
           />
         </form>
       </div>
