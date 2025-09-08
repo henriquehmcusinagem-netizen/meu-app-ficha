@@ -13,9 +13,9 @@ import { Separator } from "@/components/ui/separator";
 
 import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
 import { CalculosSummary } from "@/components/FichaTecnica/CalculosSummary";
-import { ActionButtons } from "@/components/FichaTecnica/ActionButtons";
 import { FichasList } from "@/components/FichaTecnica/FichasList";
 import { SaveButton } from "@/components/FichaTecnica/SaveButton";
+import { PostSaveActionsModal } from "@/components/FichaTecnica/PostSaveActionsModal";
 import { PrintLayout } from "@/components/FichaTecnica/PrintLayout";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
 import { clientesPredefinidos } from "@/types/ficha-tecnica";
@@ -23,6 +23,8 @@ import { formatCurrency } from "@/utils/calculations";
 import { Calendar, FileText, Settings, Calculator, Plus } from "lucide-react";
 
 export default function Index() {
+  const [showActionsModal, setShowActionsModal] = useState(false);
+  
   const {
     formData,
     materiais,
@@ -891,6 +893,7 @@ export default function Index() {
               isModified={isModified}
               isSaving={isSaving}
               onSave={salvarFichaTecnica}
+              onSaveSuccess={() => setShowActionsModal(true)}
             />
             <FichasList onLoadFicha={carregarFichaTecnica} />
             <Button 
@@ -953,14 +956,14 @@ export default function Index() {
             </CardContent>
           </Card>
 
-        {/* Action Buttons */}
-        <div className="screen-only">
-          <ActionButtons
-            formData={formData}
-            materiais={materiais}
-            fotos={fotos}
-          />
-        </div>
+        {/* Post-Save Actions Modal */}
+        <PostSaveActionsModal
+          open={showActionsModal}
+          onOpenChange={setShowActionsModal}
+          formData={formData}
+          materiais={materiais}
+          fotos={fotos}
+        />
 
         {/* Print Layout - Hidden on screen, visible only when printing */}
         <PrintLayout

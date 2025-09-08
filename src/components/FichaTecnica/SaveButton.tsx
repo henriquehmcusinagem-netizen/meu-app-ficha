@@ -7,13 +7,15 @@ interface SaveButtonProps {
   isModified: boolean;
   isSaving: boolean;
   onSave: () => Promise<{ success: boolean; errors?: string[] }>;
+  onSaveSuccess?: () => void;
 }
 
 export function SaveButton({ 
   isSaved, 
   isModified, 
   isSaving, 
-  onSave 
+  onSave,
+  onSaveSuccess
 }: SaveButtonProps) {
   const { toast } = useToast();
 
@@ -21,10 +23,7 @@ export function SaveButton({
     const result = await onSave();
     
     if (result.success) {
-      toast({
-        title: "Ficha Salva!",
-        description: "Ficha técnica salva com sucesso.",
-      });
+      onSaveSuccess?.();
     } else {
       toast({
         title: "Erro ao Salvar",
