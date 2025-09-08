@@ -93,7 +93,10 @@ export default function Dashboard() {
         {/* Main Modules */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Nova Ficha Técnica Module */}
-          <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-primary/30">
+          <Card 
+            className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-primary/30"
+            onClick={() => navigate('/nova-ficha')}
+          >
             <CardHeader className="text-center pb-4">
               <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-primary to-primary/80 rounded-full w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Plus className="h-8 w-8 text-white" />
@@ -111,7 +114,10 @@ export default function Dashboard() {
           </Card>
 
           {/* Consultar Fichas Module */}
-          <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-secondary/30">
+          <Card 
+            className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-secondary/30"
+            onClick={() => navigate('/consultar-fichas')}
+          >
             <CardHeader className="text-center pb-4">
               <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-secondary to-secondary/80 rounded-full w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Search className="h-8 w-8 text-white" />
