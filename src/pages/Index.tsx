@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { VoiceRecognition } from "@/components/FichaTecnica/VoiceRecognition";
 
@@ -282,6 +283,7 @@ export default function Index() {
               <CardTitle>EXECUÇÃO E DETALHES</CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Primeira linha: SERÁ EXECUTADO EM, VISITA TÉCNICA, HORAS VISITA */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="space-y-2">
                   <Label>SERÁ EXECUTADO EM:</Label>
@@ -321,15 +323,23 @@ export default function Index() {
 
                 <div className="space-y-2">
                   <Label htmlFor="visita_horas">HORAS VISITA:</Label>
-                  <Input
-                    type="number"
-                    value={formData.visita_horas}
-                    onChange={(e) => updateFormData("visita_horas", e.target.value)}
-                    step="0.5"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="visita_horas"
+                      type="number"
+                      value={formData.visita_horas}
+                      onChange={(e) => updateFormData("visita_horas", e.target.value)}
+                      step="0.5"
+                    />
+                    <VoiceRecognition 
+                      fieldId="visita_horas" 
+                      onResult={(text) => updateFormData("visita_horas", text)} 
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Segunda linha: TEM PEÇA DE AMOSTRA, PROJETO DESENVOLVIDO POR, DESENHO DA PEÇA */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="space-y-2">
                   <Label>TEM PEÇA DE AMOSTRA:</Label>
@@ -350,65 +360,192 @@ export default function Index() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label>PROJETO DESENVOLVIDO POR:</Label>
+                  <RadioGroup
+                    value={formData.projeto_desenvolvido_por}
+                    onValueChange={(value) => updateFormData("projeto_desenvolvido_por", value)}
+                    className="flex flex-col gap-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="HMC" id="projeto_hmc" />
+                      <Label htmlFor="projeto_hmc">HMC</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="CLIENTE" id="projeto_cliente" />
+                      <Label htmlFor="projeto_cliente">CLIENTE</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="HMC/CLIENTE" id="projeto_ambos" />
+                      <Label htmlFor="projeto_ambos">HMC/CLIENTE</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>DESENHO DA PEÇA:</Label>
+                  <RadioGroup
+                    value={formData.desenho_peca}
+                    onValueChange={(value) => updateFormData("desenho_peca", value)}
+                    className="flex flex-col gap-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="HMC" id="desenho_hmc" />
+                      <Label htmlFor="desenho_hmc">HMC</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="CLIENTE" id="desenho_cliente" />
+                      <Label htmlFor="desenho_cliente">CLIENTE</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="FINALIZADO" id="desenho_finalizado" />
+                      <Label htmlFor="desenho_finalizado">FINALIZADO</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              {/* Terceira linha: TRANSPORTE COLETA / ENTREGA */}
+              <div className="mb-6">
+                <Label className="text-base font-medium">TRANSPORTE COLETA / ENTREGA:</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="transporte_caminhao"
+                      checked={formData.transporte_caminhao_hmc}
+                      onCheckedChange={(checked) => 
+                        updateFormData("transporte_caminhao_hmc", checked as boolean)
+                      }
+                    />
+                    <Label htmlFor="transporte_caminhao">CAMINHÃO HMC</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="transporte_pickup"
+                      checked={formData.transporte_pickup_hmc}
+                      onCheckedChange={(checked) => 
+                        updateFormData("transporte_pickup_hmc", checked as boolean)
+                      }
+                    />
+                    <Label htmlFor="transporte_pickup">PICKUP HMC</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="transporte_cliente"
+                      checked={formData.transporte_cliente}
+                      onCheckedChange={(checked) => 
+                        updateFormData("transporte_cliente", checked as boolean)
+                      }
+                    />
+                    <Label htmlFor="transporte_cliente">CLIENTE</Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quarta linha: COMPRIMENTO, LARGURA */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-2">
                   <Label htmlFor="comprimento">COMPRIMENTO (mm):</Label>
-                  <Input
-                    type="number"
-                    value={formData.comprimento}
-                    onChange={(e) => updateFormData("comprimento", e.target.value)}
-                    step="0.1"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="comprimento"
+                      type="number"
+                      value={formData.comprimento}
+                      onChange={(e) => updateFormData("comprimento", e.target.value)}
+                      step="0.1"
+                    />
+                    <VoiceRecognition 
+                      fieldId="comprimento" 
+                      onResult={(text) => updateFormData("comprimento", text)} 
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="largura">LARGURA (mm):</Label>
-                  <Input
-                    type="number"
-                    value={formData.largura}
-                    onChange={(e) => updateFormData("largura", e.target.value)}
-                    step="0.1"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="largura"
+                      type="number"
+                      value={formData.largura}
+                      onChange={(e) => updateFormData("largura", e.target.value)}
+                      step="0.1"
+                    />
+                    <VoiceRecognition 
+                      fieldId="largura" 
+                      onResult={(text) => updateFormData("largura", text)} 
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Quinta linha: ALTURA, Ø EXTERNO, Ø INTERNO, PESO */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div className="space-y-2">
                   <Label htmlFor="altura">ALTURA (mm):</Label>
-                  <Input
-                    type="number"
-                    value={formData.altura}
-                    onChange={(e) => updateFormData("altura", e.target.value)}
-                    step="0.1"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="altura"
+                      type="number"
+                      value={formData.altura}
+                      onChange={(e) => updateFormData("altura", e.target.value)}
+                      step="0.1"
+                    />
+                    <VoiceRecognition 
+                      fieldId="altura" 
+                      onResult={(text) => updateFormData("altura", text)} 
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="diametro_externo">Ø EXTERNO (mm):</Label>
-                  <Input
-                    type="number"
-                    value={formData.diametro_externo}
-                    onChange={(e) => updateFormData("diametro_externo", e.target.value)}
-                    step="0.1"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="diametro_externo"
+                      type="number"
+                      value={formData.diametro_externo}
+                      onChange={(e) => updateFormData("diametro_externo", e.target.value)}
+                      step="0.1"
+                    />
+                    <VoiceRecognition 
+                      fieldId="diametro_externo" 
+                      onResult={(text) => updateFormData("diametro_externo", text)} 
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="diametro_interno">Ø INTERNO (mm):</Label>
-                  <Input
-                    type="number"
-                    value={formData.diametro_interno}
-                    onChange={(e) => updateFormData("diametro_interno", e.target.value)}
-                    step="0.1"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="diametro_interno"
+                      type="number"
+                      value={formData.diametro_interno}
+                      onChange={(e) => updateFormData("diametro_interno", e.target.value)}
+                      step="0.1"
+                    />
+                    <VoiceRecognition 
+                      fieldId="diametro_interno" 
+                      onResult={(text) => updateFormData("diametro_interno", text)} 
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="peso">PESO (Kg):</Label>
-                  <Input
-                    type="number"
-                    value={formData.peso}
-                    onChange={(e) => updateFormData("peso", e.target.value)}
-                    step="0.1"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="peso"
+                      type="number"
+                      value={formData.peso}
+                      onChange={(e) => updateFormData("peso", e.target.value)}
+                      step="0.1"
+                    />
+                    <VoiceRecognition 
+                      fieldId="peso" 
+                      onResult={(text) => updateFormData("peso", text)} 
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -416,6 +553,7 @@ export default function Index() {
                 <Label htmlFor="observacoes">OBSERVAÇÕES:</Label>
                 <div className="flex gap-2">
                   <Textarea
+                    id="observacoes"
                     value={formData.observacoes}
                     onChange={(e) => updateFormData("observacoes", e.target.value)}
                     rows={3}
@@ -900,7 +1038,7 @@ export default function Index() {
               <CardTitle>CONTROLE</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="num_orcamento">Nº do orçamento:</Label>
                   <div className="flex gap-2">
@@ -939,6 +1077,19 @@ export default function Index() {
                     <VoiceRecognition 
                       fieldId="num_nf_remessa" 
                       onResult={(text) => updateFormData("num_nf_remessa", text)} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="num_nf_entrega">Nº da NF ENTREGA:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.num_nf_entrega}
+                      onChange={(e) => updateFormData("num_nf_entrega", e.target.value)}
+                    />
+                    <VoiceRecognition 
+                      fieldId="num_nf_entrega" 
+                      onResult={(text) => updateFormData("num_nf_entrega", text)} 
                     />
                   </div>
                 </div>

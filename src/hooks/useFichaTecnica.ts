@@ -25,6 +25,11 @@ const initialFormData: FormData = {
   visita_tecnica: "",
   visita_horas: "",
   tem_peca_amostra: "",
+  projeto_desenvolvido_por: "",
+  desenho_peca: "",
+  transporte_caminhao_hmc: false,
+  transporte_pickup_hmc: false,
+  transporte_cliente: false,
   comprimento: "",
   largura: "",
   altura: "",
@@ -76,6 +81,7 @@ const initialFormData: FormData = {
   num_orcamento: "",
   num_os: "",
   num_nf_remessa: "",
+  num_nf_entrega: "",
 };
 
 export function useFichaTecnica() {
@@ -103,7 +109,7 @@ export function useFichaTecnica() {
     setMateriais(initialMaterials);
   }, []);
 
-  const updateFormData = useCallback((field: keyof FormData, value: string) => {
+  const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

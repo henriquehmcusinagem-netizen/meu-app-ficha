@@ -20,6 +20,11 @@ export interface FormData {
   visita_tecnica: string; // SIM ou NAO
   visita_horas: string;
   tem_peca_amostra: string; // SIM ou NAO
+  projeto_desenvolvido_por: string; // HMC ou CLIENTE ou HMC/CLIENTE
+  desenho_peca: string; // HMC ou CLIENTE ou FINALIZADO
+  transporte_caminhao_hmc: boolean;
+  transporte_pickup_hmc: boolean;
+  transporte_cliente: boolean;
   comprimento: string;
   largura: string;
   altura: string;
@@ -71,6 +76,7 @@ export interface FormData {
   num_orcamento: string;
   num_os: string;
   num_nf_remessa: string;
+  num_nf_entrega: string;
 }
 
 export interface Material {
