@@ -30,13 +30,6 @@ const initialFormData: FormData = {
   transporte_caminhao_hmc: false,
   transporte_pickup_hmc: false,
   transporte_cliente: false,
-  comprimento: "",
-  largura: "",
-  altura: "",
-  diametro_externo: "",
-  diametro_interno: "",
-  peso: "",
-  observacoes: "",
   
   // Tratamentos e Acabamentos
   pintura: "",

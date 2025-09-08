@@ -25,13 +25,6 @@ export interface FormData {
   transporte_caminhao_hmc: boolean;
   transporte_pickup_hmc: boolean;
   transporte_cliente: boolean;
-  comprimento: string;
-  largura: string;
-  altura: string;
-  diametro_externo: string;
-  diametro_interno: string;
-  peso: string;
-  observacoes: string;
   
   // Tratamentos e Acabamentos
   pintura: string; // SIM ou NAO
