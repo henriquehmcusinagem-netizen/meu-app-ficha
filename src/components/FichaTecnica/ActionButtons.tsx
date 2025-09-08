@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Printer, Mail, MessageCircle, Search, Save, Loader2 } from "lucide-react";
+import { FileText, Printer, Mail, MessageCircle, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FormData, Material, Foto } from "@/types/ficha-tecnica";
 
@@ -8,40 +8,14 @@ interface ActionButtonsProps {
   formData: FormData;
   materiais: Material[];
   fotos: Foto[];
-  // Save functionality
-  isSaved: boolean;
-  isModified: boolean;
-  isSaving: boolean;
-  onSave: () => Promise<{ success: boolean; errors?: string[] }>;
 }
 
 export function ActionButtons({ 
   formData, 
   materiais, 
-  fotos, 
-  isSaved, 
-  isModified, 
-  isSaving, 
-  onSave 
+  fotos
 }: ActionButtonsProps) {
   const { toast } = useToast();
-
-  const handleSave = async () => {
-    const result = await onSave();
-    
-    if (result.success) {
-      toast({
-        title: "Ficha Salva!",
-        description: "Ficha técnica salva com sucesso.",
-      });
-    } else {
-      toast({
-        title: "Erro ao Salvar",
-        description: result.errors?.[0] || "Erro desconhecido.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const exportToPDF = () => {
     toast({
@@ -82,19 +56,6 @@ export function ActionButtons({
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-wrap gap-3 justify-center">
-          <Button 
-            onClick={handleSave} 
-            disabled={isSaving}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800"
-          >
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {isSaving ? 'Salvando...' : 'Salvar Ficha'}
-          </Button>
-
           <Button onClick={exportToPDF} className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80">
             <FileText className="h-4 w-4" />
             Exportar PDF

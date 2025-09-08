@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
 import { CalculosSummary } from "@/components/FichaTecnica/CalculosSummary";
 import { ActionButtons } from "@/components/FichaTecnica/ActionButtons";
+import { SaveButton } from "@/components/FichaTecnica/SaveButton";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
 import { clientesPredefinidos } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/calculations";
@@ -881,6 +882,14 @@ export default function Index() {
             </CardContent>
           </Card>
 
+          {/* Botão Salvar Ficha */}
+          <SaveButton
+            isSaved={isSaved}
+            isModified={isModified}
+            isSaving={isSaving}
+            onSave={salvarFichaTecnica}
+          />
+
           {/* Resumo dos Totais */}
           <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
             <CardHeader>
@@ -935,10 +944,6 @@ export default function Index() {
             formData={formData}
             materiais={materiais}
             fotos={fotos}
-            isSaved={isSaved}
-            isModified={isModified}
-            isSaving={isSaving}
-            onSave={salvarFichaTecnica}
           />
         </form>
       </div>
