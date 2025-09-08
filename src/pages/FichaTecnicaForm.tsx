@@ -886,26 +886,6 @@ export default function Index() {
             </CardContent>
           </Card>
 
-          {/* Botão Salvar Ficha */}
-          <div className="flex justify-center gap-4 my-6">
-            <SaveButton 
-              isSaved={isSaved}
-              isModified={isModified}
-              isSaving={isSaving}
-              onSave={salvarFichaTecnica}
-              onSaveSuccess={() => setShowActionsModal(true)}
-            />
-            <FichasList onLoadFicha={carregarFichaTecnica} />
-            <Button 
-              onClick={criarNovaFicha}
-              variant="outline"
-              size="lg"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-5 w-5" />
-              Nova Ficha
-            </Button>
-          </div>
 
           {/* Resumo dos Totais */}
           <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
@@ -955,6 +935,15 @@ export default function Index() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Botão Salvar Ficha */}
+          <SaveButton 
+            isSaved={isSaved}
+            isModified={isModified}
+            isSaving={isSaving}
+            onSave={salvarFichaTecnica}
+            onSaveSuccess={() => setShowActionsModal(true)}
+          />
 
         {/* Post-Save Actions Modal */}
         <PostSaveActionsModal
