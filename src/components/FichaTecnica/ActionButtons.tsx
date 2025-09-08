@@ -28,16 +28,16 @@ export function ActionButtons({ formData, materiais, fotos }: ActionButtonsProps
   };
 
   const sendWhatsApp = () => {
-    const message = `Ficha Técnica de Cotação - Cliente: ${formData.cliente} - Obra: ${formData.obra}`;
+    const message = `Ficha Técnica de Cotação - Cliente: ${formData.cliente} - Serviço: ${formData.servico}`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
   const sendEmail = () => {
-    const subject = `Ficha Técnica de Cotação - ${formData.obra}`;
-    const body = `Cliente: ${formData.cliente}\nObra: ${formData.obra}\nResponsável: ${formData.responsavel}`;
+    const subject = `Ficha Técnica de Cotação - ${formData.cliente}`;
+    const body = `Cliente: ${formData.cliente}\nSolicitante: ${formData.solicitante}\nServiço: ${formData.servico}`;
     
-    const mailtoLink = `mailto:${formData.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink);
   };
 
@@ -52,7 +52,7 @@ export function ActionButtons({ formData, materiais, fotos }: ActionButtonsProps
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-wrap gap-3 justify-center">
-          <Button onClick={exportToPDF} className="flex items-center gap-2">
+          <Button onClick={exportToPDF} className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80">
             <FileText className="h-4 w-4" />
             Exportar PDF
           </Button>
@@ -62,17 +62,17 @@ export function ActionButtons({ formData, materiais, fotos }: ActionButtonsProps
             Exportar HTML
           </Button>
 
-          <Button onClick={sendWhatsApp} variant="outline" className="flex items-center gap-2">
+          <Button onClick={sendWhatsApp} className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800">
             <MessageCircle className="h-4 w-4" />
             Enviar WhatsApp
           </Button>
 
-          <Button onClick={sendEmail} variant="outline" className="flex items-center gap-2">
+          <Button onClick={sendEmail} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800">
             <Mail className="h-4 w-4" />
             Enviar E-mail
           </Button>
 
-          <Button onClick={() => window.print()} variant="outline" className="flex items-center gap-2">
+          <Button onClick={() => window.print()} variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600">
             <Printer className="h-4 w-4" />
             Imprimir
           </Button>

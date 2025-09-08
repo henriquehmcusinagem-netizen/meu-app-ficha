@@ -1,36 +1,85 @@
 export interface FormData {
+  // Dados do Cliente
   cliente: string;
-  obra: string;
-  endereco: string;
-  responsavel: string;
-  telefone: string;
-  email: string;
-  equipamento: string;
-  modelo: string;
-  marca: string;
-  numeroSerie: string;
-  ano: string;
-  horimetro: string;
+  solicitante: string;
+  fone_email: string;
+  data_visita: string;
+  data_entrega: string;
+  
+  // Dados da Peça/Equipamento
+  nome_peca: string;
+  quantidade: string;
   servico: string;
+  
+  // Material para Cotação
+  material_por_peca: string;
+  material_todas_pecas: string;
+  
+  // Execução e Detalhes
+  execucao: string; // HMC ou CLIENTE
+  visita_tecnica: string; // SIM ou NAO
+  visita_horas: string;
+  tem_peca_amostra: string; // SIM ou NAO
+  comprimento: string;
+  largura: string;
+  altura: string;
+  diametro_externo: string;
+  diametro_interno: string;
+  peso: string;
   observacoes: string;
-  solda: string;
-  pintura: string;
-  usinagem: string;
-  outros: string;
-  horasMecanico: string;
-  valorHoraMecanico: string;
-  horasSoldador: string;
-  valorHoraSoldador: string;
+  
+  // Tratamentos e Acabamentos
+  pintura: string; // SIM ou NAO
+  cor_pintura: string;
+  galvanizacao: string; // SIM ou NAO
+  peso_peca_galv: string;
+  tratamento_termico: string; // SIM ou NAO
+  peso_peca_trat: string;
+  tempera_reven: string;
+  cementacao: string;
+  dureza: string;
+  teste_lp: string; // SIM ou NAO
+  balanceamento_campo: string;
+  rotacao: string;
+  fornecimento_desenho: string; // SIM ou NAO
+  fotos_relatorio: string; // SIM ou NAO
+  relatorio_tecnico: string; // SIM ou NAO
+  emissao_art: string; // SIM ou NAO
+  servicos_terceirizados: string;
+  
+  // Horas de Serviço
+  horas_por_peca: string;
+  horas_todas_pecas: string;
+  torno_grande: string;
+  torno_pequeno: string;
+  cnc_tf: string;
+  fresa_furad: string;
+  plasma_oxicorte: string;
+  dobra: string;
+  calandra: string;
+  macarico_solda: string;
+  des_montg: string;
+  balanceamento: string;
+  mandrilhamento: string;
+  tratamento: string;
+  pintura_horas: string;
+  lavagem_acab: string;
+  programacao_cam: string;
+  eng_tec: string;
+  
+  // Controle
+  num_orcamento: string;
+  num_os: string;
+  num_nf_remessa: string;
 }
 
 export interface Material {
   id: number;
-  item: number;
+  descricao: string;
   quantidade: string;
   unidade: string;
-  descricao: string;
-  valorUnitario: string;
-  total: string;
+  valor_unitario: string;
+  valor_total: string;
 }
 
 export interface Foto {
@@ -42,9 +91,17 @@ export interface Foto {
 }
 
 export interface Calculos {
-  totalMateriais: number;
-  totalMecanico: number;
-  totalSoldador: number;
-  totalHoras: number;
-  totalGeral: number;
+  horasPorPeca: number;
+  horasTodasPecas: number;
+  materialPorPeca: number;
+  materialTodasPecas: number;
 }
+
+export const clientesPredefinidos = [
+  "BTP", "TEG", "TEAG", "TES", "DPWORLD", "ECOPORTO", "T39", 
+  "SANTOS BRASIL", "MILLS", "ADM", "CLI - RUMO", "TGG", "CMOC", 
+  "T12A", "ULTRAFERTIL", "RIO BRASIL SEPETIBA", "TERLOC", "INOVE", 
+  "XCMG", "COPERSUCAR", "TERRACOM", "TGRAO", "PORÃ", "CUTRALE", 
+  "CONSUMIDOR", "STERN", "COIMBRA - USIT", "MARIMEX", "KEPLER", 
+  "ELDORADO"
+];

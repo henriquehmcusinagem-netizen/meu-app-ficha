@@ -1,33 +1,38 @@
 import { Material, FormData, Calculos } from '@/types/ficha-tecnica';
 
 export function calculateTotals(materiais: Material[], formData: FormData): Calculos {
-  // Calculate total materials
-  const totalMateriais = materiais.reduce((sum, material) => {
-    return sum + (parseFloat(material.total) || 0);
+  // Calculate total materials per piece
+  const materialTotal = materiais.reduce((sum, material) => {
+    return sum + (parseFloat(material.valor_total) || 0);
   }, 0);
 
-  // Calculate mechanic hours total
-  const horasMecanico = parseFloat(formData.horasMecanico) || 0;
-  const valorHoraMecanico = parseFloat(formData.valorHoraMecanico) || 0;
-  const totalMecanico = horasMecanico * valorHoraMecanico;
+  // Calculate total service hours per piece
+  const horasServico = [
+    parseFloat(formData.torno_grande) || 0,
+    parseFloat(formData.torno_pequeno) || 0,
+    parseFloat(formData.cnc_tf) || 0,
+    parseFloat(formData.fresa_furad) || 0,
+    parseFloat(formData.plasma_oxicorte) || 0,
+    parseFloat(formData.dobra) || 0,
+    parseFloat(formData.calandra) || 0,
+    parseFloat(formData.macarico_solda) || 0,
+    parseFloat(formData.des_montg) || 0,
+    parseFloat(formData.balanceamento) || 0,
+    parseFloat(formData.mandrilhamento) || 0,
+    parseFloat(formData.tratamento) || 0,
+    parseFloat(formData.pintura_horas) || 0,
+    parseFloat(formData.lavagem_acab) || 0,
+    parseFloat(formData.programacao_cam) || 0,
+    parseFloat(formData.eng_tec) || 0,
+  ].reduce((sum, horas) => sum + horas, 0);
 
-  // Calculate welder hours total
-  const horasSoldador = parseFloat(formData.horasSoldador) || 0;
-  const valorHoraSoldador = parseFloat(formData.valorHoraSoldador) || 0;
-  const totalSoldador = horasSoldador * valorHoraSoldador;
-
-  // Calculate total hours
-  const totalHoras = totalMecanico + totalSoldador;
-
-  // Calculate general total
-  const totalGeral = totalMateriais + totalHoras;
+  const quantidade = parseFloat(formData.quantidade) || 1;
 
   return {
-    totalMateriais,
-    totalMecanico,
-    totalSoldador,
-    totalHoras,
-    totalGeral,
+    horasPorPeca: horasServico,
+    horasTodasPecas: horasServico * quantidade,
+    materialPorPeca: materialTotal,
+    materialTodasPecas: materialTotal * quantidade,
   };
 }
 

@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { VoiceRecognition } from "./VoiceRecognition";
 import { Material } from "@/types/ficha-tecnica";
 
@@ -12,71 +13,108 @@ interface MaterialItemProps {
 }
 
 export function MaterialItem({ material, onUpdate, onRemove }: MaterialItemProps) {
-  const unidades = [
-    "UN", "KG", "M", "M²", "M³", "L", "PC", "CJ", "MT", "CM", 
-    "MM", "G", "TON", "HR", "MIN", "PAR", "DZ", "FD", "GL", "LT"
-  ];
+  const updateField = (field: keyof Material, value: string) => {
+    let processedValue: string | number = value;
+    
+    if (field === 'quantidade' || field === 'valor_unitario') {
+      processedValue = value === '' ? '' : value;
+    }
+    
+    onUpdate(material.id, field, processedValue);
+    
+    // Auto-calculate total
+    if (field === 'quantidade' || field === 'valor_unitario') {
+      const quantidade = field === 'quantidade' ? parseFloat(value) || 0 : parseFloat(material.quantidade) || 0;
+      const valorUnitario = field === 'valor_unitario' ? parseFloat(value) || 0 : parseFloat(material.valor_unitario) || 0;
+      const total = (quantidade * valorUnitario).toFixed(2);
+      onUpdate(material.id, 'valor_total', total);
+    }
+  };
 
   return (
-    <div className="grid grid-cols-8 gap-2 items-center min-w-[800px] py-2 border-b">
-      <div className="text-center font-medium">{material.item}</div>
-      
-      <Input
-        type="number"
-        value={material.quantidade}
-        onChange={(e) => onUpdate(material.id, 'quantidade', e.target.value)}
-        placeholder="Qtd"
-        className="text-center"
-      />
-      
-      <Select 
-        value={material.unidade} 
-        onValueChange={(value) => onUpdate(material.id, 'unidade', value)}
-      >
-        <SelectTrigger className="text-xs">
-          <SelectValue placeholder="Unid." />
-        </SelectTrigger>
-        <SelectContent>
-          {unidades.map((unidade) => (
-            <SelectItem key={unidade} value={unidade}>
-              {unidade}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      
-      <div className="flex gap-1">
-        <Input
-          value={material.descricao}
-          onChange={(e) => onUpdate(material.id, 'descricao', e.target.value)}
-          placeholder="Descrição do material"
-        />
-        <VoiceRecognition fieldId={`material-${material.id}`} />
+    <Card className="p-4 bg-muted/30 border border-muted-foreground/20">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+        <div className="md:col-span-2 space-y-2">
+          <Label className="text-xs font-bold">DESCRIÇÃO</Label>
+          <div className="flex gap-2">
+            <Input
+              value={material.descricao}
+              onChange={(e) => updateField('descricao', e.target.value)}
+              placeholder="Descrição do material"
+              className="text-sm"
+            />
+            <VoiceRecognition 
+              fieldId={`descricao-${material.id}`}
+              onResult={(text) => updateField('descricao', text)} 
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label className="text-xs font-bold">QTD</Label>
+          <Input
+            type="number"
+            value={material.quantidade}
+            onChange={(e) => updateField('quantidade', e.target.value)}
+            step="0.01"
+            min="0"
+            className="text-sm"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label className="text-xs font-bold">UNID</Label>
+          <Select
+            value={material.unidade}
+            onValueChange={(value) => updateField('unidade', value)}
+          >
+            <SelectTrigger className="text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PC">PC</SelectItem>
+              <SelectItem value="UN">UN</SelectItem>
+              <SelectItem value="M">M</SelectItem>
+              <SelectItem value="M²">M²</SelectItem>
+              <SelectItem value="KG">KG</SelectItem>
+              <SelectItem value="L">L</SelectItem>
+              <SelectItem value="CJ">CJ</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <Label className="text-xs font-bold">VALOR UNIT.</Label>
+          <Input
+            type="number"
+            value={material.valor_unitario}
+            onChange={(e) => updateField('valor_unitario', e.target.value)}
+            step="0.01"
+            min="0"
+            className="text-sm"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label className="text-xs font-bold">TOTAL</Label>
+          <div className="flex gap-2">
+            <Input
+              value={`R$ ${material.valor_total}`}
+              readOnly
+              className="bg-muted font-medium text-sm border-2"
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => onRemove(material.id)}
+              className="px-3"
+            >
+              ✕
+            </Button>
+          </div>
+        </div>
       </div>
-      
-      <Input
-        type="number"
-        step="0.01"
-        value={material.valorUnitario}
-        onChange={(e) => onUpdate(material.id, 'valorUnitario', e.target.value)}
-        placeholder="0,00"
-        className="text-right"
-      />
-      
-      <div className="text-right font-medium">
-        R$ {parseFloat(material.total || '0').toFixed(2)}
-      </div>
-      
-      <div className="flex justify-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onRemove(material.id)}
-          className="text-destructive hover:text-destructive"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+    </Card>
   );
 }

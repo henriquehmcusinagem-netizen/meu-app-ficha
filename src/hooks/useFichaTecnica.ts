@@ -4,28 +4,78 @@ import { calculateTotals } from '@/utils/calculations';
 import { generateFTCNumber, getCurrentDate } from '@/utils/helpers';
 
 const initialFormData: FormData = {
-  cliente: '',
-  obra: '',
-  endereco: '',
-  responsavel: '',
-  telefone: '',
-  email: '',
-  equipamento: '',
-  modelo: '',
-  marca: '',
-  numeroSerie: '',
-  ano: '',
-  horimetro: '',
-  servico: '',
-  observacoes: '',
-  solda: '',
-  pintura: '',
-  usinagem: '',
-  outros: '',
-  horasMecanico: '0',
-  valorHoraMecanico: '0',
-  horasSoldador: '0',
-  valorHoraSoldador: '0',
+  // Dados do Cliente
+  cliente: "",
+  solicitante: "",
+  fone_email: "",
+  data_visita: "",
+  data_entrega: "",
+  
+  // Dados da Peça/Equipamento  
+  nome_peca: "",
+  quantidade: "1",
+  servico: "",
+  
+  // Material para Cotação
+  material_por_peca: "",
+  material_todas_pecas: "",
+  
+  // Execução e Detalhes
+  execucao: "",
+  visita_tecnica: "",
+  visita_horas: "",
+  tem_peca_amostra: "",
+  comprimento: "",
+  largura: "",
+  altura: "",
+  diametro_externo: "",
+  diametro_interno: "",
+  peso: "",
+  observacoes: "",
+  
+  // Tratamentos e Acabamentos
+  pintura: "",
+  cor_pintura: "",
+  galvanizacao: "",
+  peso_peca_galv: "",
+  tratamento_termico: "",
+  peso_peca_trat: "",
+  tempera_reven: "",
+  cementacao: "",
+  dureza: "",
+  teste_lp: "",
+  balanceamento_campo: "",
+  rotacao: "",
+  fornecimento_desenho: "",
+  fotos_relatorio: "",
+  relatorio_tecnico: "",
+  emissao_art: "",
+  servicos_terceirizados: "",
+  
+  // Horas de Serviço
+  horas_por_peca: "",
+  horas_todas_pecas: "",
+  torno_grande: "",
+  torno_pequeno: "",
+  cnc_tf: "",
+  fresa_furad: "",
+  plasma_oxicorte: "",
+  dobra: "",
+  calandra: "",
+  macarico_solda: "",
+  des_montg: "",
+  balanceamento: "",
+  mandrilhamento: "",
+  tratamento: "",
+  pintura_horas: "",
+  lavagem_acab: "",
+  programacao_cam: "",
+  eng_tec: "",
+  
+  // Controle
+  num_orcamento: "",
+  num_os: "",
+  num_nf_remessa: "",
 };
 
 export function useFichaTecnica() {
@@ -43,12 +93,11 @@ export function useFichaTecnica() {
     // Add initial materials
     const initialMaterials: Material[] = Array.from({ length: 3 }, (_, index) => ({
       id: Date.now() + index,
-      item: index + 1,
+      descricao: '',
       quantidade: '',
       unidade: '',
-      descricao: '',
-      valorUnitario: '',
-      total: '0',
+      valor_unitario: '',
+      valor_total: '0',
     }));
     
     setMateriais(initialMaterials);
@@ -64,15 +113,14 @@ export function useFichaTecnica() {
   const addMaterial = useCallback(() => {
     const newMaterial: Material = {
       id: Date.now(),
-      item: materiais.length + 1,
+      descricao: '',
       quantidade: '',
       unidade: '',
-      descricao: '',
-      valorUnitario: '',
-      total: '0',
+      valor_unitario: '',
+      valor_total: '0',
     };
     setMateriais(prev => [...prev, newMaterial]);
-  }, [materiais.length]);
+  }, []);
 
   const updateMaterial = useCallback((id: number, field: keyof Material, value: string | number) => {
     setMateriais(prev => prev.map(material => {
@@ -80,10 +128,10 @@ export function useFichaTecnica() {
         const updated = { ...material, [field]: value };
         
         // Calculate total if quantity or unit value changes
-        if (field === 'quantidade' || field === 'valorUnitario') {
+        if (field === 'quantidade' || field === 'valor_unitario') {
           const quantidade = parseFloat(field === 'quantidade' ? value.toString() : updated.quantidade) || 0;
-          const valorUnitario = parseFloat(field === 'valorUnitario' ? value.toString() : updated.valorUnitario) || 0;
-          updated.total = (quantidade * valorUnitario).toFixed(2);
+          const valorUnitario = parseFloat(field === 'valor_unitario' ? value.toString() : updated.valor_unitario) || 0;
+          updated.valor_total = (quantidade * valorUnitario).toFixed(2);
         }
         
         return updated;
@@ -93,14 +141,7 @@ export function useFichaTecnica() {
   }, []);
 
   const removeMaterial = useCallback((id: number) => {
-    setMateriais(prev => {
-      const filtered = prev.filter(material => material.id !== id);
-      // Reorder item numbers
-      return filtered.map((material, index) => ({
-        ...material,
-        item: index + 1
-      }));
-    });
+    setMateriais(prev => prev.filter(material => material.id !== id));
   }, []);
 
   const addFoto = useCallback((foto: Foto) => {
