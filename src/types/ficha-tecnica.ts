@@ -21,7 +21,8 @@ export interface FormData {
   visita_horas: string;
   tem_peca_amostra: string; // SIM ou NAO
   projeto_desenvolvido_por: string; // HMC ou CLIENTE ou HMC/CLIENTE
-  desenho_peca: string; // HMC ou CLIENTE ou FINALIZADO
+  desenho_peca: string; // HMC ou CLIENTE
+  desenho_finalizado: string; // SIM ou NAO
   transporte_caminhao_hmc: boolean;
   transporte_pickup_hmc: boolean;
   transporte_cliente: boolean;

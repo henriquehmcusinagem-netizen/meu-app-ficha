@@ -27,6 +27,7 @@ const initialFormData: FormData = {
   tem_peca_amostra: "",
   projeto_desenvolvido_por: "",
   desenho_peca: "",
+  desenho_finalizado: "",
   transporte_caminhao_hmc: false,
   transporte_pickup_hmc: false,
   transporte_cliente: false,

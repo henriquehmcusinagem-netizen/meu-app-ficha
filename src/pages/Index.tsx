@@ -293,8 +293,8 @@ export default function Index() {
                 </div>
               </div>
 
-              {/* Segunda linha: TEM PEÇA DE AMOSTRA, PROJETO DESENVOLVIDO POR, DESENHO DA PEÇA */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Segunda linha: TEM PEÇA DE AMOSTRA, PROJETO DESENVOLVIDO POR, DESENHO DA PEÇA, FINALIZADO */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div className="space-y-2">
                   <Label>TEM PEÇA DE AMOSTRA:</Label>
                   <RadioGroup
@@ -340,7 +340,7 @@ export default function Index() {
                   <RadioGroup
                     value={formData.desenho_peca}
                     onValueChange={(value) => updateFormData("desenho_peca", value)}
-                    className="flex flex-col gap-2"
+                    className="flex gap-4"
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="HMC" id="desenho_hmc" />
@@ -350,9 +350,23 @@ export default function Index() {
                       <RadioGroupItem value="CLIENTE" id="desenho_cliente" />
                       <Label htmlFor="desenho_cliente">CLIENTE</Label>
                     </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>FINALIZADO:</Label>
+                  <RadioGroup
+                    value={formData.desenho_finalizado}
+                    onValueChange={(value) => updateFormData("desenho_finalizado", value)}
+                    className="flex gap-4"
+                  >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="FINALIZADO" id="desenho_finalizado" />
-                      <Label htmlFor="desenho_finalizado">FINALIZADO</Label>
+                      <RadioGroupItem value="SIM" id="finalizado_sim" />
+                      <Label htmlFor="finalizado_sim">SIM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NAO" id="finalizado_nao" />
+                      <Label htmlFor="finalizado_nao">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
