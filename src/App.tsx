@@ -34,6 +34,11 @@ const App = () => (
                   <NovaFicha />
                 </ProtectedRoute>
               } />
+              <Route path="/nova-ficha/:id" element={
+                <ProtectedRoute>
+                  <NovaFicha />
+                </ProtectedRoute>
+              } />
               <Route path="/consultar-fichas" element={
                 <ProtectedRoute>
                   <ConsultarFichas />

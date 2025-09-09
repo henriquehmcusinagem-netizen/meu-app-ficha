@@ -376,8 +376,14 @@ export function useFichaTecnica() {
   // Load ficha from location state if needed
   useEffect(() => {
     const locationState = location.state as { loadFichaId?: string };
+    
+    // Get ID from URL params first
+    const urlParams = new URLSearchParams(location.search);
+    const editParam = urlParams.get('edit');
+    console.log('🔍 URL param edit:', editParam);
+    
     const sessionStorageId = sessionStorage.getItem('loadFichaId');
-    const loadFichaId = locationState?.loadFichaId || sessionStorageId;
+    const loadFichaId = editParam || locationState?.loadFichaId || sessionStorageId;
     
     console.log('🔍 useEffect carregamento - DETALHADO');
     console.log('🔍 location.state:', location.state);
@@ -386,7 +392,7 @@ export function useFichaTecnica() {
     console.log('🔍 loadFichaId final:', loadFichaId);
     console.log('🔍 Estado atual:', { isInitialized, fichaId, isLoading });
     
-    if (loadFichaId && !fichaId && !isLoading) {
+    if (loadFichaId && !fichaId && !isLoading && isInitialized) {
       console.log('🎯 CONDIÇÕES ATENDIDAS - Iniciando carregamento da ficha:', loadFichaId);
       sessionStorage.removeItem('loadFichaId'); // Clean up after loading
       carregarFichaTecnica(loadFichaId);
@@ -397,12 +403,14 @@ export function useFichaTecnica() {
         hasFichaId: !!fichaId,
         fichaIdValue: fichaId,
         isLoading,
+        isInitialized,
         decisão: !loadFichaId ? 'Sem loadFichaId' : 
                  fichaId ? 'Já tem fichaId' : 
-                 isLoading ? 'Já carregando' : 'Condições não atendidas'
+                 isLoading ? 'Já carregando' : 
+                 !isInitialized ? 'Não inicializado' : 'Condições não atendidas'
       });
     }
-  }, [location.state?.loadFichaId, fichaId, carregarFichaTecnica, isLoading]);
+  }, [location.search, location.state?.loadFichaId, fichaId, carregarFichaTecnica, isLoading, isInitialized]);
 
   return {
     // Original data

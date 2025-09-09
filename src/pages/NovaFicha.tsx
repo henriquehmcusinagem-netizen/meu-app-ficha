@@ -17,6 +17,10 @@ export default function NovaFicha() {
     console.log('🏠 NovaFicha - Component mounted');
     console.log('🏠 NovaFicha - location:', location);
     console.log('🏠 NovaFicha - location.state:', location.state);
+    
+    const urlParams = new URLSearchParams(location.search);
+    const editParam = urlParams.get('edit');
+    console.log('🏠 NovaFicha - URL param edit:', editParam);
     console.log('🏠 NovaFicha - loadFichaId from state:', location.state?.loadFichaId);
     console.log('🏠 NovaFicha - sessionStorage loadFichaId:', sessionStorage.getItem('loadFichaId'));
   }, [location]);

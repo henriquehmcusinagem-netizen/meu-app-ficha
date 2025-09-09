@@ -128,9 +128,10 @@ export default function ConsultarFichas() {
     sessionStorage.setItem('loadFichaId', id);
     console.log('💾 Salvou no sessionStorage:', sessionStorage.getItem('loadFichaId'));
     
-    console.log('🚀 Antes de navegar - location.state will be:', { loadFichaId: id });
-    navigate('/nova-ficha', { state: { loadFichaId: id } });
-    console.log('🚀 Navegação executada para /nova-ficha com state:', { loadFichaId: id });
+    // Use URL params as primary method
+    console.log('🚀 Antes de navegar - usando URL params');
+    navigate(`/nova-ficha?edit=${id}`);
+    console.log('🚀 Navegação executada para /nova-ficha?edit=' + id);
   };
 
   const formatDate = (dateString: string) => {
