@@ -630,44 +630,66 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
   drawTransport();
   drawServiceHours();
   
-  // Tratamentos e acabamentos
+  // Tratamentos e Acabamentos
   const tratamentos = [
     { label: 'Pintura', value: ficha.formData.pintura, extra: ficha.formData.cor_pintura },
     { label: 'Galvanização', value: ficha.formData.galvanizacao, extra: ficha.formData.peso_peca_galv },
-    { label: 'Tratamento Térmico', value: ficha.formData.tratamento_termico, extra: ficha.formData.tempera_reven }
+    { label: 'Tratamento Térmico', value: ficha.formData.tratamento_termico, extra: ficha.formData.tempera_reven },
+    { label: 'Teste LP', value: ficha.formData.teste_lp },
+    { label: 'Balanceamento', value: ficha.formData.balanceamento_campo },
+    { label: 'Rotação', value: ficha.formData.rotacao },
+    { label: 'Fornecimento de Desenho', value: ficha.formData.fornecimento_desenho },
+    { label: 'Fotos no Relatório', value: ficha.formData.fotos_relatorio },
+    { label: 'Relatório Técnico', value: ficha.formData.relatorio_tecnico },
+    { label: 'Emissão de ART', value: ficha.formData.emissao_art },
+    { label: 'Cementação', value: ficha.formData.cementacao },
+    { label: 'Dureza', value: ficha.formData.dureza },
+    { label: 'Serviços Terceirizados', value: ficha.formData.servicos_terceirizados }
   ];
   
-  // Show all treatments (both SIM and NÃO)
+  // Show all treatments that have a value (both SIM and NÃO)
   const treatmentsToShow = tratamentos.filter(t => t.value && t.value !== '');
   
   if (treatmentsToShow.length > 0) {
     drawSection('TRATAMENTOS E ACABAMENTOS');
     
+    let row = 0;
+    const itemsPerRow = 3;
+    const columnWidth = (pageWidth - 2 * margin) / itemsPerRow;
+    
     treatmentsToShow.forEach((trat, index) => {
-      const isSelected = trat.value === 'sim';
-      const symbol = isSelected ? '✓' : '✗';
+      const col = index % itemsPerRow;
+      const currentRow = Math.floor(index / itemsPerRow);
+      const xPos = margin + col * columnWidth;
+      const yPos = yPosition + currentRow * 6;
+      
+      // Use formatRadioValue to show "✓ Sim" or "✗ Não"
+      const formattedValue = formatRadioValue(trat.value);
       
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       
-      // Use green for SIM, gray for NÃO
-      if (isSelected) {
+      // Use colors based on value
+      if (trat.value === 'sim') {
         doc.setTextColor(34, 197, 94); // Green for SIM
       } else {
         doc.setTextColor(107, 114, 128); // Gray for NÃO
       }
       
-      doc.text(`${symbol} ${trat.label}`, margin, yPosition + index * 5);
+      doc.text(`${trat.label}: ${formattedValue}`, xPos, yPos);
       
-      // Only show extra info for selected treatments
-      if (trat.extra && isSelected) {
+      // Show extra info only for selected treatments (SIM)
+      if (trat.extra && trat.value === 'sim') {
         doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-        doc.text(` - ${trat.extra}`, margin + 30, yPosition + index * 5);
+        doc.text(`${trat.extra}`, xPos + 5, yPos + 3);
       }
+      
+      row = Math.max(row, currentRow);
     });
     
-    yPosition += treatmentsToShow.length * 5 + 5;
+    yPosition += (row + 1) * 6 + 5;
   }
   
   // Controle
