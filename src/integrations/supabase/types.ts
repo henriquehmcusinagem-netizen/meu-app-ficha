@@ -237,42 +237,12 @@ export type Database = {
           },
         ]
       }
-      usuarios_autorizados: {
-        Row: {
-          ativo: boolean
-          criado_em: string
-          email: string | null
-          id: string
-          nome: string
-          telefone: string | null
-        }
-        Insert: {
-          ativo?: boolean
-          criado_em?: string
-          email?: string | null
-          id?: string
-          nome: string
-          telefone?: string | null
-        }
-        Update: {
-          ativo?: boolean
-          criado_em?: string
-          email?: string | null
-          id?: string
-          nome?: string
-          telefone?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      is_user_authorized: {
-        Args: { user_email?: string; user_phone?: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
