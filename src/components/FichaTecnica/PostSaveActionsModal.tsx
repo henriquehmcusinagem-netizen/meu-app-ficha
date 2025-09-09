@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { FormData, Material, Foto } from "@/types/ficha-tecnica";
+import { FormData, Material, Foto, FichaSalva, Calculos } from "@/types/ficha-tecnica";
 import { exportToHTML } from "@/utils/htmlExporter";
+import { calculateTotals, formatCurrency } from "@/utils/calculations";
+import { getCurrentDate } from "@/utils/helpers";
 
 interface PostSaveActionsModalProps {
   open: boolean;
@@ -25,83 +27,36 @@ export function PostSaveActionsModal({
   const navigate = useNavigate();
 
 
+  // Create temporary FichaSalva object for export compatibility
+  const createTempFicha = (): FichaSalva => {
+    const calculos = calculateTotals(materiais, formData);
+    const currentDate = getCurrentDate();
+    const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
+    
+    return {
+      id: 'temp-' + Date.now(),
+      numeroFTC: tempFTCNumber,
+      dataCriacao: currentDate,
+      dataUltimaEdicao: currentDate,
+      status: 'rascunho',
+      formData: formData,
+      materiais: materiais,
+      fotos: fotos,
+      calculos: calculos,
+      resumo: {
+        cliente: formData.cliente,
+        servico: formData.servico,
+        quantidade: formData.quantidade,
+        valorTotal: calculos.materialTodasPecas
+      }
+    };
+  };
+
   const exportToHTMLFile = () => {
     try {
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Ficha Técnica - ${formData.cliente}</title>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .section { margin-bottom: 20px; }
-            .section h3 { border-bottom: 2px solid #333; padding-bottom: 5px; }
-            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>FICHA TÉCNICA DE COTAÇÃO</h1>
-            <p>Cliente: ${formData.cliente}</p>
-          </div>
-          
-          <div class="section">
-            <h3>DADOS DO CLIENTE</h3>
-            <p><strong>Cliente:</strong> ${formData.cliente}</p>
-            <p><strong>Solicitante:</strong> ${formData.solicitante}</p>
-            <p><strong>Contato:</strong> ${formData.fone_email}</p>
-          </div>
-
-          <div class="section">
-            <h3>DADOS DA PEÇA/EQUIPAMENTO</h3>
-            <p><strong>Nome da Peça:</strong> ${formData.nome_peca}</p>
-            <p><strong>Quantidade:</strong> ${formData.quantidade}</p>
-            <p><strong>Serviço:</strong> ${formData.servico}</p>
-          </div>
-
-          <div class="section">
-            <h3>MATERIAIS</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Descrição</th>
-                  <th>Quantidade</th>
-                  <th>Unidade</th>
-                  <th>Valor Unit.</th>
-                  <th>Valor Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${materiais.map(material => `
-                  <tr>
-                    <td>${material.descricao}</td>
-                    <td>${material.quantidade}</td>
-                    <td>${material.unidade}</td>
-                    <td>R$ ${parseFloat(material.valor_unitario || '0').toFixed(2)}</td>
-                    <td>R$ ${parseFloat(material.valor_total || '0').toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </body>
-        </html>
-      `;
-
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ficha-tecnica-${formData.cliente.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
+      const tempFicha = createTempFicha();
+      exportToHTML(tempFicha);
+      
       toast({
         title: "HTML Exportado",
         description: "Download do arquivo HTML iniciado com sucesso!",
@@ -117,9 +72,46 @@ export function PostSaveActionsModal({
   };
 
   const sendWhatsApp = () => {
-    const message = `Ficha Técnica de Cotação - Cliente: ${formData.cliente} - Serviço: ${formData.servico}`;
+    const calculos = calculateTotals(materiais, formData);
+    const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
+    
+    const totalMaterial = formatCurrency(calculos.materialTodasPecas);
+    const totalHoras = calculos.horasTodasPecas.toFixed(1);
+    
+    const message = `🔧 *FICHA TÉCNICA DE COTAÇÃO*
+
+📋 *FTC:* ${tempFTCNumber}
+📅 *Data:* ${getCurrentDate()}
+
+👥 *CLIENTE*
+• Cliente: ${formData.cliente}
+• Solicitante: ${formData.solicitante}
+• Contato: ${formData.fone_email}
+
+🔩 *PEÇA/EQUIPAMENTO*
+• Nome: ${formData.nome_peca}
+• Quantidade: ${formData.quantidade}
+• Serviço: ${formData.servico}
+
+📊 *RESUMO FINANCEIRO*
+💰 Material Total: ${totalMaterial}
+⏰ Horas Total: ${totalHoras}h
+
+📋 *MATERIAIS PRINCIPAIS*
+${materiais.filter(m => m.descricao && (parseFloat(m.quantidade) > 0 || parseFloat(m.valor_unitario || '0') > 0))
+  .slice(0, 5)
+  .map(material => 
+    `• ${material.descricao} - Qtd: ${material.quantidade} ${material.unidade} - ${formatCurrency(parseFloat(material.valor_total || '0'))}`
+  ).join('\n')}${materiais.length > 5 ? '\n• ... e mais materiais' : ''}
+
+${formData.observacoes ? `📝 *Observações:* ${formData.observacoes}` : ''}
+
+---
+Ficha técnica gerada automaticamente`;
+    
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    
     toast({
       title: "WhatsApp Aberto",
       description: "Mensagem preparada para envio!",
@@ -128,11 +120,45 @@ export function PostSaveActionsModal({
   };
 
   const sendEmail = () => {
+    const calculos = calculateTotals(materiais, formData);
+    const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
+    
     const subject = `Ficha Técnica de Cotação - ${formData.cliente}`;
-    const body = `Cliente: ${formData.cliente}\nSolicitante: ${formData.solicitante}\nServiço: ${formData.servico}`;
+    
+    const body = `FICHA TÉCNICA DE COTAÇÃO
+
+FTC: ${tempFTCNumber}
+Data: ${getCurrentDate()}
+
+=== DADOS DO CLIENTE ===
+Cliente: ${formData.cliente}
+Solicitante: ${formData.solicitante}
+Contato: ${formData.fone_email}
+
+=== DADOS DA PEÇA/EQUIPAMENTO ===
+Nome da Peça: ${formData.nome_peca}
+Quantidade: ${formData.quantidade}
+Serviço: ${formData.servico}
+
+=== RESUMO FINANCEIRO ===
+Material Total: ${formatCurrency(calculos.materialTodasPecas)}
+Horas Totais: ${calculos.horasTodasPecas.toFixed(1)}h
+
+=== MATERIAIS ===
+${materiais
+  .filter(m => m.descricao && (parseFloat(m.quantidade) > 0 || parseFloat(m.valor_unitario || '0') > 0))
+  .map(material => 
+    `${material.descricao} - Qtd: ${material.quantidade} ${material.unidade} - Unit: ${formatCurrency(parseFloat(material.valor_unitario || '0'))} - Total: ${formatCurrency(parseFloat(material.valor_total || '0'))}`
+  ).join('\n')}
+
+${formData.observacoes ? `=== OBSERVAÇÕES ===\n${formData.observacoes}\n` : ''}
+
+---
+Ficha técnica gerada automaticamente`;
     
     const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink);
+    
     toast({
       title: "E-mail Aberto",
       description: "Cliente de e-mail aberto com os dados preenchidos!",
