@@ -20,10 +20,12 @@ import { PrintLayout } from "@/components/FichaTecnica/PrintLayout";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
 import { clientesPredefinidos } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/calculations";
-import { Calendar, FileText, Settings, Calculator, Plus } from "lucide-react";
+import { Calendar, FileText, Settings, Calculator, Plus, Home, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Index() {
   const [showActionsModal, setShowActionsModal] = useState(false);
+  const navigate = useNavigate();
   
   const {
     formData,
@@ -77,6 +79,46 @@ export default function Index() {
               <div className="w-32"></div>
             </div>
           </CardHeader>
+        </Card>
+
+        {/* Botões de Acesso Rápido */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700"
+              >
+                <Home className="h-4 w-4" />
+                Dashboard
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => navigate('/consultar-fichas')}
+                className="flex items-center gap-2 bg-green-50 hover:bg-green-100 border-green-300 text-green-700"
+              >
+                <Search className="h-4 w-4" />
+                Consultar Fichas
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (isModified) {
+                    const confirm = window.confirm("Há alterações não salvas. Deseja continuar e criar uma nova ficha?");
+                    if (!confirm) return;
+                  }
+                  criarNovaFicha();
+                }}
+                className="flex items-center gap-2 bg-orange-50 hover:bg-orange-100 border-orange-300 text-orange-700"
+              >
+                <Plus className="h-4 w-4" />
+                Nova Ficha
+              </Button>
+            </div>
+          </CardContent>
         </Card>
 
         <form className="space-y-6">
