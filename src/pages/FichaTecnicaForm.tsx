@@ -106,7 +106,7 @@ export default function Index() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="manual">🖊️ Digitar manualmente</SelectItem>
-                        {clientesPredefinidos.map((cliente) => (
+                        {[...clientesPredefinidos].sort((a, b) => a.localeCompare(b)).map((cliente) => (
                           <SelectItem key={cliente} value={cliente}>
                             {cliente}
                           </SelectItem>
