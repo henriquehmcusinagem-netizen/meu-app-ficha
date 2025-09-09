@@ -112,11 +112,10 @@ export function useFichaTecnica() {
 
   // Initialize FTC number and date for new fichas
   useEffect(() => {
-    const loadFichaId = location.state?.loadFichaId;
-    console.log('useFichaTecnica - Inicializando hook, isInitialized:', isInitialized, 'fichaId:', fichaId, 'loadFichaId:', loadFichaId);
+    console.log('useFichaTecnica - Inicializando hook, isInitialized:', isInitialized, 'fichaId:', fichaId);
     
-    // Only initialize new ficha if no ficha to load and not already initialized
-    if (!isInitialized && !fichaId && !loadFichaId && !isLoading) {
+    // Only initialize new ficha if not already initialized and no ficha loaded
+    if (!isInitialized && !fichaId && !isLoading) {
       console.log('useFichaTecnica - Criando nova ficha');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
@@ -136,7 +135,7 @@ export function useFichaTecnica() {
       setMateriais(initialMaterials);
       setIsInitialized(true);
     }
-  }, [isInitialized, fichaId, isLoading, location.state]);
+  }, [isInitialized, fichaId, isLoading]);
 
   const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
