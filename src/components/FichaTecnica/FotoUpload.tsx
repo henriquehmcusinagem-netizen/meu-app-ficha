@@ -20,9 +20,13 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
   const [selectedFoto, setSelectedFoto] = useState<Foto | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📸 FotoUpload - handleFileUpload iniciado');
     const files = Array.from(event.target.files || []);
     
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      console.log('📸 FotoUpload - Nenhum arquivo selecionado');
+      return;
+    }
 
     // Check total photos limit
     if (fotos.length + files.length > 10) {
@@ -84,7 +88,12 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
           FOTOS ({fotos.length}/10)
         </CardTitle>
         <Button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📸 FotoUpload - Botão Adicionar Fotos clicado');
+            fileInputRef.current?.click();
+          }}
           variant="outline"
           size="sm"
           disabled={fotos.length >= 10}
@@ -127,7 +136,12 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
                             variant="secondary"
                             size="sm"
                             className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => setSelectedFoto(foto)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('📸 FotoUpload - Botão zoom clicado:', foto.name);
+                              setSelectedFoto(foto);
+                            }}
                           >
                             <ZoomIn className="h-4 w-4" />
                           </Button>
@@ -161,7 +175,12 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
                   variant="destructive"
                   size="sm"
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => onRemoveFoto(foto.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('📸 FotoUpload - Botão remover foto clicado:', foto.name);
+                    onRemoveFoto(foto.id);
+                  }}
                 >
                   <X className="h-4 w-4" />
                 </Button>

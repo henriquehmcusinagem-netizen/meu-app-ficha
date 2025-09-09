@@ -112,17 +112,27 @@ export function useFichaTecnica() {
 
   // Initialize FTC number and date for new fichas
   useEffect(() => {
-    const loadFichaId = location.state?.loadFichaId;
+    const locationState = location.state as { loadFichaId?: string };
+    const urlParams = new URLSearchParams(location.search);
+    const editParam = urlParams.get('edit');
+    const sessionStorageId = sessionStorage.getItem('loadFichaId');
+    const hasLoadRequest = editParam || locationState?.loadFichaId || sessionStorageId;
+    
     console.log('🔄 useEffect inicialização - Estado atual:', {
       isInitialized,
       fichaId,
-      loadFichaId,
+      hasLoadRequest,
+      editParam,
       isLoading,
       locationState: location.state
     });
     
-    // Only initialize new ficha if not already initialized, no ficha loaded, and no ficha to load
-    if (!isInitialized && !fichaId && !loadFichaId && !isLoading) {
+    // Only initialize new ficha if:
+    // 1. Not initialized yet
+    // 2. No fichaId (not editing existing) 
+    // 3. No load request pending (URL param, location state, or sessionStorage)
+    // 4. Not currently loading
+    if (!isInitialized && !fichaId && !hasLoadRequest && !isLoading) {
       console.log('✨ useFichaTecnica - Criando nova ficha');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
@@ -145,11 +155,12 @@ export function useFichaTecnica() {
       console.log('⏸️ Não criou nova ficha - Condições:', {
         isInitialized: !isInitialized,
         noFichaId: !fichaId,
-        noLoadFichaId: !loadFichaId,
-        notLoading: !isLoading
+        noLoadRequest: !hasLoadRequest,
+        notLoading: !isLoading,
+        hasLoadRequestDetails: { editParam, locationStateId: locationState?.loadFichaId, sessionStorageId }
       });
     }
-  }, [isInitialized, fichaId, isLoading]);
+  }, [isInitialized, fichaId, isLoading, location.search, location.state]);
 
   const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
@@ -199,10 +210,16 @@ export function useFichaTecnica() {
   }, []);
 
   const addFoto = useCallback((foto: Foto) => {
+    console.log('📸 useFichaTecnica - addFoto chamado:', { 
+      foto: foto.name, 
+      fichaId, 
+      isInitialized,
+      currentFotosCount: fotos.length 
+    });
     setFotos(prev => [...prev, foto]);
     setIsModified(true);
     setIsSaved(false);
-  }, []);
+  }, [fichaId, isInitialized, fotos.length]);
 
   const removeFoto = useCallback((id: number) => {
     setFotos(prev => prev.filter(foto => foto.id !== id));
