@@ -4,7 +4,6 @@ import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2 } from "lu
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { FormData, Material, Foto } from "@/types/ficha-tecnica";
-import { generatePDF } from "@/utils/pdfGenerator";
 import { exportToHTML } from "@/utils/htmlExporter";
 
 interface PostSaveActionsModalProps {
@@ -25,22 +24,6 @@ export function PostSaveActionsModal({
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const exportToPDF = () => {
-    try {
-      window.print();
-      toast({
-        title: "PDF Gerado",
-        description: "Use a opção 'Salvar como PDF' na janela de impressão.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro na Exportação",
-        description: "Não foi possível abrir a janela de impressão.",
-        variant: "destructive"
-      });
-    }
-    onOpenChange(false);
-  };
 
   const exportToHTMLFile = () => {
     try {
@@ -183,11 +166,7 @@ export function PostSaveActionsModal({
           {/* Exportar Seção */}
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Exportar</h4>
-            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={exportToPDF} className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80">
-                <FileText className="h-4 w-4" />
-                PDF
-              </Button>
+            <div className="grid grid-cols-1 gap-2">
               <Button onClick={exportToHTMLFile} variant="outline" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 HTML

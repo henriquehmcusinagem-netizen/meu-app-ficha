@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { FileText, Printer, Mail, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FichaSalva } from "@/types/ficha-tecnica";
-import { generatePDF } from "@/utils/pdfGenerator";
 import { exportToHTML } from "@/utils/htmlExporter";
 import { ConsultaPrintLayout } from "./ConsultaPrintLayout";
 import { createRoot } from "react-dom/client";
@@ -14,21 +13,6 @@ interface ConsultaActionButtonsProps {
 export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
   const { toast } = useToast();
 
-  const exportToPDF = () => {
-    try {
-      generatePDF(ficha);
-      toast({
-        title: "PDF Gerado",
-        description: `PDF da FTC ${ficha.numeroFTC} baixado com sucesso.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao gerar PDF",
-        description: "Não foi possível gerar o PDF. Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const exportToHTMLFile = () => {
     try {
@@ -119,16 +103,7 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Button 
-        onClick={(e) => { e.stopPropagation(); exportToPDF(); }} 
-        size="sm" 
-        className="bg-gradient-to-r from-primary to-primary/80"
-      >
-        <FileText className="h-3 w-3" />
-        PDF
-      </Button>
-
-      <Button 
+      <Button
         onClick={(e) => { e.stopPropagation(); exportToHTMLFile(); }} 
         variant="outline" 
         size="sm"
