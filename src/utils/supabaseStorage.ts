@@ -392,49 +392,88 @@ export async function salvarFicha(
 
     // Upload real photos to Supabase Storage and save metadata
     if (fotos.length > 0) {
-      console.log(`📸 Uploading ${fotos.length} fotos to storage...`);
+      console.log(`📸 Processando ${fotos.length} fotos...`);
+      console.log('📸 Fotos recebidas:', fotos.map(f => ({ 
+        id: f.id, 
+        name: f.name, 
+        hasFile: !!f.file, 
+        hasStoragePath: !!f.storagePath,
+        preview: f.preview?.substring(0, 50) + '...' 
+      })));
       
       const fotosData = await Promise.all(
         fotos.map(async (foto, index) => {
+          console.log(`📸 Processando foto ${index + 1}/${fotos.length}: ${foto.name}`);
+          console.log(`📸 Detalhes da foto:`, { 
+            id: foto.id, 
+            hasFile: !!foto.file, 
+            hasStoragePath: !!foto.storagePath,
+            fileType: foto.file?.type,
+            fileSize: foto.file?.size 
+          });
+          
           let storagePath = null;
           
           if (foto.file) {
             // Upload new photo to Supabase Storage
+            console.log(`📤 Fazendo upload de nova foto: ${foto.name}`);
             const fileName = `${savedFichaId}/${Date.now()}_${index}_${foto.name}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('ficha-fotos')
-              .upload(fileName, foto.file);
-              
-            if (uploadError) {
-              console.error('❌ Erro ao fazer upload da foto:', uploadError);
-            } else {
-              storagePath = uploadData?.path;
-              console.log('✅ Foto uploaded:', fileName);
+            console.log(`📤 Nome do arquivo no storage: ${fileName}`);
+            
+            try {
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('ficha-fotos')
+                .upload(fileName, foto.file);
+                
+              if (uploadError) {
+                console.error('❌ Erro no upload da foto:', foto.name, uploadError);
+                console.error('❌ Detalhes do erro:', uploadError.message);
+                // Continue with other photos even if one fails
+              } else {
+                storagePath = uploadData?.path;
+                console.log('✅ Upload bem-sucedido:', fileName, 'Path:', storagePath);
+              }
+            } catch (uploadException) {
+              console.error('💥 Exceção durante upload:', foto.name, uploadException);
             }
           } else if (foto.storagePath) {
             // Keep existing storage path for saved photos
             storagePath = foto.storagePath;
-            console.log('✅ Keeping existing photo:', foto.name);
+            console.log('🔄 Mantendo foto existente:', foto.name, 'Path:', storagePath);
+          } else {
+            console.warn('⚠️ Foto sem file nem storagePath:', foto.name);
           }
           
-          return {
+          const fotoData = {
             ficha_id: savedFichaId,
             name: foto.name,
             size: foto.size,
             type: foto.file?.type || 'image/jpeg',
             storage_path: storagePath
           };
+          
+          console.log(`📋 Dados da foto para DB:`, fotoData);
+          return fotoData;
         })
       );
 
-      const { error: fotosError } = await supabase
-        .from('fotos')
-        .insert(fotosData);
+      console.log(`💾 Inserindo metadados de ${fotosData.length} fotos no banco...`);
+      console.log('💾 Dados para inserção:', fotosData);
+      
+      try {
+        const { error: fotosError } = await supabase
+          .from('fotos')
+          .insert(fotosData);
 
-      if (fotosError) {
-        console.error('❌ Erro ao salvar metadados das fotos:', fotosError);
-      } else {
-        console.log('✅ Fotos e metadados salvos com sucesso');
+        if (fotosError) {
+          console.error('❌ Erro ao salvar metadados das fotos:', fotosError);
+          console.error('❌ Mensagem do erro:', fotosError.message);
+          console.error('❌ Dados que causaram erro:', fotosData);
+        } else {
+          console.log('✅ Fotos e metadados salvos com sucesso');
+        }
+      } catch (insertException) {
+        console.error('💥 Exceção ao inserir metadados das fotos:', insertException);
       }
     }
 
