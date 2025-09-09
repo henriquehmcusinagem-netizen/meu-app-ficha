@@ -1,13 +1,20 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { FichaSalva } from '@/types/ficha-tecnica';
 import { formatCurrency } from './calculations';
+
+// Import autotable and extend jsPDF
+let autoTable: any;
+try {
+  autoTable = require('jspdf-autotable');
+} catch (e) {
+  console.warn('jspdf-autotable not available, falling back to manual table');
+}
 
 // Declaração de tipos para o plugin autotable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: {
+    autoTable?: (options: any) => jsPDF;
+    lastAutoTable?: {
       finalY: number;
     };
     getNumberOfPages: () => number;
@@ -199,7 +206,7 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
     yPosition += 4 + (servicoLines.length * 4) + 5;
   };
 
-  // MATERIAIS - Usando autoTable para melhor formatação
+  // MATERIAIS - Com fallback manual se autoTable não funcionar
   const drawMaterials = () => {
     const materiaisPreenchidos = ficha.materiais.filter(m => 
       m.descricao.trim() || Number(m.quantidade) > 0 || Number(m.valor_unitario) > 0
@@ -218,43 +225,116 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
         material.valor_total ? formatCurrency(Number(material.valor_total)) : '—'
       ]);
       
-      // Adicionar total
       const totalMaterial = materiaisPreenchidos.reduce((sum, m) => sum + (Number(m.valor_total) || 0), 0);
       
-      doc.autoTable({
-        startY: yPosition,
-        head: [['Descrição', 'Qtd', 'Un', 'Fornecedor', 'Cliente Int.', 'Valor Unit.', 'Valor Total']],
-        body: tableData,
-        foot: [['', '', '', '', '', 'TOTAL:', formatCurrency(totalMaterial)]],
-        theme: 'grid',
-        headStyles: {
-          fillColor: primaryColor,
-          fontSize: 9,
-          fontStyle: 'bold'
-        },
-        footStyles: {
-          fillColor: secondaryColor,
-          textColor: textColor,
-          fontSize: 10,
-          fontStyle: 'bold'
-        },
-        styles: {
-          fontSize: 9,
-          cellPadding: 2
-        },
-        columnStyles: {
-          0: { cellWidth: 50 }, // Descrição
-          1: { cellWidth: 15, halign: 'center' }, // Qtd
-          2: { cellWidth: 12, halign: 'center' }, // Un
-          3: { cellWidth: 35 }, // Fornecedor
-          4: { cellWidth: 30 }, // Cliente Int
-          5: { cellWidth: 25, halign: 'right' }, // Valor Unit
-          6: { cellWidth: 25, halign: 'right', fontStyle: 'bold' } // Valor Total
-        },
-        margin: { left: margin, right: margin }
-      });
+      // Tentar usar autoTable se disponível
+      if (doc.autoTable && typeof doc.autoTable === 'function') {
+        try {
+          doc.autoTable({
+            startY: yPosition,
+            head: [['Descrição', 'Qtd', 'Un', 'Fornecedor', 'Cliente Int.', 'Valor Unit.', 'Valor Total']],
+            body: tableData,
+            foot: [['', '', '', '', '', 'TOTAL:', formatCurrency(totalMaterial)]],
+            theme: 'grid',
+            headStyles: {
+              fillColor: primaryColor,
+              fontSize: 9,
+              fontStyle: 'bold'
+            },
+            footStyles: {
+              fillColor: secondaryColor,
+              textColor: textColor,
+              fontSize: 10,
+              fontStyle: 'bold'
+            },
+            styles: {
+              fontSize: 9,
+              cellPadding: 2
+            },
+            columnStyles: {
+              0: { cellWidth: 50 },
+              1: { cellWidth: 15, halign: 'center' },
+              2: { cellWidth: 12, halign: 'center' },
+              3: { cellWidth: 35 },
+              4: { cellWidth: 30 },
+              5: { cellWidth: 25, halign: 'right' },
+              6: { cellWidth: 25, halign: 'right', fontStyle: 'bold' }
+            },
+            margin: { left: margin, right: margin }
+          });
+          
+          yPosition = (doc.lastAutoTable?.finalY || yPosition) + 5;
+        } catch (error) {
+          console.warn('AutoTable failed, using manual table:', error);
+          drawMaterialsManually();
+        }
+      } else {
+        drawMaterialsManually();
+      }
       
-      yPosition = doc.lastAutoTable.finalY + 5;
+      // Função para desenhar tabela manualmente
+      function drawMaterialsManually() {
+        const rowHeight = 6;
+        const headerHeight = 8;
+        const colWidths = [50, 15, 12, 35, 30, 25, 25];
+        const headers = ['Descrição', 'Qtd', 'Un', 'Fornecedor', 'Cliente Int.', 'Valor Unit.', 'Valor Total'];
+        let currentY = yPosition;
+        
+        // Cabeçalho
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(margin, currentY, contentWidth, headerHeight, 'F');
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        
+        let xPos = margin + 2;
+        headers.forEach((header, i) => {
+          doc.text(header, xPos, currentY + 5.5);
+          xPos += colWidths[i];
+        });
+        
+        currentY += headerHeight;
+        
+        // Linhas de dados
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        
+        tableData.forEach((row, rowIndex) => {
+          if (rowIndex % 2 === 0) {
+            doc.setFillColor(250, 250, 250);
+            doc.rect(margin, currentY, contentWidth, rowHeight, 'F');
+          }
+          
+          xPos = margin + 2;
+          row.forEach((cell, cellIndex) => {
+            const cellText = String(cell).substring(0, 20);
+            if (cellIndex >= 5) { // Valores monetários
+              doc.text(cellText, xPos + colWidths[cellIndex] - 2, currentY + 4, { align: 'right' });
+            } else if (cellIndex >= 1 && cellIndex <= 2) { // Qtd e Un
+              doc.text(cellText, xPos + colWidths[cellIndex] / 2, currentY + 4, { align: 'center' });
+            } else {
+              doc.text(cellText, xPos, currentY + 4);
+            }
+            xPos += colWidths[cellIndex];
+          });
+          
+          currentY += rowHeight;
+        });
+        
+        // Total
+        doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        doc.rect(margin, currentY, contentWidth, headerHeight, 'F');
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.text('TOTAL:', margin + contentWidth - 50, currentY + 5.5);
+        doc.text(formatCurrency(totalMaterial), margin + contentWidth - 2, currentY + 5.5, { align: 'right' });
+        
+        yPosition = currentY + headerHeight + 5;
+      }
     }
   };
 
