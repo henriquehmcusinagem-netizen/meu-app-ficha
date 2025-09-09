@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { FormData, Material, Foto, Calculos, FichaSalva } from '@/types/ficha-tecnica';
 import { calculateTotals } from '@/utils/calculations';
 import { getCurrentDate } from '@/utils/helpers';
 import { 
   salvarFicha, 
-  carregarFicha, 
   validarCamposObrigatorios 
 } from '@/utils/supabaseStorage';
+import { useFichaQuery, useFichasQuery } from './useFichasQuery';
 
 const initialFormData: FormData = {
   // Dados do Cliente
@@ -96,6 +96,7 @@ const initialFormData: FormData = {
 
 export function useFichaTecnica() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [fotos, setFotos] = useState<Foto[]>([]);
@@ -107,44 +108,38 @@ export function useFichaTecnica() {
   const [isSaved, setIsSaved] = useState(false);
   const [isModified, setIsModified] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Get edit ID from URL params or location state
+  const editId = searchParams.get('edit') || 
+                (location.state as { loadFichaId?: string })?.loadFichaId || 
+                sessionStorage.getItem('loadFichaId');
+                
+  // Use React Query for loading ficha
+  const { data: fichaCarregada, isLoading, error } = useFichaQuery(editId);
+  const { invalidateFichas } = useFichasQuery();
 
-  // Unified initialization and loading logic
+  // Initialize ficha based on React Query data or create new
   useEffect(() => {
-    const locationState = location.state as { loadFichaId?: string };
-    const urlParams = new URLSearchParams(location.search);
-    const editParam = urlParams.get('edit');
-    const sessionStorageId = sessionStorage.getItem('loadFichaId');
-    
-    // Priority order: URL param > location state > sessionStorage
-    const loadFichaId = editParam || locationState?.loadFichaId || sessionStorageId;
-    
-    console.log('🔄 useEffect UNIFICADO - Estado atual:', {
-      isInitialized,
-      fichaId,
-      loadFichaId,
-      editParam,
-      isLoading,
-      locationState: location.state
-    });
-    
-    // PRIORITY 1: Load existing ficha if ID is provided
-    if (loadFichaId && !fichaId && !isLoading) {
-      console.log('🎯 PRIORIDADE 1: Carregando ficha existente:', loadFichaId);
-      sessionStorage.removeItem('loadFichaId'); // Clean up
-      carregarFichaTecnica(loadFichaId);
-      return; // Exit early, don't create new ficha
-    }
-    
-    // PRIORITY 2: Initialize new ficha only if no load request and not already initialized
-    if (!isInitialized && !loadFichaId && !fichaId && !isLoading) {
-      console.log('✨ PRIORIDADE 2: Criando nova ficha');
+    if (editId && fichaCarregada && !fichaId) {
+      // Load existing ficha from React Query data
+      console.log('✅ Carregando ficha do cache/servidor:', editId);
+      setFichaId(fichaCarregada.id);
+      setFormData(fichaCarregada.formData);
+      setMateriais(fichaCarregada.materiais);
+      setNumeroFTC(fichaCarregada.numeroFTC);
+      setDataAtual(getCurrentDate());
+      setFotos(fichaCarregada.fotos);
+      setIsSaved(true);
+      setIsModified(false);
+      
+      // Cleanup
+      sessionStorage.removeItem('loadFichaId');
+    } else if (!editId && !fichaId && !isLoading) {
+      // Create new ficha
+      console.log('✨ Criando nova ficha');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
-      
-      // Add initial materials
-      const initialMaterials: Material[] = [{
+      setMateriais([{
         id: Date.now(),
         descricao: '',
         quantidade: '',
@@ -153,23 +148,11 @@ export function useFichaTecnica() {
         fornecedor: '',
         cliente_interno: '',
         valor_total: '0',
-      }];
-      
-      setMateriais(initialMaterials);
-      setIsInitialized(true);
-    } else {
-      console.log('⏸️ Nenhuma ação tomada - Análise:', {
-        loadFichaId: !!loadFichaId,
-        fichaId: !!fichaId,
-        isLoading,
-        isInitialized,
-        decisao: loadFichaId ? 'Tem loadFichaId para carregar' :
-                 fichaId ? 'Já tem fichaId definido' :
-                 isLoading ? 'Já está carregando' :
-                 isInitialized ? 'Já está inicializado' : 'Condições não atendidas'
-      });
+      }]);
+      setIsSaved(false);
+      setIsModified(false);
     }
-  }, [isInitialized, fichaId, isLoading, location.search, location.state]);
+  }, [editId, fichaCarregada, fichaId, isLoading]);
 
   const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
@@ -221,14 +204,13 @@ export function useFichaTecnica() {
   const addFoto = useCallback((foto: Foto) => {
     console.log('📸 useFichaTecnica - addFoto chamado:', { 
       foto: foto.name, 
-      fichaId, 
-      isInitialized,
+      fichaId,
       currentFotosCount: fotos.length 
     });
     setFotos(prev => [...prev, foto]);
     setIsModified(true);
     setIsSaved(false);
-  }, [fichaId, isInitialized, fotos.length]);
+  }, [fichaId, fotos.length]);
 
   const removeFoto = useCallback((id: number) => {
     setFotos(prev => prev.filter(foto => foto.id !== id));
@@ -302,6 +284,9 @@ export function useFichaTecnica() {
         setIsModified(false);
         setIsSaving(false);
         
+        // Invalidate React Query cache
+        invalidateFichas();
+        
         console.log('✅ Estado final após salvamento:', { 
           fichaId: result.id, 
           numeroFTC: result.numeroFTC 
@@ -320,58 +305,7 @@ export function useFichaTecnica() {
       setIsSaving(false);
       return { success: false, errors: ['Erro inesperado ao salvar'] };
     }
-  }, [formData, materiais, fotos, numeroFTC, fichaId]);
-
-  // Load ficha function
-  const carregarFichaTecnica = useCallback(async (id: string) => {
-    console.log('🚀 useFichaTecnica - Iniciando carregamento da ficha:', id);
-    setIsLoading(true);
-    
-    try {
-      console.log('📡 Fazendo chamada para carregarFicha...');
-      const ficha = await carregarFicha(id);
-      
-      if (ficha) {
-        console.log('✅ useFichaTecnica - Ficha carregada com sucesso:', {
-          id: ficha.id,
-          numeroFTC: ficha.numeroFTC,
-          cliente: ficha.formData.cliente,
-          materiaisCount: ficha.materiais.length,
-          fotosCount: ficha.fotos.length
-        });
-        
-        // Set the loaded data
-        setFichaId(ficha.id);
-        setFormData(ficha.formData);
-        setMateriais(ficha.materiais);
-        setNumeroFTC(ficha.numeroFTC);
-        setDataAtual(getCurrentDate()); // Keep current date for editing
-        
-        // Load real fotos with Storage URLs
-        setFotos(ficha.fotos);
-        
-        setIsSaved(true);
-        setIsModified(false);
-        setIsInitialized(true);
-        
-        console.log('📋 useFichaTecnica - Estado após carregamento:', {
-          fichaId: ficha.id,
-          numeroFTC: ficha.numeroFTC,
-          cliente: ficha.formData.cliente,
-          materiaisCount: ficha.materiais.length,
-          isInitialized: true,
-          isSaved: true
-        });
-      } else {
-        console.error('❌ useFichaTecnica - Ficha não encontrada para ID:', id);
-      }
-    } catch (error) {
-      console.error('💥 useFichaTecnica - Erro ao carregar ficha:', error);
-    } finally {
-      console.log('🏁 useFichaTecnica - Finalizando carregamento');
-      setIsLoading(false);
-    }
-  }, []);
+  }, [formData, materiais, fotos, numeroFTC, fichaId, invalidateFichas]);
 
   // Create new ficha function
   const criarNovaFicha = useCallback(() => {
@@ -393,7 +327,6 @@ export function useFichaTecnica() {
     setDataAtual(getCurrentDate());
     setIsSaved(false);
     setIsModified(false);
-    setIsInitialized(true);
   }, []);
 
   // Calculate totals
@@ -421,7 +354,6 @@ export function useFichaTecnica() {
     isSaving,
     isLoading,
     salvarFichaTecnica,
-    carregarFichaTecnica,
     criarNovaFicha,
   };
 }

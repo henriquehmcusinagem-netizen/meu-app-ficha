@@ -47,7 +47,6 @@ export default function Index() {
     isModified,
     isSaving,
     salvarFichaTecnica,
-    carregarFichaTecnica,
     criarNovaFicha,
   } = useFichaTecnica();
 

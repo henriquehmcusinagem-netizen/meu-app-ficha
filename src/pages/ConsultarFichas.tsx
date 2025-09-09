@@ -7,42 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, FileText, Calendar, User, Search, Filter, Eye, Home, Download, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FichaSalva } from '@/types/ficha-tecnica';
-import { carregarFichasSalvas, excluirFicha } from '@/utils/supabaseStorage';
-import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/helpers';
 import { ConsultaActionButtons } from '@/components/FichaTecnica/ConsultaActionButtons';
+import { useFichasQuery } from '@/hooks/useFichasQuery';
 
 export default function ConsultarFichas() {
   const navigate = useNavigate();
-  const [fichas, setFichas] = useState<FichaSalva[]>([]);
   const [filteredFichas, setFilteredFichas] = useState<FichaSalva[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('dataUltimaEdicao');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const { toast } = useToast();
-
-  const loadFichas = async () => {
-    setLoading(true);
-    try {
-      const fichasSalvas = await carregarFichasSalvas();
-      setFichas(fichasSalvas);
-      setFilteredFichas(fichasSalvas);
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar fichas salvas.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadFichas();
-  }, []);
+  
+  // Use React Query for data management
+  const { fichas, isLoading, deleteFicha, isDeleting } = useFichasQuery();
 
   useEffect(() => {
     let filtered = fichas.filter(ficha => {
@@ -92,25 +70,11 @@ export default function ConsultarFichas() {
     setFilteredFichas(filtered);
   }, [fichas, searchTerm, statusFilter, sortBy, sortOrder]);
 
-  const handleDeleteFicha = async (id: string, event: React.MouseEvent) => {
+  const handleDeleteFicha = (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
     
     if (confirm('Tem certeza que deseja excluir esta ficha?')) {
-      const success = await excluirFicha(id);
-      
-      if (success) {
-        toast({
-          title: "Sucesso",
-          description: "Ficha excluída com sucesso.",
-        });
-        loadFichas();
-      } else {
-        toast({
-          title: "Erro",
-          description: "Erro ao excluir ficha.",
-          variant: "destructive",
-        });
-      }
+      deleteFicha(id);
     }
   };
 
@@ -260,7 +224,7 @@ export default function ConsultarFichas() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <div className="flex justify-center p-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
@@ -362,9 +326,10 @@ export default function ConsultarFichas() {
                                 size="sm"
                                 onClick={(e) => handleDeleteFicha(ficha.id, e)}
                                 className="text-destructive hover:text-destructive flex items-center gap-1"
+                                disabled={isDeleting}
                               >
                                 <Trash2 className="h-4 w-4" />
-                                Excluir
+                                {isDeleting ? 'Excluindo...' : 'Excluir'}
                               </Button>
                             </div>
                           </div>
