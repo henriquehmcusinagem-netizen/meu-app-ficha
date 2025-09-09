@@ -41,36 +41,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAuthorizedUser = async (email: string): Promise<boolean> => {
     try {
+      console.log('🔍 Verificando autorização para email:', email);
+      
       const { data, error } = await supabase.rpc('is_user_authorized', {
         user_phone: null,
         user_email: email
       });
       
+      console.log('📊 Resposta da função RPC:', { data, error });
+      
       if (error) {
-        console.error('Erro ao verificar autorização:', error);
+        console.error('❌ Erro ao verificar autorização:', error);
         return false;
       }
       
-      return data || false;
+      const isAuthorized = data || false;
+      console.log('✅ Usuário autorizado:', isAuthorized);
+      
+      return isAuthorized;
     } catch (error) {
-      console.error('Erro ao verificar autorização:', error);
+      console.error('❌ Erro inesperado ao verificar autorização:', error);
       return false;
     }
   };
 
   const signInWithPassword = async (email: string, password: string) => {
-    // Verificar se email está autorizado
-    const authorized = await isAuthorizedUser(email);
-    if (!authorized) {
-      return { error: { message: 'Email não autorizado para acesso ao sistema' } };
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    console.log('🔐 Iniciando processo de login para:', email);
     
-    return { error };
+    try {
+      // Verificar se email está autorizado
+      console.log('📋 Verificando autorização do usuário...');
+      const authorized = await isAuthorizedUser(email);
+      console.log('✅ Resultado da autorização:', authorized);
+      
+      if (!authorized) {
+        console.log('❌ Email não autorizado:', email);
+        return { error: { message: 'Email não autorizado para acesso ao sistema' } };
+      }
+
+      console.log('🔑 Tentando fazer login com Supabase Auth...');
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error('❌ Erro no login:', error);
+        console.error('❌ Detalhes do erro:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.name
+        });
+      } else {
+        console.log('✅ Login realizado com sucesso!');
+      }
+      
+      return { error };
+    } catch (err) {
+      console.error('❌ Erro inesperado no login:', err);
+      return { error: { message: 'Erro interno no processo de login' } };
+    }
   };
 
   const signUpWithPassword = async (email: string, password: string) => {

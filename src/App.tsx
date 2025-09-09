@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import NovaFicha from "./pages/NovaFicha";
 import ConsultarFichas from "./pages/ConsultarFichas";
 import Auth from "./pages/Auth";
+import AdminTools from "./pages/AdminTools";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,11 @@ const App = () => (
               <Route path="/consultar-fichas" element={
                 <ProtectedRoute>
                   <ConsultarFichas />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <AdminTools />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
