@@ -2,7 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { FormData, Material, Foto } from "@/types/ficha-tecnica";
+import { generatePDF } from "@/utils/pdfGenerator";
+import { exportToHTML } from "@/utils/htmlExporter";
 
 interface PostSaveActionsModalProps {
   open: boolean;
@@ -20,20 +23,113 @@ export function PostSaveActionsModal({
   fotos 
 }: PostSaveActionsModalProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const exportToPDF = () => {
-    toast({
-      title: "Exportando PDF",
-      description: "Funcionalidade será implementada com o backend.",
-    });
+    try {
+      window.print();
+      toast({
+        title: "PDF Gerado",
+        description: "Use a opção 'Salvar como PDF' na janela de impressão.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na Exportação",
+        description: "Não foi possível abrir a janela de impressão.",
+        variant: "destructive"
+      });
+    }
     onOpenChange(false);
   };
 
-  const exportToHTML = () => {
-    toast({
-      title: "Exportando HTML",
-      description: "Funcionalidade será implementada com o backend.",
-    });
+  const exportToHTMLFile = () => {
+    try {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Ficha Técnica - ${formData.cliente}</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .section h3 { border-bottom: 2px solid #333; padding-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>FICHA TÉCNICA DE COTAÇÃO</h1>
+            <p>Cliente: ${formData.cliente}</p>
+          </div>
+          
+          <div class="section">
+            <h3>DADOS DO CLIENTE</h3>
+            <p><strong>Cliente:</strong> ${formData.cliente}</p>
+            <p><strong>Solicitante:</strong> ${formData.solicitante}</p>
+            <p><strong>Contato:</strong> ${formData.fone_email}</p>
+          </div>
+
+          <div class="section">
+            <h3>DADOS DA PEÇA/EQUIPAMENTO</h3>
+            <p><strong>Nome da Peça:</strong> ${formData.nome_peca}</p>
+            <p><strong>Quantidade:</strong> ${formData.quantidade}</p>
+            <p><strong>Serviço:</strong> ${formData.servico}</p>
+          </div>
+
+          <div class="section">
+            <h3>MATERIAIS</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Quantidade</th>
+                  <th>Unidade</th>
+                  <th>Valor Unit.</th>
+                  <th>Valor Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${materiais.map(material => `
+                  <tr>
+                    <td>${material.descricao}</td>
+                    <td>${material.quantidade}</td>
+                    <td>${material.unidade}</td>
+                    <td>R$ ${parseFloat(material.valor_unitario || '0').toFixed(2)}</td>
+                    <td>R$ ${parseFloat(material.valor_total || '0').toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ficha-tecnica-${formData.cliente.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "HTML Exportado",
+        description: "Download do arquivo HTML iniciado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na Exportação",
+        description: "Não foi possível gerar o arquivo HTML.",
+        variant: "destructive"
+      });
+    }
     onOpenChange(false);
   };
 
@@ -41,6 +137,10 @@ export function PostSaveActionsModal({
     const message = `Ficha Técnica de Cotação - Cliente: ${formData.cliente} - Serviço: ${formData.servico}`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    toast({
+      title: "WhatsApp Aberto",
+      description: "Mensagem preparada para envio!",
+    });
     onOpenChange(false);
   };
 
@@ -50,13 +150,18 @@ export function PostSaveActionsModal({
     
     const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink);
+    toast({
+      title: "E-mail Aberto",
+      description: "Cliente de e-mail aberto com os dados preenchidos!",
+    });
     onOpenChange(false);
   };
 
   const consultarFichas = () => {
+    navigate('/consultar-fichas');
     toast({
-      title: "Consultar Fichas",
-      description: "Funcionalidade de consulta será implementada com o backend.",
+      title: "Navegando para Consultas",
+      description: "Redirecionando para a página de consulta de fichas.",
     });
     onOpenChange(false);
   };
@@ -83,7 +188,7 @@ export function PostSaveActionsModal({
                 <FileText className="h-4 w-4" />
                 PDF
               </Button>
-              <Button onClick={exportToHTML} variant="outline" className="flex items-center gap-2">
+              <Button onClick={exportToHTMLFile} variant="outline" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 HTML
               </Button>
