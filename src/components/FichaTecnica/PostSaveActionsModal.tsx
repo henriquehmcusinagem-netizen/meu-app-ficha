@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Printer, Mail, MessageCircle, Search, CheckCircle2, Download, Paperclip, Link } from "lucide-react";
+import { Mail, Search, CheckCircle2, Download, Paperclip, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { FormData, Material, Foto, FichaSalva, Calculos } from "@/types/ficha-tecnica";
@@ -73,28 +73,6 @@ export function PostSaveActionsModal({
     onOpenChange(false);
   };
 
-  const sendWhatsApp = () => {
-    const calculos = calculateTotals(materiais, formData);
-    const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
-    const valorTotal = calculos.materialTodasPecas;
-    
-    const message = `🔧 *Ficha Técnica de Cotação*\n\n` +
-      `📋 *FTC:* ${tempFTCNumber}\n` +
-      `👤 *Cliente:* ${formData.cliente}\n` +
-      `⚙️ *Serviço:* ${formData.servico}\n` +
-      `💰 *Valor Total Material:* R$ ${valorTotal.toFixed(2)}\n` +
-      `📅 *Data:* ${getCurrentDate()}\n\n` +
-      `_Gerado pelo sistema HMC_`;
-    
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
-    
-    toast({
-      title: "WhatsApp Aberto",
-      description: "Mensagem preparada para envio!",
-    });
-    onOpenChange(false);
-  };
 
   const sendWhatsAppWithPDF = async () => {
     const tempFicha = createTempFicha();
@@ -283,10 +261,6 @@ export function PostSaveActionsModal({
                 <Paperclip className="h-4 w-4" />
                 E-mail + PDF
               </Button>
-              <Button onClick={sendWhatsApp} className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800">
-                <MessageCircle className="h-4 w-4" />
-                WhatsApp
-              </Button>
               <Button onClick={sendWhatsAppWithPDF} className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-teal-800">
                 <Link className="h-4 w-4" />
                 WA + PDF
@@ -297,11 +271,7 @@ export function PostSaveActionsModal({
           {/* Outras Ações Seção */}
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Outras Ações</h4>
-            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={() => window.print()} variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600">
-                <Printer className="h-4 w-4" />
-                Imprimir
-              </Button>
+            <div className="grid grid-cols-1 gap-2">
               <Button onClick={consultarFichas} variant="secondary" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
                 Consultar

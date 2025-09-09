@@ -1,10 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Printer, Mail, MessageCircle, Download, Paperclip, Link } from "lucide-react";
+import { Mail, Download, Paperclip, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FichaSalva } from "@/types/ficha-tecnica";
 import { generatePDF, generatePDFBlob } from "@/utils/pdfGenerator";
-import { ConsultaPrintLayout } from "./ConsultaPrintLayout";
-import { createRoot } from "react-dom/client";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ConsultaActionButtonsProps {
@@ -32,24 +30,6 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
     }
   };
 
-  const sendWhatsApp = () => {
-    const valorTotal = ficha.calculos.materialTodasPecas;
-    const message = `🔧 *Ficha Técnica de Cotação*\n\n` +
-      `📋 *FTC:* ${ficha.numeroFTC}\n` +
-      `👤 *Cliente:* ${ficha.resumo.cliente}\n` +
-      `⚙️ *Serviço:* ${ficha.resumo.servico}\n` +
-      `💰 *Valor Total Material:* R$ ${valorTotal.toFixed(2)}\n` +
-      `📅 *Data:* ${ficha.dataCriacao}\n\n` +
-      `_Gerado pelo sistema HMC_`;
-    
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
-    
-    toast({
-      title: "WhatsApp aberto",
-      description: "Mensagem preparada para envio.",
-    });
-  };
 
   const sendWhatsAppWithPDF = async () => {
     try {
@@ -195,31 +175,6 @@ Equipe HMC`;
     }
   };
 
-  const printFicha = () => {
-    // Create a temporary div to render the print layout
-    const printDiv = document.createElement('div');
-    document.body.appendChild(printDiv);
-    
-    // Create root and render the print layout
-    const root = createRoot(printDiv);
-    root.render(<ConsultaPrintLayout ficha={ficha} />);
-    
-    // Wait for render and then print
-    setTimeout(() => {
-      window.print();
-      
-      // Cleanup after print
-      setTimeout(() => {
-        root.unmount();
-        document.body.removeChild(printDiv);
-      }, 100);
-    }, 100);
-    
-    toast({
-      title: "Preparando impressão",
-      description: "Janela de impressão será aberta.",
-    });
-  };
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -252,31 +207,12 @@ Equipe HMC`;
       </Button>
 
       <Button 
-        onClick={(e) => { e.stopPropagation(); sendWhatsApp(); }} 
-        size="sm" 
-        className="bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800"
-      >
-        <MessageCircle className="h-3 w-3" />
-        WhatsApp
-      </Button>
-
-      <Button 
         onClick={(e) => { e.stopPropagation(); sendWhatsAppWithPDF(); }} 
         size="sm" 
         className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-teal-800"
       >
         <Link className="h-3 w-3" />
         WA+PDF
-      </Button>
-
-      <Button 
-        onClick={(e) => { e.stopPropagation(); printFicha(); }} 
-        variant="outline" 
-        size="sm" 
-        className="bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
-      >
-        <Printer className="h-3 w-3" />
-        Imprimir
       </Button>
     </div>
   );
