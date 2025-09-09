@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function Dashboard() {
 
 
         {/* Main Modules */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Nova Ficha Técnica Module */}
           <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-primary/30" onClick={() => navigate('/nova-ficha')}>
             <CardHeader className="text-center pb-4">
@@ -48,6 +48,24 @@ export default function Dashboard() {
             <CardContent className="text-center">
               <div className="text-sm text-muted-foreground">
                 Busque, filtre e gerencie suas fichas salvas
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Gestão de Usuários Module */}
+          <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-accent/30" onClick={() => navigate('/admin/usuarios')}>
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-accent to-accent/80 rounded-full w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Users className="h-8 w-8 text-accent-foreground" />
+              </div>
+              <CardTitle className="text-2xl text-accent-foreground">Gestão de Usuários</CardTitle>
+              <p className="text-muted-foreground">
+                Gerenciar usuários do sistema
+              </p>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="text-sm text-muted-foreground">
+                Adicionar, editar e gerenciar usuários
               </div>
             </CardContent>
           </Card>
