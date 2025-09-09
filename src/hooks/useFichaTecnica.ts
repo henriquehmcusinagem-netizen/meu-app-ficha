@@ -94,26 +94,34 @@ export function useFichaTecnica() {
   const [isSaved, setIsSaved] = useState(false);
   const [isModified, setIsModified] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize FTC number and date
+  // Initialize FTC number and date only if not loading a ficha
   useEffect(() => {
-    setNumeroFTC(generateFTCNumber());
-    setDataAtual(getCurrentDate());
+    console.log('useFichaTecnica - Inicializando hook, isInitialized:', isInitialized, 'fichaId:', fichaId);
     
-    // Add initial materials
-    const initialMaterials: Material[] = Array.from({ length: 1 }, (_, index) => ({
-      id: Date.now() + index,
-      descricao: '',
-      quantidade: '',
-      unidade: '',
-      valor_unitario: '',
-      fornecedor: '',
-      cliente_interno: '',
-      valor_total: '0',
-    }));
-    
-    setMateriais(initialMaterials);
-  }, []);
+    if (!isInitialized && !fichaId) {
+      console.log('useFichaTecnica - Criando nova ficha');
+      setNumeroFTC(generateFTCNumber());
+      setDataAtual(getCurrentDate());
+      
+      // Add initial materials
+      const initialMaterials: Material[] = Array.from({ length: 1 }, (_, index) => ({
+        id: Date.now() + index,
+        descricao: '',
+        quantidade: '',
+        unidade: '',
+        valor_unitario: '',
+        fornecedor: '',
+        cliente_interno: '',
+        valor_total: '0',
+      }));
+      
+      setMateriais(initialMaterials);
+      setIsInitialized(true);
+    }
+  }, [isInitialized, fichaId]);
 
   const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
@@ -207,24 +215,48 @@ export function useFichaTecnica() {
 
   // Load ficha function
   const carregarFichaTecnica = useCallback(async (id: string) => {
-    const ficha = await carregarFicha(id);
+    console.log('useFichaTecnica - Carregando ficha:', id);
+    setIsLoading(true);
     
-    if (ficha) {
-      setFichaId(ficha.id);
-      setFormData(ficha.formData);
-      setMateriais(ficha.materiais);
-      setNumeroFTC(ficha.numeroFTC);
+    try {
+      const ficha = await carregarFicha(id);
       
-      // Clear fotos since they don't persist
-      setFotos([]);
-      
-      setIsSaved(true);
-      setIsModified(false);
+      if (ficha) {
+        console.log('useFichaTecnica - Ficha carregada com sucesso:', ficha);
+        
+        // Set the loaded data
+        setFichaId(ficha.id);
+        setFormData(ficha.formData);
+        setMateriais(ficha.materiais);
+        setNumeroFTC(ficha.numeroFTC);
+        setDataAtual(getCurrentDate()); // Keep current date for editing
+        
+        // Clear fotos since they don't persist
+        setFotos([]);
+        
+        setIsSaved(true);
+        setIsModified(false);
+        setIsInitialized(true);
+        
+        console.log('useFichaTecnica - Estado após carregamento:', {
+          fichaId: ficha.id,
+          numeroFTC: ficha.numeroFTC,
+          cliente: ficha.formData.cliente,
+          materiaisCount: ficha.materiais.length
+        });
+      } else {
+        console.error('useFichaTecnica - Ficha não encontrada');
+      }
+    } catch (error) {
+      console.error('useFichaTecnica - Erro ao carregar ficha:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
   // Create new ficha function
   const criarNovaFicha = useCallback(() => {
+    console.log('useFichaTecnica - Criando nova ficha');
     setFichaId(null);
     setFormData(initialFormData);
     setMateriais([{
@@ -239,8 +271,10 @@ export function useFichaTecnica() {
     }]);
     setFotos([]);
     setNumeroFTC(generateFTCNumber());
+    setDataAtual(getCurrentDate());
     setIsSaved(false);
     setIsModified(false);
+    setIsInitialized(true);
   }, []);
 
   // Calculate totals
@@ -266,6 +300,7 @@ export function useFichaTecnica() {
     isSaved,
     isModified,
     isSaving,
+    isLoading,
     salvarFichaTecnica,
     carregarFichaTecnica,
     criarNovaFicha,
