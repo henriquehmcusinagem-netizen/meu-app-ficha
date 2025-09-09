@@ -12,6 +12,15 @@ export default function NovaFicha() {
   const { toast } = useToast();
   const { isLoading, fichaId } = useFichaTecnica();
 
+  // Debug location state
+  useEffect(() => {
+    console.log('🏠 NovaFicha - Component mounted');
+    console.log('🏠 NovaFicha - location:', location);
+    console.log('🏠 NovaFicha - location.state:', location.state);
+    console.log('🏠 NovaFicha - loadFichaId from state:', location.state?.loadFichaId);
+    console.log('🏠 NovaFicha - sessionStorage loadFichaId:', sessionStorage.getItem('loadFichaId'));
+  }, [location]);
+
   // Show toast for loading state
   useEffect(() => {
     const loadFichaId = location.state?.loadFichaId;
