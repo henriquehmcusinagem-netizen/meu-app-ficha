@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Mail, Download, Paperclip, Link } from "lucide-react";
+import { Download, Paperclip, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FichaSalva } from "@/types/ficha-tecnica";
 import { generatePDF, generatePDFBlob } from "@/utils/pdfGenerator";
@@ -70,46 +70,6 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
     }
   };
 
-  const sendEmail = () => {
-    const subject = `Ficha Técnica de Cotação - ${ficha.resumo.cliente} - FTC ${ficha.numeroFTC}`;
-    
-    // Import the HTML generator
-    import('@/utils/htmlGenerator').then(({ generateHTMLContent }) => {
-      const htmlContent = generateHTMLContent(ficha);
-      
-      const mailtoLink = `mailto:${ficha.formData.fone_email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(htmlContent)}`;
-      window.open(mailtoLink);
-      
-      toast({
-        title: "Email aberto",
-        description: "Cliente de email aberto com HTML completo da ficha técnica!",
-      });
-    }).catch(() => {
-      // Fallback to basic email if import fails
-      const valorTotal = ficha.calculos.materialTodasPecas;
-      const body = `Prezado(a),
-
-Segue informações da Ficha Técnica de Cotação:
-
-FTC: ${ficha.numeroFTC}
-Cliente: ${ficha.resumo.cliente}
-Solicitante: ${ficha.formData.solicitante || 'Não informado'}
-Serviço: ${ficha.resumo.servico}
-Valor Total Material: R$ ${valorTotal.toFixed(2)}
-Horas Totais: ${ficha.calculos.horasTodasPecas.toFixed(1)}h
-
-Atenciosamente,
-Equipe HMC`;
-      
-      const mailtoLink = `mailto:${ficha.formData.fone_email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.open(mailtoLink);
-      
-      toast({
-        title: "Email aberto",
-        description: "Cliente de email aberto com os dados da ficha.",
-      });
-    });
-  };
 
   const sendEmailWithPDF = async () => {
     const email = prompt('Digite o email de destino:');
@@ -188,14 +148,6 @@ Equipe HMC`;
         PDF
       </Button>
 
-      <Button 
-        onClick={(e) => { e.stopPropagation(); sendEmail(); }} 
-        size="sm" 
-        className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
-      >
-        <Mail className="h-3 w-3" />
-        Email
-      </Button>
 
       <Button 
         onClick={(e) => { e.stopPropagation(); sendEmailWithPDF(); }} 

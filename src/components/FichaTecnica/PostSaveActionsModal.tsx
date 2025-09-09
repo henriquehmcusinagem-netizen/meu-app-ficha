@@ -117,35 +117,6 @@ export function PostSaveActionsModal({
     onOpenChange(false);
   };
 
-  const sendEmail = () => {
-    const tempFicha = createTempFicha();
-    const subject = `Ficha Técnica de Cotação - ${formData.cliente}`;
-    
-    import('@/utils/htmlGenerator').then(({ generateHTMLContent }) => {
-      const htmlContent = generateHTMLContent(tempFicha);
-      const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(htmlContent)}`;
-      window.open(mailtoLink);
-      
-      toast({
-        title: "E-mail Aberto",
-        description: "Cliente de e-mail aberto com HTML completo da ficha técnica!",
-      });
-    }).catch(() => {
-      const calculos = calculateTotals(materiais, formData);
-      const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
-      
-      const basicBody = `FICHA TÉCNICA DE COTAÇÃO - FTC: ${tempFTCNumber}\nCliente: ${formData.cliente}\nMaterial Total: ${formatCurrency(calculos.materialTodasPecas)}`;
-      const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(basicBody)}`;
-      window.open(mailtoLink);
-      
-      toast({
-        title: "E-mail Aberto", 
-        description: "Cliente de e-mail aberto!",
-      });
-    });
-    
-    onOpenChange(false);
-  };
 
   const sendEmailWithPDF = async () => {
     const email = prompt('Digite o email de destino:');
@@ -253,10 +224,6 @@ export function PostSaveActionsModal({
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Compartilhar</h4>
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={sendEmail} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800">
-                <Mail className="h-4 w-4" />
-                E-mail
-              </Button>
               <Button onClick={sendEmailWithPDF} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800">
                 <Paperclip className="h-4 w-4" />
                 E-mail + PDF
