@@ -96,27 +96,28 @@ export function PostSaveActionsModal({
 
   const sendEmail = () => {
     const tempFicha = createTempFicha();
+    const subject = `Ficha Técnica de Cotação - ${formData.cliente}`;
     
-    import('@/utils/htmlViewer').then(({ openHTMLInNewTab }) => {
-      const success = openHTMLInNewTab(tempFicha);
+    import('@/utils/htmlGenerator').then(({ generateHTMLContent }) => {
+      const htmlContent = generateHTMLContent(tempFicha);
+      const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(htmlContent)}`;
+      window.open(mailtoLink);
       
-      if (success) {
-        toast({
-          title: "HTML Aberto",
-          description: "Nova aba aberta com a ficha técnica formatada para visualização e compartilhamento!",
-        });
-      } else {
-        toast({
-          title: "Erro",
-          description: "Não foi possível abrir a nova aba. Verifique se popups estão permitidos.",
-          variant: "destructive"
-        });
-      }
-    }).catch(() => {
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar o visualizador HTML.",
-        variant: "destructive"
+        title: "E-mail Aberto",
+        description: "Cliente de e-mail aberto com HTML completo da ficha técnica!",
+      });
+    }).catch(() => {
+      const calculos = calculateTotals(materiais, formData);
+      const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
+      
+      const basicBody = `FICHA TÉCNICA DE COTAÇÃO - FTC: ${tempFTCNumber}\nCliente: ${formData.cliente}\nMaterial Total: ${formatCurrency(calculos.materialTodasPecas)}`;
+      const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(basicBody)}`;
+      window.open(mailtoLink);
+      
+      toast({
+        title: "E-mail Aberto", 
+        description: "Cliente de e-mail aberto!",
       });
     });
     

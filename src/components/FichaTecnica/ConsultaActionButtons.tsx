@@ -50,26 +50,42 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
   };
 
   const sendEmail = () => {
-    import('@/utils/htmlViewer').then(({ openHTMLInNewTab }) => {
-      const success = openHTMLInNewTab(ficha);
+    const subject = `Ficha Técnica de Cotação - ${ficha.resumo.cliente} - FTC ${ficha.numeroFTC}`;
+    
+    // Import the HTML generator
+    import('@/utils/htmlGenerator').then(({ generateHTMLContent }) => {
+      const htmlContent = generateHTMLContent(ficha);
       
-      if (success) {
-        toast({
-          title: "HTML Aberto",
-          description: "Nova aba aberta com a ficha técnica formatada para visualização e compartilhamento!",
-        });
-      } else {
-        toast({
-          title: "Erro",
-          description: "Não foi possível abrir a nova aba. Verifique se popups estão permitidos.",
-          variant: "destructive"
-        });
-      }
-    }).catch(() => {
+      const mailtoLink = `mailto:${ficha.formData.fone_email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(htmlContent)}`;
+      window.open(mailtoLink);
+      
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar o visualizador HTML.",
-        variant: "destructive"
+        title: "Email aberto",
+        description: "Cliente de email aberto com HTML completo da ficha técnica!",
+      });
+    }).catch(() => {
+      // Fallback to basic email if import fails
+      const valorTotal = ficha.calculos.materialTodasPecas;
+      const body = `Prezado(a),
+
+Segue informações da Ficha Técnica de Cotação:
+
+FTC: ${ficha.numeroFTC}
+Cliente: ${ficha.resumo.cliente}
+Solicitante: ${ficha.formData.solicitante || 'Não informado'}
+Serviço: ${ficha.resumo.servico}
+Valor Total Material: R$ ${valorTotal.toFixed(2)}
+Horas Totais: ${ficha.calculos.horasTodasPecas.toFixed(1)}h
+
+Atenciosamente,
+Equipe HMC`;
+      
+      const mailtoLink = `mailto:${ficha.formData.fone_email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.open(mailtoLink);
+      
+      toast({
+        title: "Email aberto",
+        description: "Cliente de email aberto com os dados da ficha.",
       });
     });
   };
