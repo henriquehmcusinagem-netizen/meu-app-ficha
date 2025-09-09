@@ -250,8 +250,8 @@ export function useFichaTecnica() {
         setNumeroFTC(ficha.numeroFTC);
         setDataAtual(getCurrentDate()); // Keep current date for editing
         
-        // Clear fotos since they don't persist
-        setFotos([]);
+        // Load real fotos with Storage URLs
+        setFotos(ficha.fotos);
         
         setIsSaved(true);
         setIsModified(false);

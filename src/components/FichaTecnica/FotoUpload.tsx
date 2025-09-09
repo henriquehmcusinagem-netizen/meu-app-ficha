@@ -59,7 +59,7 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
       const reader = new FileReader();
       reader.onload = (e) => {
         const foto: Foto = {
-          id: Date.now() + Math.random(),
+          id: Date.now() + Math.random() * 10000, // Ensure unique ID
           file,
           preview: e.target?.result as string,
           name: file.name,
