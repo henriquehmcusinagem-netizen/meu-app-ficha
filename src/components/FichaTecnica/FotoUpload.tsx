@@ -1,8 +1,9 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, X, Upload } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Camera, X, Upload, ZoomIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Foto } from "@/types/ficha-tecnica";
 import { formatFileSize } from "@/utils/helpers";
@@ -16,6 +17,7 @@ interface FotoUploadProps {
 export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [selectedFoto, setSelectedFoto] = useState<Foto | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -111,12 +113,37 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {fotos.map((foto) => (
               <div key={foto.id} className="relative group">
-                <div className="aspect-square rounded-lg overflow-hidden border bg-muted">
+                <div className="aspect-square rounded-lg overflow-hidden border bg-muted cursor-pointer">
                   <img
                     src={foto.preview}
                     alt={foto.name}
                     className="w-full h-full object-cover"
                   />
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setSelectedFoto(foto)}
+                      >
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[90vh] p-2">
+                      <div className="flex flex-col items-center">
+                        <img
+                          src={foto.preview}
+                          alt={foto.name}
+                          className="max-w-full max-h-[80vh] object-contain"
+                        />
+                        <div className="mt-4 text-center">
+                          <p className="font-medium">{foto.name}</p>
+                          <p className="text-sm text-muted-foreground">{formatFileSize(foto.size)}</p>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
                 <Button
                   variant="destructive"

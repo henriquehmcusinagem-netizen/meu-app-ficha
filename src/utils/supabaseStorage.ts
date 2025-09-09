@@ -188,14 +188,28 @@ export async function salvarFicha(
   fichaId?: string
 ): Promise<{ success: boolean; id?: string; error?: string; numeroFTC?: string }> {
   try {
+    console.log('🔄 Iniciando salvamento da ficha...');
+    console.log('📋 Dados recebidos:', { 
+      cliente: formData.cliente, 
+      materiais: materiais.length, 
+      fotos: fotos.length,
+      fichaId 
+    });
     // Generate FTC number if this is a new ficha (no fichaId) or if it's a draft
     let finalNumeroFTC = numeroFTC;
     if (!fichaId || numeroFTC.startsWith('DRAFT')) {
+      console.log('🔢 Gerando novo número FTC...');
       const { data, error } = await supabase
         .rpc('get_next_ftc_number');
         
-      if (!error && data) {
+      if (error) {
+        console.error('❌ Erro ao gerar número FTC:', error);
+        return { success: false, error: 'Erro ao gerar número FTC.' };
+      }
+      
+      if (data) {
         finalNumeroFTC = data;
+        console.log('✅ Número FTC gerado:', finalNumeroFTC);
       }
     }
 
@@ -243,6 +257,7 @@ export async function salvarFicha(
 
     if (fichaId) {
       // Update existing ficha
+      console.log('🔄 Atualizando ficha existente:', fichaId);
       const { data, error } = await supabase
         .from('fichas_tecnicas')
         .update(dbData)
@@ -251,13 +266,15 @@ export async function salvarFicha(
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar ficha:', error);
-        return { success: false, error: 'Erro ao atualizar ficha.' };
+        console.error('❌ Erro ao atualizar ficha:', error);
+        return { success: false, error: `Erro ao atualizar ficha: ${error.message}` };
       }
 
+      console.log('✅ Ficha atualizada com sucesso');
       savedFichaId = fichaId;
     } else {
       // Create new ficha
+      console.log('✨ Criando nova ficha...');
       const { data, error } = await supabase
         .from('fichas_tecnicas')
         .insert(dbData)
@@ -265,14 +282,17 @@ export async function salvarFicha(
         .single();
 
       if (error) {
-        console.error('Erro ao criar ficha:', error);
-        return { success: false, error: 'Erro ao criar ficha.' };
+        console.error('❌ Erro ao criar ficha:', error);
+        console.error('📋 Dados enviados:', dbData);
+        return { success: false, error: `Erro ao criar ficha: ${error.message}` };
       }
 
+      console.log('✅ Ficha criada com sucesso:', data.id);
       savedFichaId = data.id;
     }
 
     // Delete existing materials and fotos for this ficha
+    console.log('🗑️ Removendo materiais e fotos existentes...');
     await Promise.all([
       supabase.from('materiais').delete().eq('ficha_id', savedFichaId),
       supabase.from('fotos').delete().eq('ficha_id', savedFichaId)
@@ -280,6 +300,7 @@ export async function salvarFicha(
 
     // Insert materials
     if (materiais.length > 0) {
+      console.log(`📦 Inserindo ${materiais.length} materiais...`);
       const materiaisData = materiais.map((material, index) => ({
         ficha_id: savedFichaId,
         ordem: index + 1,
@@ -297,12 +318,15 @@ export async function salvarFicha(
         .insert(materiaisData);
 
       if (materiaisError) {
-        console.error('Erro ao salvar materiais:', materiaisError);
+        console.error('❌ Erro ao salvar materiais:', materiaisError);
+      } else {
+        console.log('✅ Materiais salvos com sucesso');
       }
     }
 
     // Insert fotos metadata
     if (fotos.length > 0) {
+      console.log(`📸 Inserindo ${fotos.length} fotos...`);
       const fotosData = fotos.map(foto => ({
         ficha_id: savedFichaId,
         name: foto.name,
@@ -315,14 +339,17 @@ export async function salvarFicha(
         .insert(fotosData);
 
       if (fotosError) {
-        console.error('Erro ao salvar fotos:', fotosError);
+        console.error('❌ Erro ao salvar fotos:', fotosError);
+      } else {
+        console.log('✅ Fotos salvas com sucesso');
       }
     }
 
+    console.log('🎉 Ficha salva com sucesso!', { id: savedFichaId, numeroFTC: finalNumeroFTC });
     return { success: true, id: savedFichaId, numeroFTC: finalNumeroFTC };
   } catch (error) {
-    console.error('Erro ao salvar ficha:', error);
-    return { success: false, error: 'Erro ao salvar ficha.' };
+    console.error('💥 Erro crítico ao salvar ficha:', error);
+    return { success: false, error: `Erro ao salvar ficha: ${error instanceof Error ? error.message : 'Erro desconhecido'}` };
   }
 }
 
