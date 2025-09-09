@@ -113,11 +113,17 @@ export function useFichaTecnica() {
   // Initialize FTC number and date for new fichas
   useEffect(() => {
     const loadFichaId = location.state?.loadFichaId;
-    console.log('useFichaTecnica - Inicializando hook, isInitialized:', isInitialized, 'fichaId:', fichaId, 'loadFichaId:', loadFichaId);
+    console.log('🔄 useEffect inicialização - Estado atual:', {
+      isInitialized,
+      fichaId,
+      loadFichaId,
+      isLoading,
+      locationState: location.state
+    });
     
     // Only initialize new ficha if not already initialized, no ficha loaded, and no ficha to load
     if (!isInitialized && !fichaId && !loadFichaId && !isLoading) {
-      console.log('useFichaTecnica - Criando nova ficha');
+      console.log('✨ useFichaTecnica - Criando nova ficha');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
       
@@ -135,6 +141,13 @@ export function useFichaTecnica() {
       
       setMateriais(initialMaterials);
       setIsInitialized(true);
+    } else {
+      console.log('⏸️ Não criou nova ficha - Condições:', {
+        isInitialized: !isInitialized,
+        noFichaId: !fichaId,
+        noLoadFichaId: !loadFichaId,
+        notLoading: !isLoading
+      });
     }
   }, [isInitialized, fichaId, isLoading]);
 
@@ -238,14 +251,21 @@ export function useFichaTecnica() {
 
   // Load ficha function
   const carregarFichaTecnica = useCallback(async (id: string) => {
-    console.log('useFichaTecnica - Carregando ficha:', id);
+    console.log('🚀 useFichaTecnica - Iniciando carregamento da ficha:', id);
     setIsLoading(true);
     
     try {
+      console.log('📡 Fazendo chamada para carregarFicha...');
       const ficha = await carregarFicha(id);
       
       if (ficha) {
-        console.log('useFichaTecnica - Ficha carregada com sucesso:', ficha);
+        console.log('✅ useFichaTecnica - Ficha carregada com sucesso:', {
+          id: ficha.id,
+          numeroFTC: ficha.numeroFTC,
+          cliente: ficha.formData.cliente,
+          materiaisCount: ficha.materiais.length,
+          fotosCount: ficha.fotos.length
+        });
         
         // Set the loaded data
         setFichaId(ficha.id);
@@ -261,18 +281,21 @@ export function useFichaTecnica() {
         setIsModified(false);
         setIsInitialized(true);
         
-        console.log('useFichaTecnica - Estado após carregamento:', {
+        console.log('📋 useFichaTecnica - Estado após carregamento:', {
           fichaId: ficha.id,
           numeroFTC: ficha.numeroFTC,
           cliente: ficha.formData.cliente,
-          materiaisCount: ficha.materiais.length
+          materiaisCount: ficha.materiais.length,
+          isInitialized: true,
+          isSaved: true
         });
       } else {
-        console.error('useFichaTecnica - Ficha não encontrada');
+        console.error('❌ useFichaTecnica - Ficha não encontrada para ID:', id);
       }
     } catch (error) {
-      console.error('useFichaTecnica - Erro ao carregar ficha:', error);
+      console.error('💥 useFichaTecnica - Erro ao carregar ficha:', error);
     } finally {
+      console.log('🏁 useFichaTecnica - Finalizando carregamento');
       setIsLoading(false);
     }
   }, []);
@@ -306,10 +329,17 @@ export function useFichaTecnica() {
   // Load ficha from location state if needed
   useEffect(() => {
     const loadFichaId = location.state?.loadFichaId;
+    console.log('🔍 useEffect carregamento - loadFichaId:', loadFichaId, 'isInitialized:', isInitialized, 'fichaId:', fichaId);
     
     if (loadFichaId && !isInitialized && !fichaId) {
-      console.log('useFichaTecnica - Carregando ficha do location state:', loadFichaId);
+      console.log('✅ useFichaTecnica - Carregando ficha do location state:', loadFichaId);
       carregarFichaTecnica(loadFichaId);
+    } else {
+      console.log('❌ Não carregou ficha - Motivos:', {
+        hasLoadFichaId: !!loadFichaId,
+        isNotInitialized: !isInitialized,
+        hasFichaId: !!fichaId
+      });
     }
   }, [location.state?.loadFichaId, isInitialized, fichaId, carregarFichaTecnica]);
 
