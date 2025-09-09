@@ -85,7 +85,7 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.text(title, margin + 3, yPosition + 5.5);
     
-    yPosition += height + 2;
+    yPosition += height + 5;
     
     // Reset cores
     doc.setTextColor(textColor[0], textColor[1], textColor[2]);
@@ -131,17 +131,41 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
   const drawClientData = () => {
     drawSection('DADOS DO CLIENTE');
     
-    const fields = [
-      { label: 'Cliente', value: ficha.formData.cliente, width: contentWidth * 0.5 },
-      { label: 'Solicitante', value: ficha.formData.solicitante, width: contentWidth * 0.5 },
-      { label: 'Contato', value: ficha.formData.fone_email, width: contentWidth * 0.33 },
-      { label: 'Data Visita', value: ficha.formData.data_visita, width: contentWidth * 0.33 },
-      { label: 'Data Entrega', value: ficha.formData.data_entrega, width: contentWidth * 0.34, highlight: true }
+    // Primeira linha: Cliente e Solicitante
+    const firstRow = [
+      { label: 'Cliente', value: ficha.formData.cliente, width: contentWidth * 0.48 },
+      { label: 'Solicitante', value: ficha.formData.solicitante, width: contentWidth * 0.48 }
     ];
     
     let xPos = margin;
+    firstRow.forEach((field) => {
+      // Label
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+      doc.text(`${field.label}:`, xPos, yPosition);
+      
+      // Value
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      const text = doc.splitTextToSize(formatField(field.value), field.width - 5);
+      doc.text(text, xPos, yPosition + 4);
+      
+      xPos += field.width + 8;
+    });
     
-    fields.forEach((field, index) => {
+    yPosition += 12;
+    
+    // Segunda linha: Contato, Data Visita e Data Entrega
+    const secondRow = [
+      { label: 'Contato', value: ficha.formData.fone_email, width: contentWidth * 0.4 },
+      { label: 'Data Visita', value: ficha.formData.data_visita, width: contentWidth * 0.25 },
+      { label: 'Data Entrega', value: ficha.formData.data_entrega, width: contentWidth * 0.25, highlight: true }
+    ];
+    
+    xPos = margin;
+    secondRow.forEach((field) => {
       // Label
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
@@ -158,16 +182,10 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
       }
       doc.text(formatField(field.value), xPos, yPosition + 4);
       
-      xPos += field.width;
-      
-      // Nova linha após 2 campos
-      if (index === 1) {
-        yPosition += 10;
-        xPos = margin;
-      }
+      xPos += field.width + 10;
     });
     
-    yPosition += 12;
+    yPosition += 15;
   };
 
   // DADOS DA PEÇA/EQUIPAMENTO
@@ -252,13 +270,13 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
               cellPadding: 2
             },
             columnStyles: {
-              0: { cellWidth: 50 },
+              0: { cellWidth: 42 },
               1: { cellWidth: 15, halign: 'center' },
               2: { cellWidth: 12, halign: 'center' },
-              3: { cellWidth: 35 },
-              4: { cellWidth: 30 },
-              5: { cellWidth: 25, halign: 'right' },
-              6: { cellWidth: 25, halign: 'right', fontStyle: 'bold' }
+              3: { cellWidth: 30 },
+              4: { cellWidth: 25 },
+              5: { cellWidth: 28, halign: 'right' },
+              6: { cellWidth: 28, halign: 'right', fontStyle: 'bold' }
             },
             margin: { left: margin, right: margin }
           });
@@ -276,7 +294,7 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
       function drawMaterialsManually() {
         const rowHeight = 6;
         const headerHeight = 8;
-        const colWidths = [50, 15, 12, 35, 30, 25, 25];
+        const colWidths = [42, 15, 12, 30, 25, 28, 28];
         const headers = ['Descrição', 'Qtd', 'Un', 'Fornecedor', 'Cliente Int.', 'Valor Unit.', 'Valor Total'];
         let currentY = yPosition;
         
@@ -352,29 +370,30 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
       { label: 'Finalizado', value: formatRadioValue(ficha.formData.desenho_finalizado) }
     ];
     
-    const colWidth = contentWidth / 4;
+    const colWidth = contentWidth / 3;
     let xPos = margin;
     let row = 0;
     
     details.forEach((detail, index) => {
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
-      doc.text(`${detail.label}:`, xPos, yPosition + row * 8);
+      doc.text(`${detail.label}:`, xPos, yPosition + row * 10);
       
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-      doc.text(detail.value, xPos, yPosition + row * 8 + 3.5);
+      const text = doc.splitTextToSize(detail.value, colWidth - 5);
+      doc.text(text, xPos, yPosition + row * 10 + 4);
       
       xPos += colWidth;
-      if ((index + 1) % 4 === 0) {
+      if ((index + 1) % 3 === 0) {
         row++;
         xPos = margin;
       }
     });
     
-    yPosition += (Math.ceil(details.length / 4) * 8) + 5;
+    yPosition += (Math.ceil(details.length / 3) * 10) + 8;
   };
 
   // TRANSPORTE
@@ -382,8 +401,8 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
     drawSection('TRANSPORTE', 7);
     
     const transportOptions = [
-      { label: 'Caminhão HMC', value: ficha.formData.transporte_caminhao_hmc },
-      { label: 'Pickup HMC', value: ficha.formData.transporte_pickup_hmc },
+      { label: 'Caminhão', value: ficha.formData.transporte_caminhao_hmc },
+      { label: 'Pickup', value: ficha.formData.transporte_pickup_hmc },
       { label: 'Cliente', value: ficha.formData.transporte_cliente }
     ];
     
@@ -404,10 +423,10 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
       }
       
       doc.text(`${checkmark} ${option.label}`, xPos, yPosition);
-      xPos += colWidth;
+      xPos += colWidth - 5;
     });
     
-    yPosition += 8;
+    yPosition += 10;
     doc.setTextColor(textColor[0], textColor[1], textColor[2]);
   };
 
@@ -443,12 +462,12 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
-        doc.text(`${hora.label}:`, xPos, yPosition + row * 6);
+        doc.text(`${hora.label}:`, xPos, yPosition + row * 8);
         
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        doc.text(`${hora.value}h`, xPos + 25, yPosition + row * 6);
+        doc.text(`${hora.value}h`, xPos + 28, yPosition + row * 8);
         
         xPos += colWidth;
         if ((index + 1) % 4 === 0) {
@@ -457,7 +476,7 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
         }
       });
       
-      yPosition += (Math.ceil(horasServicos.length / 4) * 6) + 5;
+      yPosition += (Math.ceil(horasServicos.length / 4) * 8) + 8;
     }
   };
 
