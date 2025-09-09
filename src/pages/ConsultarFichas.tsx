@@ -115,6 +115,9 @@ export default function ConsultarFichas() {
   };
 
   const handleLoadFicha = (id: string) => {
+    console.log('🔗 ConsultarFichas - Navegando para editar ficha:', id);
+    // Store in sessionStorage as backup
+    sessionStorage.setItem('loadFichaId', id);
     navigate('/nova-ficha', { state: { loadFichaId: id } });
   };
 

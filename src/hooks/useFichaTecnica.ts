@@ -328,20 +328,26 @@ export function useFichaTecnica() {
 
   // Load ficha from location state if needed
   useEffect(() => {
-    const loadFichaId = location.state?.loadFichaId;
+    const loadFichaId = location.state?.loadFichaId || sessionStorage.getItem('loadFichaId');
     console.log('🔍 useEffect carregamento - loadFichaId:', loadFichaId, 'isInitialized:', isInitialized, 'fichaId:', fichaId);
+    console.log('📍 Fontes do loadFichaId:', {
+      fromLocationState: location.state?.loadFichaId,
+      fromSessionStorage: sessionStorage.getItem('loadFichaId'),
+      final: loadFichaId
+    });
     
-    if (loadFichaId && !isInitialized && !fichaId) {
-      console.log('✅ useFichaTecnica - Carregando ficha do location state:', loadFichaId);
+    if (loadFichaId && !fichaId) {
+      console.log('✅ useFichaTecnica - Carregando ficha:', loadFichaId);
+      // Clear sessionStorage after using it
+      sessionStorage.removeItem('loadFichaId');
       carregarFichaTecnica(loadFichaId);
     } else {
       console.log('❌ Não carregou ficha - Motivos:', {
         hasLoadFichaId: !!loadFichaId,
-        isNotInitialized: !isInitialized,
         hasFichaId: !!fichaId
       });
     }
-  }, [location.state?.loadFichaId, isInitialized, fichaId, carregarFichaTecnica]);
+  }, [location.state?.loadFichaId, fichaId, carregarFichaTecnica]);
 
   return {
     // Original data
