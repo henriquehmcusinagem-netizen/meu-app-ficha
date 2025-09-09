@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { FileText, Printer, Mail, MessageCircle, Download, Paperclip, Link } from "lucide-react";
+import { Printer, Mail, MessageCircle, Download, Paperclip, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FichaSalva } from "@/types/ficha-tecnica";
-import { exportToHTML } from "@/utils/htmlExporter";
 import { generatePDF, generatePDFBlob } from "@/utils/pdfGenerator";
 import { ConsultaPrintLayout } from "./ConsultaPrintLayout";
 import { createRoot } from "react-dom/client";
@@ -16,21 +15,6 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
   const { toast } = useToast();
 
 
-  const exportToHTMLFile = () => {
-    try {
-      exportToHTML(ficha);
-      toast({
-        title: "HTML Exportado",
-        description: `Arquivo HTML da FTC ${ficha.numeroFTC} baixado com sucesso.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao exportar HTML",
-        description: "Não foi possível exportar o HTML. Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const exportToPDFFile = () => {
     try {
@@ -239,15 +223,6 @@ Equipe HMC`;
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Button
-        onClick={(e) => { e.stopPropagation(); exportToHTMLFile(); }} 
-        variant="outline" 
-        size="sm"
-      >
-        <FileText className="h-3 w-3" />
-        HTML
-      </Button>
-
       <Button
         onClick={(e) => { e.stopPropagation(); exportToPDFFile(); }} 
         variant="outline" 
