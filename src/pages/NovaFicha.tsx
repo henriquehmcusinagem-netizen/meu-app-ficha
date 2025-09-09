@@ -10,7 +10,7 @@ export default function NovaFicha() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { carregarFichaTecnica, isLoading, fichaId } = useFichaTecnica();
+  const { carregarFichaTecnica, isLoading, fichaId, preventAutoInitialization } = useFichaTecnica();
 
   // Load ficha if coming from consultation page
   useEffect(() => {
@@ -18,7 +18,11 @@ export default function NovaFicha() {
     console.log('NovaFicha - useEffect executado, loadFichaId:', loadFichaId);
     
     if (loadFichaId) {
-      console.log('NovaFicha - Carregando ficha:', loadFichaId);
+      console.log('NovaFicha - Prevenindo inicialização e carregando ficha:', loadFichaId);
+      
+      // Prevent the hook from auto-initializing
+      preventAutoInitialization();
+      
       toast({
         title: "Carregando ficha...",
         description: "Aguarde enquanto a ficha é carregada.",
@@ -38,7 +42,7 @@ export default function NovaFicha() {
         });
       });
     }
-  }, [location.state?.loadFichaId, carregarFichaTecnica, toast]);
+  }, [location.state?.loadFichaId, carregarFichaTecnica, preventAutoInitialization, toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">

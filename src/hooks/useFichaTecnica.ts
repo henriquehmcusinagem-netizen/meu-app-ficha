@@ -96,12 +96,13 @@ export function useFichaTecnica() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [preventAutoInit, setPreventAutoInit] = useState(false);
 
   // Initialize FTC number and date only if not loading a ficha
   useEffect(() => {
-    console.log('useFichaTecnica - Inicializando hook, isInitialized:', isInitialized, 'fichaId:', fichaId);
+    console.log('useFichaTecnica - Inicializando hook, isInitialized:', isInitialized, 'fichaId:', fichaId, 'preventAutoInit:', preventAutoInit);
     
-    if (!isInitialized && !fichaId) {
+    if (!isInitialized && !fichaId && !preventAutoInit && !isLoading) {
       console.log('useFichaTecnica - Criando nova ficha');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
@@ -121,7 +122,7 @@ export function useFichaTecnica() {
       setMateriais(initialMaterials);
       setIsInitialized(true);
     }
-  }, [isInitialized, fichaId]);
+  }, [isInitialized, fichaId, preventAutoInit, isLoading]);
 
   const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
@@ -217,6 +218,12 @@ export function useFichaTecnica() {
     }
   }, [formData, materiais, fotos, numeroFTC, fichaId]);
 
+  // Prevent auto initialization (called before loading)
+  const preventAutoInitialization = useCallback(() => {
+    console.log('useFichaTecnica - Prevenindo inicialização automática');
+    setPreventAutoInit(true);
+  }, []);
+
   // Load ficha function
   const carregarFichaTecnica = useCallback(async (id: string) => {
     console.log('useFichaTecnica - Carregando ficha:', id);
@@ -241,6 +248,7 @@ export function useFichaTecnica() {
         setIsSaved(true);
         setIsModified(false);
         setIsInitialized(true);
+        setPreventAutoInit(false); // Reset after successful load
         
         console.log('useFichaTecnica - Estado após carregamento:', {
           fichaId: ficha.id,
@@ -250,9 +258,13 @@ export function useFichaTecnica() {
         });
       } else {
         console.error('useFichaTecnica - Ficha não encontrada');
+        // If loading fails, allow normal initialization
+        setPreventAutoInit(false);
       }
     } catch (error) {
       console.error('useFichaTecnica - Erro ao carregar ficha:', error);
+      // If loading fails, allow normal initialization
+      setPreventAutoInit(false);
     } finally {
       setIsLoading(false);
     }
@@ -279,6 +291,7 @@ export function useFichaTecnica() {
     setIsSaved(false);
     setIsModified(false);
     setIsInitialized(true);
+    setPreventAutoInit(false); // Allow normal initialization for new fichas
   }, []);
 
   // Calculate totals
@@ -308,5 +321,6 @@ export function useFichaTecnica() {
     salvarFichaTecnica,
     carregarFichaTecnica,
     criarNovaFicha,
+    preventAutoInitialization,
   };
 }
