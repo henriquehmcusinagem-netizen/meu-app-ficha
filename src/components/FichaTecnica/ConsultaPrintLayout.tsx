@@ -176,7 +176,7 @@ export function ConsultaPrintLayout({ ficha }: ConsultaPrintLayoutProps) {
       {/* Service Hours */}
       <div className="print-section">
         <div className="print-title">HORAS DE SERVIÇO</div>
-        <div className="print-grid print-grid-6">
+        <div className="print-grid print-grid-8">
           {[
             { label: "TORNO G", value: ficha.formData.torno_grande },
             { label: "TORNO P", value: ficha.formData.torno_pequeno },
@@ -196,6 +196,16 @@ export function ConsultaPrintLayout({ ficha }: ConsultaPrintLayoutProps) {
           ))}
         </div>
       </div>
+
+      {/* Additional Information */}
+      {ficha.formData.observacoes && (
+        <div className="print-additional-section">
+          <div className="print-additional-title">INFORMAÇÕES ADICIONAIS</div>
+          <div className="print-field">
+            <div className="print-value" style={{fontSize: '6px', lineHeight: '1.1'}}>{ficha.formData.observacoes}</div>
+          </div>
+        </div>
+      )}
 
       {/* Transport */}
       <div className="print-section">

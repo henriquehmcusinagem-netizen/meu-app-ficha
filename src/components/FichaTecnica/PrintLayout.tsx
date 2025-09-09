@@ -188,7 +188,7 @@ export function PrintLayout({
       {/* Service Hours */}
       <div className="print-section">
         <div className="print-title">HORAS DE SERVIÇO</div>
-        <div className="print-grid print-grid-6">
+        <div className="print-grid print-grid-8">
           {[
             { label: "TORNO G", value: formData.torno_grande },
             { label: "TORNO P", value: formData.torno_pequeno },
@@ -208,6 +208,16 @@ export function PrintLayout({
           ))}
         </div>
       </div>
+
+      {/* Additional Information */}
+      {formData.observacoes && (
+        <div className="print-additional-section">
+          <div className="print-additional-title">INFORMAÇÕES ADICIONAIS</div>
+          <div className="print-field">
+            <div className="print-value" style={{fontSize: '6px', lineHeight: '1.1'}}>{formData.observacoes}</div>
+          </div>
+        </div>
+      )}
 
       {/* Transport */}
       <div className="print-section">
