@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Trash2, FileText, Calendar, User, Search, Filter, Eye, Home, Download, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { carregarFichasSalvas, excluirFicha, FichaSalva } from '@/utils/supabaseStorage';
+import { FichaSalva } from '@/types/ficha-tecnica';
+import { carregarFichasSalvas, excluirFicha } from '@/utils/supabaseStorage';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/helpers';
 import { ConsultaActionButtons } from '@/components/FichaTecnica/ConsultaActionButtons';

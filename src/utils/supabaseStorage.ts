@@ -1,23 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { FormData, Material, Foto, Calculos } from '@/types/ficha-tecnica';
-
-export interface FichaSalva {
-  id: string;
-  numeroFTC: string;
-  dataCriacao: string;
-  dataUltimaEdicao: string;
-  status: 'rascunho' | 'finalizada';
-  formData: FormData;
-  materiais: Material[];
-  fotos: { id: number; name: string; size: number; type: string }[];
-  calculos: Calculos;
-  resumo: {
-    cliente: string;
-    servico: string;
-    quantidade: string;
-    valorTotal: number;
-  };
-}
+import { FormData, Material, Foto, Calculos, FichaSalva } from '@/types/ficha-tecnica';
 
 // Generate UUID
 function generateId(): string {
@@ -51,9 +33,9 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
     projeto_desenvolvido_por: row.origem_projeto || '',
     desenho_peca: '',
     desenho_finalizado: row.desenho_finalizado || '',
-    transporte_caminhao_hmc: false,
-    transporte_pickup_hmc: false,
-    transporte_cliente: true,
+    transporte_caminhao_hmc: row.transporte === 'CAMINHAO_HMC',
+    transporte_pickup_hmc: row.transporte === 'PICKUP_HMC', 
+    transporte_cliente: row.transporte === 'CLIENTE' || !row.transporte,
     
     // Tratamentos e Acabamentos
     pintura: row.pintura || '',
@@ -107,11 +89,23 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
     materialTodasPecas: row.total_material_todas_pecas || 0
   };
 
-  const fotosMetadata = fotos.map(foto => ({
-    id: parseInt(foto.id),
+  // Convert fotos from database format (use index as ID to match Foto interface)
+  const fotosMetadata: Omit<Foto, 'file' | 'preview'>[] = fotos.map((foto, index) => ({
+    id: index + 1, // Use index as numeric ID
     name: foto.name,
-    size: foto.size,
-    type: foto.type
+    size: foto.size
+  }));
+
+  // Convert materials from database format to Material interface
+  const materiaisConvertidos: Material[] = materiais.map((material, index) => ({
+    id: index + 1,
+    descricao: material.descricao || '',
+    quantidade: material.quantidade || '',
+    unidade: material.unidade || 'UN',
+    valor_unitario: material.valor_unitario?.toString() || '0',
+    fornecedor: material.fornecedor || '',
+    cliente_interno: material.cliente_interno || '',
+    valor_total: material.valor_total?.toString() || '0'
   }));
 
   return {
@@ -121,7 +115,7 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
     dataUltimaEdicao: row.data_ultima_edicao,
     status: row.status,
     formData,
-    materiais,
+    materiais: materiaisConvertidos,
     fotos: fotosMetadata,
     calculos,
     resumo: {
@@ -136,6 +130,8 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
 // Get all saved fichas
 export async function carregarFichasSalvas(): Promise<FichaSalva[]> {
   try {
+    console.log('Carregando fichas técnicas do Supabase...');
+    
     const { data: fichas, error: fichasError } = await supabase
       .from('fichas_tecnicas')
       .select('*')
@@ -146,7 +142,12 @@ export async function carregarFichasSalvas(): Promise<FichaSalva[]> {
       return [];
     }
 
-    if (!fichas) return [];
+    if (!fichas) {
+      console.log('Nenhuma ficha encontrada no banco');
+      return [];
+    }
+
+    console.log(`${fichas.length} fichas encontradas no banco`);
 
     // Load related data for each ficha
     const fichasCompletas = await Promise.all(

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { FileText, Printer, Mail, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { FichaSalva } from "@/utils/supabaseStorage";
+import { FichaSalva } from "@/types/ficha-tecnica";
 import { generatePDF } from "@/utils/pdfGenerator";
 import { exportToHTML } from "@/utils/htmlExporter";
 import { ConsultaPrintLayout } from "./ConsultaPrintLayout";

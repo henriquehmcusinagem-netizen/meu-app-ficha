@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, FileText, Calendar, User } from 'lucide-react';
-import { carregarFichasSalvas, excluirFicha, FichaSalva } from '@/utils/supabaseStorage';
+import { FichaSalva } from '@/types/ficha-tecnica';
+import { carregarFichasSalvas, excluirFicha } from '@/utils/supabaseStorage';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/helpers';
 
