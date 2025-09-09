@@ -335,7 +335,7 @@ export default function ConsultarFichas() {
                         <div className="pt-3 border-t space-y-3">
                           <div className="flex justify-between items-center">
                             <p className="text-xs text-muted-foreground">
-                              {ficha.materiais.length} material(is)
+                              {ficha.materiais.length} material(is) • {ficha.fotos.length} foto(s)
                             </p>
                             <span className="text-xs bg-muted px-2 py-1 rounded">
                               Criada: {formatDate(ficha.dataCriacao)}

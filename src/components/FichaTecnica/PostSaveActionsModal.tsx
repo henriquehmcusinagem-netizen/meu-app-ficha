@@ -3,113 +3,139 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { FormData, Material, FichaSalva } from "@/types/ficha-tecnica";
+import { FormData, Material, Foto } from "@/types/ficha-tecnica";
 import { exportToHTML } from "@/utils/htmlExporter";
-import { calculateTotals } from "@/utils/calculations";
-import { getCurrentDate } from "@/utils/helpers";
 
 interface PostSaveActionsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   formData: FormData;
   materiais: Material[];
+  fotos: Foto[];
 }
 
 export function PostSaveActionsModal({ 
   open, 
   onOpenChange, 
   formData, 
-  materiais 
+  materiais, 
+  fotos 
 }: PostSaveActionsModalProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
 
 
-  // Create temporary FichaSalva object for consistent exports
-  const createTempFicha = (): FichaSalva => {
-    const calculos = calculateTotals(materiais, formData);
-    return {
-      id: 'temp',
-      numeroFTC: 'temp-' + Date.now(),
-      dataCriacao: getCurrentDate(),
-      dataUltimaEdicao: getCurrentDate(),
-      status: 'rascunho',
-      formData,
-      materiais,
-      fotos: [],
-      calculos,
-      resumo: {
-        cliente: formData.cliente,
-        servico: formData.servico,
-        quantidade: formData.quantidade,
-        valorTotal: calculos.materialTodasPecas
-      }
-    };
-  };
-
   const exportToHTMLFile = () => {
     try {
-      const tempFicha = createTempFicha();
-      exportToHTML(tempFicha);
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Ficha Técnica - ${formData.cliente}</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .section h3 { border-bottom: 2px solid #333; padding-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>FICHA TÉCNICA DE COTAÇÃO</h1>
+            <p>Cliente: ${formData.cliente}</p>
+          </div>
+          
+          <div class="section">
+            <h3>DADOS DO CLIENTE</h3>
+            <p><strong>Cliente:</strong> ${formData.cliente}</p>
+            <p><strong>Solicitante:</strong> ${formData.solicitante}</p>
+            <p><strong>Contato:</strong> ${formData.fone_email}</p>
+          </div>
+
+          <div class="section">
+            <h3>DADOS DA PEÇA/EQUIPAMENTO</h3>
+            <p><strong>Nome da Peça:</strong> ${formData.nome_peca}</p>
+            <p><strong>Quantidade:</strong> ${formData.quantidade}</p>
+            <p><strong>Serviço:</strong> ${formData.servico}</p>
+          </div>
+
+          <div class="section">
+            <h3>MATERIAIS</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Quantidade</th>
+                  <th>Unidade</th>
+                  <th>Valor Unit.</th>
+                  <th>Valor Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${materiais.map(material => `
+                  <tr>
+                    <td>${material.descricao}</td>
+                    <td>${material.quantidade}</td>
+                    <td>${material.unidade}</td>
+                    <td>R$ ${parseFloat(material.valor_unitario || '0').toFixed(2)}</td>
+                    <td>R$ ${parseFloat(material.valor_total || '0').toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ficha-tecnica-${formData.cliente.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
       toast({
         title: "HTML Exportado",
-        description: `Arquivo HTML da ficha baixado com sucesso.`,
+        description: "Download do arquivo HTML iniciado com sucesso!",
       });
     } catch (error) {
       toast({
-        title: "Erro ao exportar HTML",
-        description: "Não foi possível exportar o HTML. Tente novamente.",
-        variant: "destructive",
+        title: "Erro na Exportação",
+        description: "Não foi possível gerar o arquivo HTML.",
+        variant: "destructive"
       });
     }
     onOpenChange(false);
   };
 
   const sendWhatsApp = () => {
-    const tempFicha = createTempFicha();
-    const valorTotal = tempFicha.calculos.materialTodasPecas;
-    const message = `🔧 *Ficha Técnica de Cotação*\n\n` +
-      `📋 *FTC:* ${tempFicha.numeroFTC}\n` +
-      `👤 *Cliente:* ${tempFicha.resumo.cliente}\n` +
-      `⚙️ *Serviço:* ${tempFicha.resumo.servico}\n` +
-      `💰 *Valor Total Material:* R$ ${valorTotal.toFixed(2)}\n` +
-      `📅 *Data:* ${tempFicha.dataCriacao}\n\n` +
-      `_Gerado pelo sistema HMC_`;
-    
+    const message = `Ficha Técnica de Cotação - Cliente: ${formData.cliente} - Serviço: ${formData.servico}`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
-    
     toast({
-      title: "WhatsApp aberto",
-      description: "Mensagem preparada para envio.",
+      title: "WhatsApp Aberto",
+      description: "Mensagem preparada para envio!",
     });
     onOpenChange(false);
   };
 
   const sendEmail = () => {
-    const tempFicha = createTempFicha();
-    const valorTotal = tempFicha.calculos.materialTodasPecas;
-    const subject = `Ficha Técnica de Cotação - ${tempFicha.resumo.cliente} - FTC ${tempFicha.numeroFTC}`;
-    const body = `Prezado(a),\n\n` +
-      `Segue informações da Ficha Técnica de Cotação:\n\n` +
-      `FTC: ${tempFicha.numeroFTC}\n` +
-      `Cliente: ${tempFicha.resumo.cliente}\n` +
-      `Solicitante: ${tempFicha.formData.solicitante || 'Não informado'}\n` +
-      `Serviço: ${tempFicha.resumo.servico}\n` +
-      `Peça/Equipamento: ${tempFicha.formData.nome_peca || 'Não informado'}\n` +
-      `Quantidade: ${tempFicha.formData.quantidade || '1'}\n` +
-      `Valor Total Material: R$ ${valorTotal.toFixed(2)}\n` +
-      `Horas Totais: ${tempFicha.calculos.horasTodasPecas.toFixed(1)}h\n` +
-      `Data de Criação: ${tempFicha.dataCriacao}\n\n` +
-      `Atenciosamente,\n` +
-      `Equipe HMC`;
+    const subject = `Ficha Técnica de Cotação - ${formData.cliente}`;
+    const body = `Cliente: ${formData.cliente}\nSolicitante: ${formData.solicitante}\nServiço: ${formData.servico}`;
     
-    const mailtoLink = `mailto:${tempFicha.formData.fone_email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink);
-    
     toast({
-      title: "Email aberto",
-      description: "Cliente de email padrão aberto com os dados da ficha.",
+      title: "E-mail Aberto",
+      description: "Cliente de e-mail aberto com os dados preenchidos!",
     });
     onOpenChange(false);
   };

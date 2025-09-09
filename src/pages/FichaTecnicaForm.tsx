@@ -17,7 +17,7 @@ import { FichasList } from "@/components/FichaTecnica/FichasList";
 import { SaveButton } from "@/components/FichaTecnica/SaveButton";
 import { PostSaveActionsModal } from "@/components/FichaTecnica/PostSaveActionsModal";
 import { PrintLayout } from "@/components/FichaTecnica/PrintLayout";
-
+import { FotoUpload } from "@/components/FichaTecnica/FotoUpload";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
 import { clientesPredefinidos } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/calculations";
@@ -31,6 +31,7 @@ export default function Index() {
   const {
     formData,
     materiais,
+    fotos,
     calculos,
     numeroFTC,
     dataAtual,
@@ -38,6 +39,8 @@ export default function Index() {
     addMaterial,
     updateMaterial,
     removeMaterial,
+    addFoto,
+    removeFoto,
     // Save functionality
     fichaId,
     isSaved,
@@ -204,6 +207,11 @@ export default function Index() {
                 />
               </div>
 
+              <FotoUpload
+                fotos={fotos}
+                onAddFoto={addFoto}
+                onRemoveFoto={removeFoto}
+              />
             </CardContent>
           </Card>
 
@@ -964,12 +972,14 @@ export default function Index() {
           onOpenChange={setShowActionsModal}
           formData={formData}
           materiais={materiais}
+          fotos={fotos}
         />
 
         {/* Print Layout - Hidden on screen, visible only when printing */}
         <PrintLayout
           formData={formData}
           materiais={materiais}
+          fotos={fotos}
           calculos={calculos}
           numeroFTC={numeroFTC}
           dataAtual={dataAtual}

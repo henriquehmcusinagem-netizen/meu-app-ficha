@@ -1,9 +1,10 @@
-import { FormData, Material, Calculos } from "@/types/ficha-tecnica";
+import { FormData, Material, Foto, Calculos } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/calculations";
 
 interface PrintLayoutProps {
   formData: FormData;
   materiais: Material[];
+  fotos: Foto[];
   calculos: Calculos;
   numeroFTC: string;
   dataAtual: string;
@@ -12,6 +13,7 @@ interface PrintLayoutProps {
 export function PrintLayout({ 
   formData, 
   materiais, 
+  fotos, 
   calculos, 
   numeroFTC, 
   dataAtual 

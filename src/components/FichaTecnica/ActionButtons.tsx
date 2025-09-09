@@ -2,16 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Printer, Mail, MessageCircle, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { FormData, Material } from "@/types/ficha-tecnica";
+import { FormData, Material, Foto } from "@/types/ficha-tecnica";
 
 interface ActionButtonsProps {
   formData: FormData;
   materiais: Material[];
+  fotos: Foto[];
 }
 
 export function ActionButtons({ 
   formData, 
-  materiais
+  materiais, 
+  fotos
 }: ActionButtonsProps) {
   const { toast } = useToast();
 
