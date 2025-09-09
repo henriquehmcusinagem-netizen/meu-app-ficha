@@ -749,8 +749,6 @@ export async function generatePDF(ficha: FichaSalva) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
-    return { success: true, filename };
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
     throw error;

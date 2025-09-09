@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2, Download } from "lucide-react";
+import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2, Download, Paperclip, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { FormData, Material, Foto, FichaSalva, Calculos } from "@/types/ficha-tecnica";
 import { exportToHTML } from "@/utils/htmlExporter";
-import { generatePDF } from "@/utils/pdfGenerator";
+import { generatePDF, generatePDFBlob } from "@/utils/pdfGenerator";
 import { calculateTotals, formatCurrency } from "@/utils/calculations";
 import { getCurrentDate } from "@/utils/helpers";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PostSaveActionsModalProps {
   open: boolean;
@@ -114,6 +115,49 @@ export function PostSaveActionsModal({
     onOpenChange(false);
   };
 
+  const sendWhatsAppWithPDF = async () => {
+    const tempFicha = createTempFicha();
+    
+    try {
+      toast({
+        title: "Gerando link...",
+        description: "Criando PDF e gerando link de compartilhamento...",
+      });
+
+      const pdfLink = await uploadPDFAndGetLink(tempFicha);
+      if (!pdfLink) {
+        throw new Error('Não foi possível gerar o link do PDF');
+      }
+
+      const calculos = calculateTotals(materiais, formData);
+      const message = `🔧 *Ficha Técnica de Cotação*\n\n` +
+        `📋 *FTC:* ${tempFicha.numeroFTC}\n` +
+        `👤 *Cliente:* ${formData.cliente}\n` +
+        `⚙️ *Serviço:* ${formData.servico}\n` +
+        `💰 *Valor Total:* R$ ${calculos.materialTodasPecas.toFixed(2)}\n` +
+        `📅 *Data:* ${getCurrentDate()}\n\n` +
+        `📄 *PDF Completo:* ${pdfLink}\n\n` +
+        `_Clique no link acima para visualizar/baixar o PDF completo._`;
+      
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+
+      toast({
+        title: "Link gerado!",
+        description: "PDF salvo e link copiado para WhatsApp.",
+      });
+    } catch (error) {
+      console.error('Error creating WhatsApp link:', error);
+      toast({
+        title: "Erro ao gerar link",
+        description: "Não foi possível criar o link do PDF.",
+        variant: "destructive",
+      });
+    }
+    
+    onOpenChange(false);
+  };
+
   const sendEmail = () => {
     const tempFicha = createTempFicha();
     const subject = `Ficha Técnica de Cotação - ${formData.cliente}`;
@@ -142,6 +186,74 @@ export function PostSaveActionsModal({
     });
     
     onOpenChange(false);
+  };
+
+  const sendEmailWithPDF = async () => {
+    const email = prompt('Digite o email de destino:');
+    if (!email) return;
+    
+    const tempFicha = createTempFicha();
+    
+    try {
+      toast({
+        title: "Enviando email...",
+        description: "Gerando PDF e enviando por email. Aguarde...",
+      });
+
+      const response = await supabase.functions.invoke('send-email-with-pdf', {
+        body: {
+          ficha: tempFicha,
+          to: email,
+          subject: `Ficha Técnica - ${tempFicha.numeroFTC}`
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast({
+        title: "Email enviado!",
+        description: `PDF enviado com sucesso para ${email}`,
+      });
+    } catch (error) {
+      console.error('Error sending email with PDF:', error);
+      toast({
+        title: "Erro ao enviar email",
+        description: "Não foi possível enviar o email com PDF.",
+        variant: "destructive",
+      });
+    }
+    
+    onOpenChange(false);
+  };
+
+  const uploadPDFAndGetLink = async (tempFicha: FichaSalva): Promise<string | null> => {
+    try {
+      const pdfBlob = await generatePDFBlob(tempFicha);
+      const fileName = `ficha-${tempFicha.numeroFTC}-${Date.now()}.pdf`;
+      const filePath = `temp/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('ficha-fotos')
+        .upload(filePath, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: true
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('ficha-fotos')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      return null;
+    }
   };
 
   const consultarFichas = () => {
@@ -186,13 +298,21 @@ export function PostSaveActionsModal({
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Compartilhar</h4>
             <div className="grid grid-cols-2 gap-2">
+              <Button onClick={sendEmail} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800">
+                <Mail className="h-4 w-4" />
+                E-mail
+              </Button>
+              <Button onClick={sendEmailWithPDF} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800">
+                <Paperclip className="h-4 w-4" />
+                E-mail + PDF
+              </Button>
               <Button onClick={sendWhatsApp} className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800">
                 <MessageCircle className="h-4 w-4" />
                 WhatsApp
               </Button>
-              <Button onClick={sendEmail} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800">
-                <Mail className="h-4 w-4" />
-                E-mail
+              <Button onClick={sendWhatsAppWithPDF} className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-teal-800">
+                <Link className="h-4 w-4" />
+                WA + PDF
               </Button>
             </div>
           </div>
