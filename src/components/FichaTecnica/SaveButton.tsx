@@ -23,6 +23,11 @@ export function SaveButton({
     const result = await onSave();
     
     if (result.success) {
+      toast({
+        title: "Ficha Salva com Sucesso",
+        description: "Ficha técnica salva e número FTC gerado automaticamente.",
+        variant: "default",
+      });
       onSaveSuccess?.();
     } else {
       toast({

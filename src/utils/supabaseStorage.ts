@@ -186,11 +186,22 @@ export async function salvarFicha(
   calculos: Calculos,
   numeroFTC: string,
   fichaId?: string
-): Promise<{ success: boolean; id?: string; error?: string }> {
+): Promise<{ success: boolean; id?: string; error?: string; numeroFTC?: string }> {
   try {
+    // Generate FTC number if this is a new ficha (no fichaId) or if it's a draft
+    let finalNumeroFTC = numeroFTC;
+    if (!fichaId || numeroFTC.startsWith('DRAFT')) {
+      const { data, error } = await supabase
+        .rpc('get_next_ftc_number');
+        
+      if (!error && data) {
+        finalNumeroFTC = data;
+      }
+    }
+
     // Convert form data to database format
     const dbData = {
-      numero_ftc: numeroFTC,
+      numero_ftc: finalNumeroFTC,
       status: formData.desenho_finalizado === 'SIM' ? 'finalizada' : 'rascunho',
       cliente: formData.cliente,
       solicitante: formData.solicitante,
@@ -308,7 +319,7 @@ export async function salvarFicha(
       }
     }
 
-    return { success: true, id: savedFichaId };
+    return { success: true, id: savedFichaId, numeroFTC: finalNumeroFTC };
   } catch (error) {
     console.error('Erro ao salvar ficha:', error);
     return { success: false, error: 'Erro ao salvar ficha.' };

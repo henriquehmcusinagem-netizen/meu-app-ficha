@@ -60,15 +60,17 @@ export default function Index() {
               <div className="text-left">
                 <div className="text-sm text-muted-foreground">Data: {dataAtual}</div>
                 <div className="flex items-center gap-2">
-                  <div className="text-lg font-bold text-primary">Nº FTC: {numeroFTC}</div>
-                  {isSaved && !isModified && (
+                  <div className="text-lg font-bold text-primary">
+                    Nº FTC: {numeroFTC.startsWith('DRAFT') ? 'RASCUNHO' : numeroFTC}
+                  </div>
+                  {isSaved && !isModified && !numeroFTC.startsWith('DRAFT') && (
                     <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
                       SALVO
                     </span>
                   )}
-                  {isModified && (
+                  {(isModified || numeroFTC.startsWith('DRAFT')) && (
                     <span className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded-full">
-                      MODIFICADO
+                      {numeroFTC.startsWith('DRAFT') ? 'NOVO' : 'MODIFICADO'}
                     </span>
                   )}
                 </div>

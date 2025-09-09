@@ -1,12 +1,27 @@
-export function generateFTCNumber(): string {
-  const year = new Date().getFullYear();
-  const storedCounter = localStorage.getItem('ftcCounter');
-  let counter = storedCounter ? parseInt(storedCounter) : 0;
+// Generate next FTC number from database
+export async function getNextFTCNumber(): Promise<string> {
+  const { supabase } = await import('@/integrations/supabase/client');
   
-  counter++;
-  localStorage.setItem('ftcCounter', counter.toString());
-  
-  return `${year}${counter.toString().padStart(3, '0')}`;
+  try {
+    const { data, error } = await supabase
+      .rpc('get_next_ftc_number');
+
+    if (error) {
+      console.error('Erro ao gerar número FTC:', error);
+      // Fallback: generate based on current year + timestamp
+      const year = new Date().getFullYear();
+      const timestamp = Date.now().toString().slice(-3);
+      return `${year}${timestamp}`;
+    }
+    
+    return data || `${new Date().getFullYear()}001`;
+  } catch (error) {
+    console.error('Erro ao buscar próximo número FTC:', error);
+    // Fallback: generate based on current year + timestamp
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString().slice(-3);
+    return `${year}${timestamp}`;
+  }
 }
 
 export function getCurrentDate(): string {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FormData, Material, Foto, Calculos, FichaSalva } from '@/types/ficha-tecnica';
 import { calculateTotals } from '@/utils/calculations';
-import { generateFTCNumber, getCurrentDate } from '@/utils/helpers';
+import { getCurrentDate } from '@/utils/helpers';
 import { 
   salvarFicha, 
   carregarFicha, 
@@ -103,7 +103,7 @@ export function useFichaTecnica() {
     
     if (!isInitialized && !fichaId) {
       console.log('useFichaTecnica - Criando nova ficha');
-      setNumeroFTC(generateFTCNumber());
+      setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
       
       // Add initial materials
@@ -179,7 +179,7 @@ export function useFichaTecnica() {
   }, []);
 
   // Save ficha function
-  const salvarFichaTecnica = useCallback(async (): Promise<{ success: boolean; errors?: string[] }> => {
+  const salvarFichaTecnica = useCallback(async (): Promise<{ success: boolean; errors?: string[]; numeroFTC?: string }> => {
     setIsSaving(true);
     
     try {
@@ -199,6 +199,10 @@ export function useFichaTecnica() {
       
       if (result.success) {
         setFichaId(result.id!);
+        // Update FTC number with the real one from database
+        if (result.numeroFTC) {
+          setNumeroFTC(result.numeroFTC);
+        }
         setIsSaved(true);
         setIsModified(false);
         setIsSaving(false);
@@ -270,7 +274,7 @@ export function useFichaTecnica() {
       valor_total: '0',
     }]);
     setFotos([]);
-    setNumeroFTC(generateFTCNumber());
+    setNumeroFTC('DRAFT-' + Date.now());
     setDataAtual(getCurrentDate());
     setIsSaved(false);
     setIsModified(false);
