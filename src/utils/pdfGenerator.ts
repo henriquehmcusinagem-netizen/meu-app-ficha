@@ -413,16 +413,16 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       
-      // Checkbox
+      // Checkbox with consistent formatting - gray for labels, black for values
+      doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]); // Gray for labels
       const checkmark = formatCheckbox(option.value);
-      if (option.value) {
-        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        doc.setFont('helvetica', 'bold');
-      } else {
-        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
-      }
+      doc.text(`${option.label}:`, xPos, yPosition);
       
-      doc.text(`${checkmark} ${option.label}`, xPos, yPosition);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]); // Black for values
+      if (option.value) {
+        doc.setFont('helvetica', 'bold');
+      }
+      doc.text(checkmark, xPos + 30, yPosition);
       xPos += colWidth - 5;
     });
     
@@ -461,12 +461,12 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
       horasServicos.forEach((hora, index) => {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]); // Gray for labels
         doc.text(`${hora.label}:`, xPos, yPosition + row * 8);
         
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]); // Black for values
         doc.text(`${hora.value}h`, xPos + 28, yPosition + row * 8);
         
         xPos += colWidth;
@@ -669,14 +669,12 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       
-      // Use colors based on value
-      if (trat.value === 'sim') {
-        doc.setTextColor(34, 197, 94); // Green for SIM
-      } else {
-        doc.setTextColor(107, 114, 128); // Gray for NÃO
-      }
+      // Labels in gray, values in black (consistent formatting)
+      doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]); // Gray for labels
+      doc.text(`${trat.label}:`, xPos, yPos);
       
-      doc.text(`${trat.label}: ${formattedValue}`, xPos, yPos);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]); // Black for values
+      doc.text(formattedValue, xPos + 30, yPos);
       
       // Show extra info only for selected treatments (SIM)
       if (trat.extra && trat.value === 'sim') {
