@@ -105,34 +105,6 @@ export function generateHTMLContent(ficha: FichaSalva): string {
             <div class="label">SERVIÇO A SER REALIZADO:</div>
             <div class="value">${ficha.formData.servico || "—"}</div>
         </div>
-        <div class="grid grid-2" style="margin-top: 8px;">
-            <div class="field">
-                <div class="label">MATERIAL BASE:</div>
-                <div class="value">${ficha.formData.material_base || "—"}</div>
-            </div>
-            <div class="field">
-                <div class="label">DIMENSÕES:</div>
-                <div class="value">${ficha.formData.dimensoes || "—"}</div>
-            </div>
-        </div>
-        <div class="grid grid-3" style="margin-top: 8px;">
-            <div class="field">
-                <div class="label">TOLERÂNCIA:</div>
-                <div class="value">${ficha.formData.tolerancia || "—"}</div>
-            </div>
-            <div class="field">
-                <div class="label">ACABAMENTO SUPERFÍCIE:</div>
-                <div class="value">${ficha.formData.acabamento_superficie || "—"}</div>
-            </div>
-            <div class="field">
-                <div class="label">NORMA APLICÁVEL:</div>
-                <div class="value">${ficha.formData.norma_aplicavel || "—"}</div>
-            </div>
-        </div>
-        <div class="field" style="margin-top: 8px;">
-            <div class="label">CERTIFICAÇÃO:</div>
-            <div class="value">${ficha.formData.certificacao || "—"}</div>
-        </div>
     </div>
 
     ${materiaisPreenchidos.length > 0 ? `
@@ -293,29 +265,6 @@ export function generateHTMLContent(ficha: FichaSalva): string {
         </div>
     </div>
 
-    ${(ficha.formData.observacoes || ficha.formData.condicoes_especiais || ficha.formData.descricao_geral) ? `
-    <div class="section">
-        <div class="section-title">INFORMAÇÕES ADICIONAIS</div>
-        ${ficha.formData.observacoes ? `
-        <div class="field">
-            <div class="label">OBSERVAÇÕES:</div>
-            <div class="value">${ficha.formData.observacoes}</div>
-        </div>
-        ` : ''}
-        ${ficha.formData.condicoes_especiais ? `
-        <div class="field" style="margin-top: 8px;">
-            <div class="label">CONDIÇÕES ESPECIAIS:</div>
-            <div class="value">${ficha.formData.condicoes_especiais}</div>
-        </div>
-        ` : ''}
-        ${ficha.formData.descricao_geral ? `
-        <div class="field" style="margin-top: 8px;">
-            <div class="label">DESCRIÇÃO GERAL:</div>
-            <div class="value">${ficha.formData.descricao_geral}</div>
-        </div>
-        ` : ''}
-    </div>
-    ` : ''}
 
     <div class="totals">
         <div class="section-title">RESUMO DOS CÁLCULOS</div>

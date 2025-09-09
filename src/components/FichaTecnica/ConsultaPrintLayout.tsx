@@ -197,15 +197,6 @@ export function ConsultaPrintLayout({ ficha }: ConsultaPrintLayoutProps) {
         </div>
       </div>
 
-      {/* Additional Information */}
-      {ficha.formData.observacoes && (
-        <div className="print-additional-section">
-          <div className="print-additional-title">INFORMAÇÕES ADICIONAIS</div>
-          <div className="print-field">
-            <div className="print-value" style={{fontSize: '6px', lineHeight: '1.1'}}>{ficha.formData.observacoes}</div>
-          </div>
-        </div>
-      )}
 
       {/* Transport */}
       <div className="print-section">

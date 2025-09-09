@@ -76,17 +76,6 @@ async function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]
     programacao_cam: row.programacao_cam?.toString() || '',
     eng_tec: row.eng_tec?.toString() || '',
     
-    // Campos adicionais
-    observacoes: row.observacoes || '',
-    descricao_geral: row.descricao_geral || '',
-    material_base: row.material_base || '',
-    dimensoes: row.dimensoes || '',
-    tolerancia: row.tolerancia || '',
-    acabamento_superficie: row.acabamento_superficie || '',
-    norma_aplicavel: row.norma_aplicavel || '',
-    certificacao: row.certificacao || '',
-    condicoes_especiais: row.condicoes_especiais || '',
-    
     // Controle
     num_orcamento: row.numero_orcamento || '',
     num_os: row.numero_os || '',
@@ -310,16 +299,6 @@ export async function salvarFicha(
       horas_pintura: parseFloat(formData.pintura_horas) || 0,
       horas_montagem: parseFloat(formData.des_montg) || 0,
       horas_outros: 0,
-      // Campos adicionais
-      observacoes: formData.observacoes,
-      descricao_geral: formData.descricao_geral,
-      material_base: formData.material_base,
-      dimensoes: formData.dimensoes,
-      tolerancia: formData.tolerancia,
-      acabamento_superficie: formData.acabamento_superficie,
-      norma_aplicavel: formData.norma_aplicavel,
-      certificacao: formData.certificacao,
-      condicoes_especiais: formData.condicoes_especiais,
       // Controle
       numero_orcamento: formData.num_orcamento,
       numero_os: formData.num_os,

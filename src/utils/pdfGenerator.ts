@@ -103,22 +103,6 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
   
   // Linha 2
   addField('Serviço', formatField(ficha.formData.servico), margin + 2, false);
-  addField('Material Base', formatField(ficha.formData.material_base), col2Start, false);
-  yPosition += lineHeight;
-  
-  // Linha 3
-  addField('Dimensões', formatField(ficha.formData.dimensoes), margin + 2, false);
-  addField('Tolerância', formatField(ficha.formData.tolerancia), col2Start, false);
-  yPosition += lineHeight;
-  
-  // Linha 4
-  addField('Acabamento Superficie', formatField(ficha.formData.acabamento_superficie), margin + 2, false);
-  addField('Norma Aplicável', formatField(ficha.formData.norma_aplicavel), col2Start, false);
-  yPosition += lineHeight;
-  
-  // Linha 5
-  addField('Certificação', formatField(ficha.formData.certificacao), margin + 2, false);
-  addField('Condições Especiais', formatField(ficha.formData.condicoes_especiais), col2Start, false);
   yPosition += sectionSpacing;
 
   // MATERIAL PARA COTAÇÃO (Tabela compacta)
@@ -430,48 +414,6 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
   doc.text(formatField(ficha.formData.num_nf_remessa), margin + 28 + (gridWidth * 2), yPosition);
   yPosition += sectionSpacing;
 
-  // INFORMAÇÕES ADICIONAIS
-  addSectionTitle('INFORMAÇÕES ADICIONAIS');
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Observações:', margin + 2, yPosition);
-  yPosition += 4;
-  
-  doc.setFont('helvetica', 'normal');
-  if (ficha.formData.observacoes && ficha.formData.observacoes.trim()) {
-    const lines = doc.splitTextToSize(ficha.formData.observacoes, contentWidth - 4);
-    lines.slice(0, 3).forEach((line: string) => {
-      doc.text(line, margin + 2, yPosition);
-      yPosition += 4;
-    });
-  } else {
-    // Linhas vazias para preenchimento
-    for (let i = 0; i < 3; i++) {
-      doc.text('_________________________________________________________________', margin + 2, yPosition);
-      yPosition += 4;
-    }
-  }
-  yPosition += 2;
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Descrição Geral:', margin + 2, yPosition);
-  yPosition += 4;
-  
-  doc.setFont('helvetica', 'normal');
-  if (ficha.formData.descricao_geral && ficha.formData.descricao_geral.trim()) {
-    const lines = doc.splitTextToSize(ficha.formData.descricao_geral, contentWidth - 4);
-    lines.slice(0, 2).forEach((line: string) => {
-      doc.text(line, margin + 2, yPosition);
-      yPosition += 4;
-    });
-  } else {
-    // Linhas vazias para preenchimento
-    for (let i = 0; i < 2; i++) {
-      doc.text('_________________________________________________________________', margin + 2, yPosition);
-      yPosition += 4;
-    }
-  }
-  yPosition += 4;
 
   // RESUMO DOS CÁLCULOS (1 linha)
   addSectionTitle('RESUMO DOS CÁLCULOS');

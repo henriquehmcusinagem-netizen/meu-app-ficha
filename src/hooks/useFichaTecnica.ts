@@ -77,16 +77,6 @@ const initialFormData: FormData = {
   programacao_cam: "",
   eng_tec: "",
   
-  // Campos Adicionais
-  observacoes: "",
-  descricao_geral: "",
-  material_base: "",
-  dimensoes: "",
-  tolerancia: "",
-  acabamento_superficie: "",
-  norma_aplicavel: "",
-  certificacao: "",
-  condicoes_especiais: "",
   
   // Controle
   num_orcamento: "",

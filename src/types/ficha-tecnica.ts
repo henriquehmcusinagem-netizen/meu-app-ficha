@@ -66,16 +66,6 @@ export interface FormData {
   programacao_cam: string;
   eng_tec: string;
   
-  // Campos Adicionais
-  observacoes: string;
-  descricao_geral: string;
-  material_base: string;
-  dimensoes: string;
-  tolerancia: string;
-  acabamento_superficie: string;
-  norma_aplicavel: string;
-  certificacao: string;
-  condicoes_especiais: string;
   
   // Controle
   num_orcamento: string;
