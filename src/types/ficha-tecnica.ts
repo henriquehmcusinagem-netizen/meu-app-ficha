@@ -100,6 +100,7 @@ export interface Foto {
   preview?: string;
   name: string;
   size: number;
+  storagePath?: string;
 }
 
 export interface Calculos {

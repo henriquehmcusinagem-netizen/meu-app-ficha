@@ -187,10 +187,14 @@ export function useFichaTecnica() {
 
   const addFoto = useCallback((foto: Foto) => {
     setFotos(prev => [...prev, foto]);
+    setIsModified(true);
+    setIsSaved(false);
   }, []);
 
   const removeFoto = useCallback((id: number) => {
     setFotos(prev => prev.filter(foto => foto.id !== id));
+    setIsModified(true);
+    setIsSaved(false);
   }, []);
 
   // Save ficha function

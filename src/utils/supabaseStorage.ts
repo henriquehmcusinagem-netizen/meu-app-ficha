@@ -121,7 +121,8 @@ async function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]
         name: foto.name,
         size: foto.size,
         file: undefined, // No file for saved photos
-        preview // Real URL from Storage or undefined
+        preview, // Real URL from Storage or undefined
+        storagePath: foto.storage_path // Keep storage path for re-saving
       };
     })
   );
@@ -410,6 +411,10 @@ export async function salvarFicha(
               storagePath = uploadData?.path;
               console.log('✅ Foto uploaded:', fileName);
             }
+          } else if (foto.storagePath) {
+            // Keep existing storage path for saved photos
+            storagePath = foto.storagePath;
+            console.log('✅ Keeping existing photo:', foto.name);
           }
           
           return {
