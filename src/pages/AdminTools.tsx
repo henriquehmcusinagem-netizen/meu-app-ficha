@@ -148,6 +148,82 @@ export default function AdminTools() {
     }
   };
 
+  const fixAllCredentials = async () => {
+    const emails = [
+      'contato@hmcusinagem.com.br',
+      'compras@hmcusinagem.com.br',
+      'producao@hmcusinagem.com.br'
+    ];
+    
+    setLoading(true);
+    
+    try {
+      console.log('🔧 Iniciando correção de credenciais para todos os usuários...');
+      
+      // Reset password for each email
+      for (const targetEmail of emails) {
+        console.log(`\n🔑 Corrigindo credenciais para ${targetEmail}...`);
+        
+        // Reset password
+        const resetResult = await callAdminFunction('reset-password', { 
+          email: targetEmail, 
+          newPassword: '@Hmcusinagem402' 
+        });
+        
+        if (resetResult?.success) {
+          console.log(`✅ Senha resetada com sucesso para ${targetEmail}`);
+          
+          // Test login immediately after reset
+          const loginTest = await callAdminFunction('test-login', { 
+            email: targetEmail, 
+            newPassword: '@Hmcusinagem402' 
+          });
+          
+          if (loginTest?.success) {
+            console.log(`✅ Login funcionando para ${targetEmail}`);
+            toast({
+              title: "Credencial corrigida",
+              description: `${targetEmail} agora pode fazer login`,
+            });
+          } else {
+            console.log(`❌ Login ainda falhando para ${targetEmail}:`, loginTest?.error);
+            toast({
+              title: "Erro no teste",
+              description: `Login ainda falha para ${targetEmail}`,
+              variant: "destructive",
+            });
+          }
+        } else {
+          console.log(`❌ Falha ao resetar senha para ${targetEmail}`);
+          toast({
+            title: "Erro no reset",
+            description: `Não foi possível resetar a senha de ${targetEmail}`,
+            variant: "destructive",
+          });
+        }
+        
+        // Small delay between operations
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      console.log('🎉 Processo de correção finalizado');
+      toast({
+        title: "Correção concluída",
+        description: "Todas as credenciais foram processadas. Verifique os logs para detalhes.",
+      });
+      
+    } catch (error) {
+      console.error('❌ Erro durante correção:', error);
+      toast({
+        title: "Erro crítico",
+        description: "Erro inesperado durante a correção das credenciais",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">Ferramentas Administrativas</h1>
@@ -201,6 +277,34 @@ export default function AdminTools() {
                 <Button onClick={testAllEmails} disabled={loading} variant="outline">
                   Testar Todos
                 </Button>
+              </div>
+              
+              <div className="pt-4 border-t">
+                <Button 
+                  onClick={fixAllCredentials} 
+                  disabled={loading} 
+                  variant="destructive"
+                  className="w-full"
+                >
+                  🔧 CORRIGIR TODAS AS CREDENCIAIS
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Esta ação reseta a senha dos 3 usuários para @Hmcusinagem402 e testa o login
+                </p>
+              </div>
+              
+              <div className="pt-4 border-t">
+                <Button 
+                  onClick={fixAllCredentials} 
+                  disabled={loading} 
+                  variant="destructive"
+                  className="w-full"
+                >
+                  🔧 CORRIGIR TODAS AS CREDENCIAIS
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Esta ação reseta a senha dos 3 usuários para @Hmcusinagem402 e testa o login
+                </p>
               </div>
             </CardContent>
           </Card>
