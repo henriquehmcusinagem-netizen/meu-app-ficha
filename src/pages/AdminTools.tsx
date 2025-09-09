@@ -121,6 +121,67 @@ export default function AdminTools() {
     }
   };
 
+  const emergencyDiagnosis = async () => {
+    setLoading(true);
+    try {
+      console.log('🚨 DIAGNÓSTICO DE EMERGÊNCIA');
+      
+      // Teste 1: Verificar se edge function responde
+      toast({
+        title: '🔧 Fase 1: Testando Edge Functions',
+        description: 'Verificando se admin-auth está funcionando...'
+      });
+      
+      const response = await supabase.functions.invoke('admin-auth', {
+        body: { action: 'list-users' }
+      });
+      
+      console.log('📊 Response da edge function:', response);
+      
+      if (response.error) {
+        toast({
+          title: '❌ Edge Function com erro',
+          description: `Erro: ${response.error.message}`,
+          variant: 'destructive'
+        });
+      } else if (response.data?.users) {
+        toast({
+          title: '✅ Edge Function funcionando',
+          description: `Encontrados ${response.data.users.length} usuários no Auth`,
+        });
+        
+        console.log('👥 Usuários no Supabase Auth:', response.data.users);
+        setUsers(response.data.users);
+      }
+      
+      // Teste 2: Verificar usuários autorizados
+      const { data: authorized, error: authError } = await supabase
+        .from('usuarios_autorizados')
+        .select('*')
+        .eq('ativo', true);
+        
+      if (authError) {
+        console.error('❌ Erro ao buscar usuários autorizados:', authError);
+      } else {
+        console.log('📋 Usuários autorizados:', authorized);
+        toast({
+          title: '📋 Usuários Autorizados',
+          description: `Encontrados ${authorized?.length || 0} usuários autorizados`,
+        });
+      }
+      
+    } catch (error) {
+      console.error('🚨 Erro no diagnóstico:', error);
+      toast({
+        title: '🚨 Erro no Diagnóstico',
+        description: `Erro: ${error.message}`,
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const testAllEmails = async () => {
     const emails = [
       'contato@hmcusinagem.com.br',
@@ -145,6 +206,88 @@ export default function AdminTools() {
       });
       
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s between tests
+    }
+  };
+
+  const fixAllCredentialsEmergency = async () => {
+    setLoading(true);
+    const emails = [
+      'contato@hmcusinagem.com.br',
+      'compras@hmcusinagem.com.br', 
+      'producao@hmcusinagem.com.br'
+    ];
+    
+    try {
+      toast({
+        title: '🚨 CORREÇÃO DE EMERGÊNCIA',
+        description: 'Resetando credenciais para todos os usuários...'
+      });
+
+      for (const email of emails) {
+        console.log(`🔧 Corrigindo credenciais para: ${email}`);
+        
+        // Reset password
+        const resetResult = await supabase.functions.invoke('admin-auth', {
+          body: { 
+            action: 'reset-password', 
+            email: email, 
+            newPassword: '@Hmcusinagem402' 
+          }
+        });
+        
+        console.log(`📊 Reset result for ${email}:`, resetResult);
+        
+        if (resetResult.error) {
+          toast({
+            title: `❌ Erro ao resetar ${email}`,
+            description: resetResult.error.message,
+            variant: 'destructive'
+          });
+          continue;
+        }
+        
+        // Test login immediately
+        const testResult = await supabase.functions.invoke('admin-auth', {
+          body: { 
+            action: 'test-login', 
+            email: email, 
+            newPassword: '@Hmcusinagem402' 
+          }
+        });
+        
+        console.log(`🧪 Test result for ${email}:`, testResult);
+        
+        if (testResult.data?.success) {
+          toast({
+            title: `✅ ${email} CORRIGIDO`,
+            description: 'Login funcionando perfeitamente!'
+          });
+        } else {
+          toast({
+            title: `❌ ${email} ainda com problema`,
+            description: testResult.data?.error || 'Login falhou',
+            variant: 'destructive'
+          });
+        }
+        
+        // Wait 1 second between operations
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      toast({
+        title: '🎉 Correção Finalizada',
+        description: 'Verificar resultados acima para cada usuário'
+      });
+      
+    } catch (error) {
+      console.error('🚨 Erro na correção de emergência:', error);
+      toast({
+        title: '🚨 Erro na Correção',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -279,17 +422,35 @@ export default function AdminTools() {
                 </Button>
               </div>
               
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t space-y-2">
+                <Button 
+                  onClick={emergencyDiagnosis}
+                  disabled={loading}
+                  className="w-full"
+                  variant="outline"
+                >
+                  🚨 DIAGNÓSTICO DE EMERGÊNCIA
+                </Button>
+                
+                <Button 
+                  onClick={fixAllCredentialsEmergency}
+                  disabled={loading}
+                  className="w-full"
+                  variant="destructive"
+                >
+                  🔧 CORREÇÃO DE EMERGÊNCIA
+                </Button>
+                
                 <Button 
                   onClick={fixAllCredentials} 
                   disabled={loading} 
-                  variant="destructive"
+                  variant="secondary"
                   className="w-full"
                 >
-                  🔧 CORRIGIR TODAS AS CREDENCIAIS
+                  🔧 CORRIGIR CREDENCIAIS (Normal)
                 </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Esta ação reseta a senha dos 3 usuários para @Hmcusinagem402 e testa o login
+                <p className="text-xs text-muted-foreground">
+                  Diagnóstico primeiro, depois correção de emergência se necessário
                 </p>
               </div>
             </CardContent>
