@@ -72,36 +72,46 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
 
 
   const sendEmailWithPDF = async () => {
-    const email = prompt('Digite o email de destino:');
-    if (!email) return;
-    
     try {
       toast({
-        title: "Enviando email...",
-        description: "Gerando PDF e enviando por email. Aguarde...",
+        title: "Preparando email...",
+        description: "Gerando PDF e preparando email...",
       });
 
-      const response = await supabase.functions.invoke('send-email-with-pdf', {
-        body: {
-          ficha: ficha,
-          to: email,
-          subject: `Ficha Técnica - ${ficha.numeroFTC}`
-        }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
+      const pdfLink = await uploadPDFAndGetLink();
+      if (!pdfLink) {
+        throw new Error('Não foi possível gerar o link do PDF');
       }
 
+      const valorTotal = ficha.calculos.materialTodasPecas;
+      const subject = `Ficha Técnica - ${ficha.numeroFTC}`;
+      const body = `Prezado(a),
+
+Segue em anexo a Ficha Técnica de Cotação:
+
+📋 FTC: ${ficha.numeroFTC}
+👤 Cliente: ${ficha.resumo.cliente}
+⚙️ Serviço: ${ficha.resumo.servico}
+💰 Valor Total: R$ ${valorTotal.toFixed(2)}
+📅 Data: ${ficha.dataCriacao}
+
+📄 Link para o PDF: ${pdfLink}
+
+Atenciosamente,
+Equipe Técnica`;
+
+      const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoUrl;
+
       toast({
-        title: "Email enviado!",
-        description: `PDF enviado com sucesso para ${email}`,
+        title: "Email preparado!",
+        description: "Seu cliente de email foi aberto com o PDF anexado.",
       });
     } catch (error) {
-      console.error('Error sending email with PDF:', error);
+      console.error('Error preparing email with PDF:', error);
       toast({
-        title: "Erro ao enviar email",
-        description: "Não foi possível enviar o email com PDF.",
+        title: "Erro ao preparar email",
+        description: "Não foi possível preparar o email com PDF.",
         variant: "destructive",
       });
     }
