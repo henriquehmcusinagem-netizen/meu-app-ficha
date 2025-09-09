@@ -41,7 +41,7 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
       `_Gerado pelo sistema HMC_`;
     
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
     
     toast({
       title: "WhatsApp aberto",

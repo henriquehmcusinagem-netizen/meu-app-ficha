@@ -74,43 +74,18 @@ export function PostSaveActionsModal({
   const sendWhatsApp = () => {
     const calculos = calculateTotals(materiais, formData);
     const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
+    const valorTotal = calculos.materialTodasPecas;
     
-    const totalMaterial = formatCurrency(calculos.materialTodasPecas);
-    const totalHoras = calculos.horasTodasPecas.toFixed(1);
-    
-    const message = `🔧 *FICHA TÉCNICA DE COTAÇÃO*
-
-📋 *FTC:* ${tempFTCNumber}
-📅 *Data:* ${getCurrentDate()}
-
-👥 *CLIENTE*
-• Cliente: ${formData.cliente}
-• Solicitante: ${formData.solicitante}
-• Contato: ${formData.fone_email}
-
-🔩 *PEÇA/EQUIPAMENTO*
-• Nome: ${formData.nome_peca}
-• Quantidade: ${formData.quantidade}
-• Serviço: ${formData.servico}
-
-📊 *RESUMO FINANCEIRO*
-💰 Material Total: ${totalMaterial}
-⏰ Horas Total: ${totalHoras}h
-
-📋 *MATERIAIS PRINCIPAIS*
-${materiais.filter(m => m.descricao && (parseFloat(m.quantidade) > 0 || parseFloat(m.valor_unitario || '0') > 0))
-  .slice(0, 5)
-  .map(material => 
-    `• ${material.descricao} - Qtd: ${material.quantidade} ${material.unidade} - ${formatCurrency(parseFloat(material.valor_total || '0'))}`
-  ).join('\n')}${materiais.length > 5 ? '\n• ... e mais materiais' : ''}
-
-${formData.observacoes ? `📝 *Observações:* ${formData.observacoes}` : ''}
-
----
-Ficha técnica gerada automaticamente`;
+    const message = `🔧 *Ficha Técnica de Cotação*\n\n` +
+      `📋 *FTC:* ${tempFTCNumber}\n` +
+      `👤 *Cliente:* ${formData.cliente}\n` +
+      `⚙️ *Serviço:* ${formData.servico}\n` +
+      `💰 *Valor Total Material:* R$ ${valorTotal.toFixed(2)}\n` +
+      `📅 *Data:* ${getCurrentDate()}\n\n` +
+      `_Gerado pelo sistema HMC_`;
     
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
     
     toast({
       title: "WhatsApp Aberto",
