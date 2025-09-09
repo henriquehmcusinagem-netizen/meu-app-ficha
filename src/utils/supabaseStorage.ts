@@ -28,53 +28,53 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
     // Execução e Detalhes
     execucao: row.tipo_execucao || '',
     visita_tecnica: row.visita_tecnica || '',
-    visita_horas: '',
+    visita_horas: row.horas_visita?.toString() || '',
     tem_peca_amostra: row.peca_amostra || '',
     projeto_desenvolvido_por: row.origem_projeto || '',
     desenho_peca: '',
     desenho_finalizado: row.desenho_finalizado || '',
-    transporte_caminhao_hmc: row.transporte === 'CAMINHAO_HMC',
-    transporte_pickup_hmc: row.transporte === 'PICKUP_HMC', 
+    transporte_caminhao_hmc: row.transporte === 'HMC' || row.transporte === 'CAMINHAO_HMC',
+    transporte_pickup_hmc: false, // Ajustar se houver outros tipos específicos no banco
     transporte_cliente: row.transporte === 'CLIENTE' || !row.transporte,
     
     // Tratamentos e Acabamentos
     pintura: row.pintura || '',
-    cor_pintura: '',
+    cor_pintura: row.cor_pintura || '',
     galvanizacao: row.galvanizacao || '',
-    peso_peca_galv: '',
+    peso_peca_galv: row.peso_peca_galv?.toString() || '',
     tratamento_termico: row.tratamento_termico || '',
-    peso_peca_trat: '',
-    tempera_reven: '',
-    cementacao: '',
+    peso_peca_trat: row.peso_peca_trat?.toString() || '',
+    tempera_reven: row.tempera_reven || '',
+    cementacao: row.cementacao || '',
     dureza: row.dureza || '',
     teste_lp: row.ensaio_lp || '',
-    balanceamento_campo: '',
-    rotacao: '',
-    fornecimento_desenho: '',
-    fotos_relatorio: '',
-    relatorio_tecnico: '',
-    emissao_art: '',
-    servicos_terceirizados: '',
+    balanceamento_campo: row.balanceamento_campo || '',
+    rotacao: row.rotacao?.toString() || '',
+    fornecimento_desenho: row.fornecimento_desenho || '',
+    fotos_relatorio: row.fotos_relatorio || '',
+    relatorio_tecnico: row.relatorio_tecnico || '',
+    emissao_art: row.emissao_art || '',
+    servicos_terceirizados: row.servicos_terceirizados || '',
     
     // Horas de Serviço
     horas_por_peca: '',
     horas_todas_pecas: '',
     torno_grande: row.horas_torno?.toString() || '',
-    torno_pequeno: '',
-    cnc_tf: '',
+    torno_pequeno: row.horas_torno_pequeno?.toString() || '',
+    cnc_tf: row.horas_cnc?.toString() || '',
     fresa_furad: row.horas_fresa?.toString() || '',
-    plasma_oxicorte: '',
-    dobra: '',
-    calandra: '',
+    plasma_oxicorte: row.horas_plasma?.toString() || '',
+    dobra: row.horas_dobra?.toString() || '',
+    calandra: row.horas_calandra?.toString() || '',
     macarico_solda: row.horas_solda?.toString() || '',
     des_montg: row.horas_montagem?.toString() || '',
-    balanceamento: '',
-    mandrilhamento: '',
-    tratamento: '',
+    balanceamento: row.horas_balanceamento?.toString() || '',
+    mandrilhamento: row.horas_mandrilhamento?.toString() || '',
+    tratamento: row.horas_tratamento?.toString() || '',
     pintura_horas: row.horas_pintura?.toString() || '',
-    lavagem_acab: '',
-    programacao_cam: '',
-    eng_tec: '',
+    lavagem_acab: row.horas_lavagem?.toString() || '',
+    programacao_cam: row.horas_programacao?.toString() || '',
+    eng_tec: row.horas_engenharia?.toString() || '',
     
     // Controle
     num_orcamento: row.numero_orcamento || '',
@@ -89,11 +89,13 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
     materialTodasPecas: row.total_material_todas_pecas || 0
   };
 
-  // Convert fotos from database format (use index as ID to match Foto interface)
-  const fotosMetadata: Omit<Foto, 'file' | 'preview'>[] = fotos.map((foto, index) => ({
+  // Convert fotos from database format - include preview placeholder for saved photos
+  const fotosMetadata: Foto[] = fotos.map((foto, index) => ({
     id: index + 1, // Use index as numeric ID
     name: foto.name,
-    size: foto.size
+    size: foto.size,
+    file: undefined, // No file for saved photos
+    preview: undefined // No preview for saved photos - will be handled in component
   }));
 
   // Convert materials from database format to Material interface
@@ -230,7 +232,9 @@ export async function salvarFicha(
       peca_amostra: formData.tem_peca_amostra,
       origem_projeto: formData.projeto_desenvolvido_por,
       desenho_finalizado: formData.desenho_finalizado,
-      transporte: formData.transporte_cliente ? 'CLIENTE' : 'HMC',
+      transporte: formData.transporte_cliente ? 'CLIENTE' : 
+                  formData.transporte_caminhao_hmc ? 'HMC' : 
+                  formData.transporte_pickup_hmc ? 'PICKUP_HMC' : 'CLIENTE',
       pintura: formData.pintura,
       galvanizacao: formData.galvanizacao,
       tratamento_termico: formData.tratamento_termico,
