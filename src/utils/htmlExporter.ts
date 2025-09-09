@@ -13,13 +13,19 @@ export function exportToHTML(ficha: FichaSalva) {
     { label: "TORNO G", value: ficha.formData.torno_grande },
     { label: "TORNO P", value: ficha.formData.torno_pequeno },
     { label: "CNC", value: ficha.formData.cnc_tf },
-    { label: "FRESA", value: ficha.formData.fresa_furad },
-    { label: "SOLDA", value: ficha.formData.macarico_solda },
-    { label: "PINTURA", value: ficha.formData.pintura_horas },
-    { label: "PLASMA", value: ficha.formData.plasma_oxicorte },
+    { label: "FRESA/FURAD.", value: ficha.formData.fresa_furad },
+    { label: "PLASMA/OXICORTE", value: ficha.formData.plasma_oxicorte },
     { label: "DOBRA", value: ficha.formData.dobra },
-    { label: "ENG/TEC", value: ficha.formData.eng_tec },
-    { label: "TRAT.", value: ficha.formData.tratamento }
+    { label: "CALANDRA", value: ficha.formData.calandra },
+    { label: "MACARICO/SOLDA", value: ficha.formData.macarico_solda },
+    { label: "DES/MONT.", value: ficha.formData.des_montg },
+    { label: "BALANCEAMENTO", value: ficha.formData.balanceamento },
+    { label: "MANDRILHAMENTO", value: ficha.formData.mandrilhamento },
+    { label: "TRATAMENTO", value: ficha.formData.tratamento },
+    { label: "PINTURA", value: ficha.formData.pintura_horas },
+    { label: "LAVAGEM/ACAB.", value: ficha.formData.lavagem_acab },
+    { label: "PROG. CAM", value: ficha.formData.programacao_cam },
+    { label: "ENG/TEC", value: ficha.formData.eng_tec }
   ].filter(h => parseFloat(h.value || "0") > 0);
 
   const htmlContent = `
@@ -100,6 +106,34 @@ export function exportToHTML(ficha: FichaSalva) {
             <div class="label">SERVIÇO A SER REALIZADO:</div>
             <div class="value">${ficha.formData.servico || "—"}</div>
         </div>
+        <div class="grid grid-2" style="margin-top: 8px;">
+            <div class="field">
+                <div class="label">MATERIAL BASE:</div>
+                <div class="value">${ficha.formData.material_base || "—"}</div>
+            </div>
+            <div class="field">
+                <div class="label">DIMENSÕES:</div>
+                <div class="value">${ficha.formData.dimensoes || "—"}</div>
+            </div>
+        </div>
+        <div class="grid grid-3" style="margin-top: 8px;">
+            <div class="field">
+                <div class="label">TOLERÂNCIA:</div>
+                <div class="value">${ficha.formData.tolerancia || "—"}</div>
+            </div>
+            <div class="field">
+                <div class="label">ACABAMENTO SUPERFÍCIE:</div>
+                <div class="value">${ficha.formData.acabamento_superficie || "—"}</div>
+            </div>
+            <div class="field">
+                <div class="label">NORMA APLICÁVEL:</div>
+                <div class="value">${ficha.formData.norma_aplicavel || "—"}</div>
+            </div>
+        </div>
+        <div class="field" style="margin-top: 8px;">
+            <div class="label">CERTIFICAÇÃO:</div>
+            <div class="value">${ficha.formData.certificacao || "—"}</div>
+        </div>
     </div>
 
     ${materiaisPreenchidos.length > 0 ? `
@@ -150,12 +184,22 @@ export function exportToHTML(ficha: FichaSalva) {
                 </div>
             </div>
             <div class="field">
-                <div class="label">HORAS VISITA:</div>
-                <div class="value">${ficha.formData.visita_horas || "—"}</div>
-            </div>
-            <div class="field">
                 <div class="label">PEÇA AMOSTRA:</div>
                 <div class="value">${formatRadioValue(ficha.formData.tem_peca_amostra)}</div>
+            </div>
+            <div class="field">
+                <div class="label">PROJETO POR:</div>
+                <div class="value">${formatRadioValue(ficha.formData.projeto_desenvolvido_por)}</div>
+            </div>
+        </div>
+        <div class="grid grid-2" style="margin-top: 8px;">
+            <div class="field">
+                <div class="label">DESENHO FINALIZADO:</div>
+                <div class="value">${formatRadioValue(ficha.formData.desenho_finalizado)}</div>
+            </div>
+            <div class="field">
+                <div class="label">DESENHO:</div>
+                <div class="value">${ficha.formData.desenho_peca || "—"}</div>
             </div>
         </div>
     </div>
@@ -176,8 +220,26 @@ export function exportToHTML(ficha: FichaSalva) {
                 <div class="value">${formatRadioValue(ficha.formData.galvanizacao)}</div>
             </div>
             <div class="field">
+                <div class="label">PESO P/ GALV.:</div>
+                <div class="value">${ficha.formData.peso_peca_galv || "—"}</div>
+            </div>
+        </div>
+        <div class="grid grid-4" style="margin-top: 8px;">
+            <div class="field">
                 <div class="label">TRAT. TÉRMICO:</div>
                 <div class="value">${formatRadioValue(ficha.formData.tratamento_termico)}</div>
+            </div>
+            <div class="field">
+                <div class="label">TEMPERA/REVEN.:</div>
+                <div class="value">${ficha.formData.tempera_reven || "—"}</div>
+            </div>
+            <div class="field">
+                <div class="label">DUREZA:</div>
+                <div class="value">${ficha.formData.dureza || "—"}</div>
+            </div>
+            <div class="field">
+                <div class="label">ENSAIO LP:</div>
+                <div class="value">${formatRadioValue(ficha.formData.teste_lp)}</div>
             </div>
         </div>
     </div>
@@ -231,6 +293,30 @@ export function exportToHTML(ficha: FichaSalva) {
             </div>
         </div>
     </div>
+
+    ${(ficha.formData.observacoes || ficha.formData.condicoes_especiais || ficha.formData.descricao_geral) ? `
+    <div class="section">
+        <div class="section-title">INFORMAÇÕES ADICIONAIS</div>
+        ${ficha.formData.observacoes ? `
+        <div class="field">
+            <div class="label">OBSERVAÇÕES:</div>
+            <div class="value">${ficha.formData.observacoes}</div>
+        </div>
+        ` : ''}
+        ${ficha.formData.condicoes_especiais ? `
+        <div class="field" style="margin-top: 8px;">
+            <div class="label">CONDIÇÕES ESPECIAIS:</div>
+            <div class="value">${ficha.formData.condicoes_especiais}</div>
+        </div>
+        ` : ''}
+        ${ficha.formData.descricao_geral ? `
+        <div class="field" style="margin-top: 8px;">
+            <div class="label">DESCRIÇÃO GERAL:</div>
+            <div class="value">${ficha.formData.descricao_geral}</div>
+        </div>
+        ` : ''}
+    </div>
+    ` : ''}
 
     <div class="totals">
         <div class="section-title">RESUMO DOS CÁLCULOS</div>
