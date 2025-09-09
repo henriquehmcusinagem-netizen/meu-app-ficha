@@ -17,8 +17,8 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
   const titleFontSize = 12;
   const sectionFontSize = 8;
   const fieldFontSize = 7;
-  const lineHeight = 4.5;
-  const sectionSpacing = 6;
+  const lineHeight = 6; // Aumentado para melhor legibilidade
+  const sectionSpacing = 8; // Mais espaço entre seções
   
   // Funções auxiliares para formatação
   const formatRadioValue = (value: string) => {
@@ -34,7 +34,7 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
   };
 
   const formatField = (value: string | undefined | null) => {
-    return value && value.trim() ? value : '_________________________________';
+    return value && value.trim() ? value : '__________'; // Linha mais curta para preenchimento
   };
 
   // Função para título de seção - espaçamento melhorado
@@ -73,37 +73,32 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
   
   yPosition = margin + 18;
 
-  // DADOS DO CLIENTE (2 colunas bem espaçadas)
+  // DADOS DO CLIENTE (3 colunas para melhor aproveitamento do espaço)
   addSectionTitle('DADOS DO CLIENTE');
   
-  const col1Width = contentWidth / 2;
+  const col1Width = contentWidth / 3;
   const col2Start = margin + col1Width;
+  const col3Start = margin + (col1Width * 2);
   
-  // Linha 1
+  // Linha 1 - 3 campos
   addField('Cliente', formatField(ficha.formData.cliente), margin + 2, false);
   addField('Solicitante', formatField(ficha.formData.solicitante), col2Start, false);
+  addField('Fone/Email', formatField(ficha.formData.fone_email), col3Start, false);
   yPosition += lineHeight;
   
-  // Linha 2
-  addField('Fone/Email', formatField(ficha.formData.fone_email), margin + 2, false);
-  addField('Data Visita', formatField(ficha.formData.data_visita), col2Start, false);
-  yPosition += lineHeight;
-  
-  // Linha 3
-  addField('Data Entrega', formatField(ficha.formData.data_entrega), margin + 2, false);
-  yPosition += 3;
+  // Linha 2 - 2 campos com mais espaço
+  addField('Data Visita', formatField(ficha.formData.data_visita), margin + 2, false);
+  addField('Data Entrega', formatField(ficha.formData.data_entrega), col2Start, false);
+  yPosition += lineHeight + 3; // Espaço extra após seção
 
-  // DADOS DA PEÇA/EQUIPAMENTO (2 colunas bem espaçadas)
+  // DADOS DA PEÇA/EQUIPAMENTO (3 colunas para melhor aproveitamento)
   addSectionTitle('DADOS DA PEÇA/EQUIPAMENTO');
   
-  // Linha 1
+  // Linha 1 - 3 campos
   addField('Nome da Peça', formatField(ficha.formData.nome_peca), margin + 2, false);
   addField('Quantidade', formatField(ficha.formData.quantidade), col2Start, false);
-  yPosition += lineHeight;
-  
-  // Linha 2
-  addField('Serviço', formatField(ficha.formData.servico), margin + 2, false);
-  yPosition += 3;
+  addField('Serviço', formatField(ficha.formData.servico), col3Start, false);
+  yPosition += lineHeight + 3; // Espaço extra após seção
 
   // MATERIAL PARA COTAÇÃO (Tabela com melhor espaçamento) - SEMPRE 4 LINHAS
   addSectionTitle('MATERIAL PARA COTAÇÃO');
@@ -153,7 +148,7 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
   doc.text('Total', xPos, yPosition);
   yPosition += 4;
   
-  // Linhas da tabela - 4 linhas com altura maior
+  // Linhas da tabela - 4 linhas com altura adequada para preenchimento
   doc.setFont('helvetica', 'normal');
   materiaisParaExibir.slice(0, 4).forEach(material => {
     xPos = margin + 2;
@@ -181,9 +176,9 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
       : '__________';
     doc.text(total, xPos, yPosition);
     
-    yPosition += 4;
+    yPosition += lineHeight; // Usar lineHeight consistente
   });
-  yPosition += 2;
+  yPosition += 3; // Espaço após tabela
 
   // EXECUÇÃO E DETALHES (Grid 3 colunas para melhor legibilidade)
   addSectionTitle('EXECUÇÃO E DETALHES');
@@ -230,7 +225,7 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
   doc.text('Desenho Finalizado:', margin + 2, yPosition);
   doc.setFont('helvetica', 'normal');
   doc.text(formatRadioValue(ficha.formData.desenho_finalizado), margin + 26, yPosition);
-  yPosition += 3;
+  yPosition += lineHeight + 3; // Espaço extra após seção
 
   // TRANSPORTE (1 linha mais espaçada)
   addSectionTitle('TRANSPORTE');
@@ -251,7 +246,7 @@ export function generatePDFBlob(ficha: FichaSalva): Blob {
   doc.text('Cliente:', margin + 2 + (transportGridWidth * 2), yPosition);
   doc.setFont('helvetica', 'normal');
   doc.text(formatCheckbox(ficha.formData.transporte_cliente), margin + 12 + (transportGridWidth * 2), yPosition);
-  yPosition += 3;
+  yPosition += lineHeight + 3; // Espaço consistente após seção
 
   // TRATAMENTOS E ACABAMENTOS (Grid 4x4 - melhor espaçamento)
   addSectionTitle('TRATAMENTOS E ACABAMENTOS');
