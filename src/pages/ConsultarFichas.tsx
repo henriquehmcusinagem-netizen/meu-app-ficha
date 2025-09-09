@@ -255,18 +255,9 @@ export default function ConsultarFichas() {
         {/* Results */}
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>
-                Fichas Encontradas ({filteredFichas.length})
-              </CardTitle>
-              <Button
-                onClick={() => navigate('/nova-ficha')}
-                className="bg-gradient-to-r from-primary to-primary/80"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Nova Ficha
-              </Button>
-            </div>
+            <CardTitle>
+              Fichas Encontradas ({filteredFichas.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (

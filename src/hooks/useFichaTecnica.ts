@@ -110,36 +110,42 @@ export function useFichaTecnica() {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize FTC number and date for new fichas
+  // Unified initialization and loading logic
   useEffect(() => {
     const locationState = location.state as { loadFichaId?: string };
     const urlParams = new URLSearchParams(location.search);
     const editParam = urlParams.get('edit');
     const sessionStorageId = sessionStorage.getItem('loadFichaId');
-    const hasLoadRequest = editParam || locationState?.loadFichaId || sessionStorageId;
     
-    console.log('🔄 useEffect inicialização - Estado atual:', {
+    // Priority order: URL param > location state > sessionStorage
+    const loadFichaId = editParam || locationState?.loadFichaId || sessionStorageId;
+    
+    console.log('🔄 useEffect UNIFICADO - Estado atual:', {
       isInitialized,
       fichaId,
-      hasLoadRequest,
+      loadFichaId,
       editParam,
       isLoading,
       locationState: location.state
     });
     
-    // Only initialize new ficha if:
-    // 1. Not initialized yet
-    // 2. No fichaId (not editing existing) 
-    // 3. No load request pending (URL param, location state, or sessionStorage)
-    // 4. Not currently loading
-    if (!isInitialized && !fichaId && !hasLoadRequest && !isLoading) {
-      console.log('✨ useFichaTecnica - Criando nova ficha');
+    // PRIORITY 1: Load existing ficha if ID is provided
+    if (loadFichaId && !fichaId && !isLoading) {
+      console.log('🎯 PRIORIDADE 1: Carregando ficha existente:', loadFichaId);
+      sessionStorage.removeItem('loadFichaId'); // Clean up
+      carregarFichaTecnica(loadFichaId);
+      return; // Exit early, don't create new ficha
+    }
+    
+    // PRIORITY 2: Initialize new ficha only if no load request and not already initialized
+    if (!isInitialized && !loadFichaId && !fichaId && !isLoading) {
+      console.log('✨ PRIORIDADE 2: Criando nova ficha');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
       
       // Add initial materials
-      const initialMaterials: Material[] = Array.from({ length: 1 }, (_, index) => ({
-        id: Date.now() + index,
+      const initialMaterials: Material[] = [{
+        id: Date.now(),
         descricao: '',
         quantidade: '',
         unidade: '',
@@ -147,17 +153,20 @@ export function useFichaTecnica() {
         fornecedor: '',
         cliente_interno: '',
         valor_total: '0',
-      }));
+      }];
       
       setMateriais(initialMaterials);
       setIsInitialized(true);
     } else {
-      console.log('⏸️ Não criou nova ficha - Condições:', {
-        isInitialized: !isInitialized,
-        noFichaId: !fichaId,
-        noLoadRequest: !hasLoadRequest,
-        notLoading: !isLoading,
-        hasLoadRequestDetails: { editParam, locationStateId: locationState?.loadFichaId, sessionStorageId }
+      console.log('⏸️ Nenhuma ação tomada - Análise:', {
+        loadFichaId: !!loadFichaId,
+        fichaId: !!fichaId,
+        isLoading,
+        isInitialized,
+        decisao: loadFichaId ? 'Tem loadFichaId para carregar' :
+                 fichaId ? 'Já tem fichaId definido' :
+                 isLoading ? 'Já está carregando' :
+                 isInitialized ? 'Já está inicializado' : 'Condições não atendidas'
       });
     }
   }, [isInitialized, fichaId, isLoading, location.search, location.state]);
@@ -389,45 +398,6 @@ export function useFichaTecnica() {
 
   // Calculate totals
   const calculos: Calculos = calculateTotals(materiais, formData);
-
-  // Load ficha from location state if needed
-  useEffect(() => {
-    const locationState = location.state as { loadFichaId?: string };
-    
-    // Get ID from URL params first
-    const urlParams = new URLSearchParams(location.search);
-    const editParam = urlParams.get('edit');
-    console.log('🔍 URL param edit:', editParam);
-    
-    const sessionStorageId = sessionStorage.getItem('loadFichaId');
-    const loadFichaId = editParam || locationState?.loadFichaId || sessionStorageId;
-    
-    console.log('🔍 useEffect carregamento - DETALHADO');
-    console.log('🔍 location.state:', location.state);
-    console.log('🔍 locationState?.loadFichaId:', locationState?.loadFichaId);
-    console.log('🔍 sessionStorage loadFichaId:', sessionStorageId);
-    console.log('🔍 loadFichaId final:', loadFichaId);
-    console.log('🔍 Estado atual:', { isInitialized, fichaId, isLoading });
-    
-    if (loadFichaId && !fichaId && !isLoading && isInitialized) {
-      console.log('🎯 CONDIÇÕES ATENDIDAS - Iniciando carregamento da ficha:', loadFichaId);
-      sessionStorage.removeItem('loadFichaId'); // Clean up after loading
-      carregarFichaTecnica(loadFichaId);
-    } else {
-      console.log('❌ Não carregou ficha - Análise detalhada:', {
-        hasLoadFichaId: !!loadFichaId,
-        loadFichaIdValue: loadFichaId,
-        hasFichaId: !!fichaId,
-        fichaIdValue: fichaId,
-        isLoading,
-        isInitialized,
-        decisão: !loadFichaId ? 'Sem loadFichaId' : 
-                 fichaId ? 'Já tem fichaId' : 
-                 isLoading ? 'Já carregando' : 
-                 !isInitialized ? 'Não inicializado' : 'Condições não atendidas'
-      });
-    }
-  }, [location.search, location.state?.loadFichaId, fichaId, carregarFichaTecnica, isLoading, isInitialized]);
 
   return {
     // Original data
