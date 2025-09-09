@@ -6,12 +6,10 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signInWithPhone: (phone: string) => Promise<{ error: any }>;
-  signInWithEmail: (email: string) => Promise<{ error: any }>;
-  verifyOtp: (phone: string, token: string) => Promise<{ error: any }>;
-  verifyEmailOtp: (email: string, token: string) => Promise<{ error: any }>;
+  signInWithPassword: (email: string, password: string) => Promise<{ error: any }>;
+  signUpWithPassword: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  isAuthorizedUser: (phone?: string, email?: string) => Promise<boolean>;
+  isAuthorizedUser: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,11 +39,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const isAuthorizedUser = async (phone?: string, email?: string): Promise<boolean> => {
+  const isAuthorizedUser = async (email: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.rpc('is_user_authorized', {
-        user_phone: phone || null,
-        user_email: email || null
+        user_phone: null,
+        user_email: email
       });
       
       if (error) {
@@ -60,57 +58,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithPhone = async (phone: string) => {
-    // Verificar se telefone está autorizado
-    const authorized = await isAuthorizedUser(phone);
-    if (!authorized) {
-      return { error: { message: 'Telefone não autorizado para acesso ao sistema' } };
-    }
-
-    const { error } = await supabase.auth.signInWithOtp({
-      phone,
-      options: {
-        channel: 'sms'
-      }
-    });
-    
-    return { error };
-  };
-
-  const signInWithEmail = async (email: string) => {
+  const signInWithPassword = async (email: string, password: string) => {
     // Verificar se email está autorizado
-    const authorized = await isAuthorizedUser(undefined, email);
+    const authorized = await isAuthorizedUser(email);
     if (!authorized) {
       return { error: { message: 'Email não autorizado para acesso ao sistema' } };
     }
 
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      options: {
-        emailRedirectTo: redirectUrl
-      }
+      password
     });
     
     return { error };
   };
 
-  const verifyOtp = async (phone: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({
-      phone,
-      token,
-      type: 'sms'
-    });
-    
-    return { error };
-  };
+  const signUpWithPassword = async (email: string, password: string) => {
+    // Verificar se email está autorizado
+    const authorized = await isAuthorizedUser(email);
+    if (!authorized) {
+      return { error: { message: 'Email não autorizado para acesso ao sistema' } };
+    }
 
-  const verifyEmailOtp = async (email: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({
+    const { error } = await supabase.auth.signUp({
       email,
-      token,
-      type: 'email'
+      password
     });
     
     return { error };
@@ -124,10 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
-    signInWithPhone,
-    signInWithEmail,
-    verifyOtp,
-    verifyEmailOtp,
+    signInWithPassword,
+    signUpWithPassword,
     signOut,
     isAuthorizedUser
   };
