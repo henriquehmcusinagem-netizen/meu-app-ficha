@@ -212,38 +212,85 @@ export function useFichaTecnica() {
 
   // Save ficha function
   const salvarFichaTecnica = useCallback(async (): Promise<{ success: boolean; errors?: string[]; numeroFTC?: string }> => {
+    console.log('💾 SALVAMENTO INICIADO');
+    console.log('💾 Estado atual:', { 
+      fichaId, 
+      isSaved, 
+      isModified, 
+      numeroFTC 
+    });
+    console.log('💾 Dados para salvar:', { 
+      cliente: formData.cliente, 
+      materiais: materiais.length, 
+      fotos: fotos.length,
+      fotosComFile: fotos.filter(f => f.file).length,
+      fotosExistentes: fotos.filter(f => f.storagePath).length
+    });
+    
     setIsSaving(true);
     
     try {
       // Validate required fields
+      console.log('✅ Validando campos obrigatórios...');
       const erros = validarCamposObrigatorios(formData, materiais);
       
       if (erros.length > 0) {
+        console.error('❌ Erros de validação:', erros);
         setIsSaving(false);
         return { success: false, errors: erros };
       }
       
       // Calculate totals for saving
+      console.log('🧮 Calculando totais...');
       const calculos = calculateTotals(materiais, formData);
+      console.log('🧮 Totais calculados:', calculos);
       
       // Save to Supabase
+      console.log('💾 Chamando salvarFicha...');
+      console.log('💾 Parâmetros:', { 
+        fichaId: fichaId || undefined, 
+        numeroFTC,
+        fotosTotal: fotos.length 
+      });
+      
       const result = await salvarFicha(formData, materiais, fotos, calculos, numeroFTC, fichaId || undefined);
       
+      console.log('💾 Resultado do salvarFicha:', result);
+      
       if (result.success) {
-        setFichaId(result.id!);
+        console.log('✅ SALVAMENTO BEM-SUCEDIDO!');
+        console.log('✅ Atualizando estado...');
+        
+        if (result.id) {
+          console.log('🆔 Definindo fichaId para:', result.id);
+          setFichaId(result.id);
+        }
+        
         // Update FTC number with the real one from database
         if (result.numeroFTC) {
+          console.log('🔢 Atualizando numeroFTC para:', result.numeroFTC);
           setNumeroFTC(result.numeroFTC);
         }
+        
         setIsSaved(true);
         setIsModified(false);
         setIsSaving(false);
+        
+        console.log('✅ Estado final após salvamento:', { 
+          fichaId: result.id, 
+          numeroFTC: result.numeroFTC 
+        });
+        
         return { success: true };
       } else {
+        console.error('❌ ERRO NO SALVAMENTO:', result.error);
+        console.error('❌ NÃO vou resetar o fichaId - mantendo sessão de edição');
         setIsSaving(false);
         return { success: false, errors: [result.error || 'Erro ao salvar'] };
       }
     } catch (error) {
+      console.error('💥 EXCEÇÃO DURANTE SALVAMENTO:', error);
+      console.error('💥 NÃO vou resetar o fichaId - mantendo sessão de edição');
       setIsSaving(false);
       return { success: false, errors: ['Erro inesperado ao salvar'] };
     }
