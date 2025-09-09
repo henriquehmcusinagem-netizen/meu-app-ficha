@@ -10,39 +10,26 @@ export default function NovaFicha() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { carregarFichaTecnica, isLoading, fichaId, preventAutoInitialization } = useFichaTecnica();
+  const { isLoading, fichaId } = useFichaTecnica();
 
-  // Load ficha if coming from consultation page
+  // Show toast for loading state
   useEffect(() => {
     const loadFichaId = location.state?.loadFichaId;
-    console.log('NovaFicha - useEffect executado, loadFichaId:', loadFichaId);
     
-    if (loadFichaId) {
-      console.log('NovaFicha - Prevenindo inicialização e carregando ficha:', loadFichaId);
-      
-      // Prevent the hook from auto-initializing
-      preventAutoInitialization();
-      
+    if (loadFichaId && isLoading) {
       toast({
         title: "Carregando ficha...",
         description: "Aguarde enquanto a ficha é carregada.",
       });
-      
-      carregarFichaTecnica(loadFichaId).then(() => {
-        toast({
-          title: "Ficha carregada",
-          description: "A ficha foi carregada com sucesso.",
-        });
-      }).catch((error) => {
-        console.error('NovaFicha - Erro ao carregar ficha:', error);
-        toast({
-          title: "Erro ao carregar ficha",
-          description: "Ocorreu um erro ao carregar a ficha.",
-          variant: "destructive",
-        });
+    }
+    
+    if (loadFichaId && !isLoading && fichaId) {
+      toast({
+        title: "Ficha carregada com sucesso!",
+        description: "Você pode agora editar a ficha técnica.",
       });
     }
-  }, [location.state?.loadFichaId, carregarFichaTecnica, preventAutoInitialization, toast]);
+  }, [location.state?.loadFichaId, isLoading, fichaId, toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
