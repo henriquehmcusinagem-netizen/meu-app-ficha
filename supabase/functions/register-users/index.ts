@@ -40,10 +40,22 @@ serve(async (req) => {
     for (const email of users) {
       console.log(`Processing user: ${email}`);
       
-      // Check if user already exists
-      const { data: existingUser } = await supabaseAdmin.auth.admin.getUserById(email);
+      // Check if user already exists by listing users and filtering by email
+      const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
       
-      if (existingUser.user) {
+      if (listError) {
+        console.error(`Error listing users:`, listError);
+        results.push({
+          email,
+          status: 'error',
+          message: `Error checking existing users: ${listError.message}`
+        });
+        continue;
+      }
+      
+      const userExists = existingUsers.users.some(user => user.email === email);
+      
+      if (userExists) {
         console.log(`User ${email} already exists, skipping...`);
         results.push({
           email,
