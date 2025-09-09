@@ -112,10 +112,11 @@ export function useFichaTecnica() {
 
   // Initialize FTC number and date for new fichas
   useEffect(() => {
-    console.log('useFichaTecnica - Inicializando hook, isInitialized:', isInitialized, 'fichaId:', fichaId);
+    const loadFichaId = location.state?.loadFichaId;
+    console.log('useFichaTecnica - Inicializando hook, isInitialized:', isInitialized, 'fichaId:', fichaId, 'loadFichaId:', loadFichaId);
     
-    // Only initialize new ficha if not already initialized and no ficha loaded
-    if (!isInitialized && !fichaId && !isLoading) {
+    // Only initialize new ficha if not already initialized, no ficha loaded, and no ficha to load
+    if (!isInitialized && !fichaId && !loadFichaId && !isLoading) {
       console.log('useFichaTecnica - Criando nova ficha');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
