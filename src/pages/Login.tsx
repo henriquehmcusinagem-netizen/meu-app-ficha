@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, LogIn } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { AdminPasswordReset } from '@/components/AdminPasswordReset';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -65,7 +66,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex flex-col items-center justify-center p-4 gap-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Login</CardTitle>
@@ -129,6 +130,10 @@ export default function Login() {
           </form>
         </CardContent>
       </Card>
+      
+      <div className="w-full max-w-md">
+        <AdminPasswordReset />
+      </div>
     </div>
   );
 }
