@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, LogIn, UserPlus } from 'lucide-react';
+import { Shield, LogIn, UserPlus, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const { user, loading, signInWithPassword, signUpWithPassword } = useAuth();
@@ -91,6 +92,48 @@ export default function Auth() {
       toast({
         title: 'Cadastro realizado!',
         description: 'Sua conta foi criada com sucesso'
+      });
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleRegisterUsers = async () => {
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('register-users');
+      
+      if (error) {
+        toast({
+          title: 'Erro',
+          description: 'Erro ao registrar usuários: ' + error.message,
+          variant: 'destructive'
+        });
+      } else {
+        console.log('Registration results:', data);
+        const { results } = data;
+        
+        const created = results.filter((r: any) => r.status === 'created').length;
+        const existing = results.filter((r: any) => r.status === 'exists').length;
+        const errors = results.filter((r: any) => r.status === 'error').length;
+        
+        let message = '';
+        if (created > 0) message += `${created} usuários criados com sucesso. `;
+        if (existing > 0) message += `${existing} usuários já existiam. `;
+        if (errors > 0) message += `${errors} erros encontrados.`;
+        
+        toast({
+          title: 'Registro de usuários',
+          description: message || 'Processo concluído',
+          variant: created > 0 ? 'default' : 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Erro inesperado ao registrar usuários',
+        variant: 'destructive'
       });
     }
     
@@ -190,6 +233,21 @@ export default function Auth() {
               </Button>
             </TabsContent>
           </Tabs>
+          
+          <div className="mt-6 pt-4 border-t space-y-3">
+            <div className="text-xs text-muted-foreground text-center">
+              Administração
+            </div>
+            <Button
+              onClick={handleRegisterUsers}
+              variant="outline"
+              className="w-full flex items-center gap-2"
+              disabled={isLoading}
+            >
+              <Users className="h-4 w-4" />
+              {isLoading ? 'Registrando...' : 'Registrar Usuários HMC'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
