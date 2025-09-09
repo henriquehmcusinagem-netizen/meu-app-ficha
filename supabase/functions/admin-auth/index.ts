@@ -25,7 +25,8 @@ serve(async (req) => {
     );
 
     const { action, email, newPassword } = await req.json();
-    console.log(`Admin auth action: ${action} for email: ${email}`);
+    console.log(`🔧 Admin Auth - Action: ${action}, Email: ${email}`);
+    console.log(`📊 Request timestamp: ${new Date().toISOString()}`);
 
     if (action === 'list-users') {
       // List all users in Supabase Auth
@@ -55,16 +56,36 @@ serve(async (req) => {
     }
 
     if (action === 'reset-password' && email && newPassword) {
-      // Reset user password
-      const { data: users } = await supabaseAdmin.auth.admin.listUsers();
+      console.log(`🔑 Attempting to reset password for: ${email}`);
+      
+      // List users to find the target user
+      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('❌ Error listing users:', listError);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: listError.message 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
       const user = users.users.find(u => u.email === email);
       
       if (!user) {
-        return new Response(JSON.stringify({ error: 'User not found' }), {
+        console.error(`❌ User not found: ${email}`);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'User not found' 
+        }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+
+      console.log(`✅ User found with ID: ${user.id}`);
 
       const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
         user.id,
@@ -72,17 +93,21 @@ serve(async (req) => {
       );
 
       if (error) {
-        console.error(`Error resetting password for ${email}:`, error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        console.error(`❌ Error resetting password for ${email}:`, error);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: error.message 
+        }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      console.log(`Password reset successfully for ${email}`);
+      console.log(`✅ Password reset successfully for ${email}`);
       return new Response(JSON.stringify({ 
         success: true,
-        message: `Password reset for ${email}`
+        message: `Password reset for ${email}`,
+        user: data.user
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -113,6 +138,8 @@ serve(async (req) => {
     }
 
     if (action === 'test-login' && email && newPassword) {
+      console.log(`🧪 Testing login for: ${email}`);
+      
       // Test login with provided credentials
       const supabaseTest = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
@@ -120,14 +147,16 @@ serve(async (req) => {
       );
 
       // First check if user is authorized
+      console.log(`🔍 Checking authorization for: ${email}`);
       const { data: authCheck } = await supabaseAdmin.rpc('is_user_authorized', {
         user_phone: null,
         user_email: email
       });
 
-      console.log(`Authorization check for ${email}: ${authCheck}`);
+      console.log(`✅ Authorization check for ${email}: ${authCheck}`);
 
       if (!authCheck) {
+        console.error(`❌ Email not authorized: ${email}`);
         return new Response(JSON.stringify({ 
           success: false,
           error: 'Email not authorized'
@@ -137,13 +166,14 @@ serve(async (req) => {
       }
 
       // Try to sign in
+      console.log(`🔐 Attempting login for: ${email}`);
       const { data, error } = await supabaseTest.auth.signInWithPassword({
         email,
         password: newPassword
       });
 
       if (error) {
-        console.error(`Login test failed for ${email}:`, error);
+        console.error(`❌ Login test failed for ${email}:`, error);
         return new Response(JSON.stringify({ 
           success: false,
           error: error.message
@@ -152,9 +182,15 @@ serve(async (req) => {
         });
       }
 
-      console.log(`Login test successful for ${email}`);
+      console.log(`✅ Login test successful for ${email}`);
+      
+      // Sign out after successful test
+      await supabaseTest.auth.signOut();
+      console.log(`🚪 Signed out test session for ${email}`);
+      
       return new Response(JSON.stringify({ 
         success: true,
+        message: `Login successful for ${email}`,
         user: {
           id: data.user?.id,
           email: data.user?.email

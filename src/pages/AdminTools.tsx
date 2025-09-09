@@ -292,20 +292,6 @@ export default function AdminTools() {
                   Esta ação reseta a senha dos 3 usuários para @Hmcusinagem402 e testa o login
                 </p>
               </div>
-              
-              <div className="pt-4 border-t">
-                <Button 
-                  onClick={fixAllCredentials} 
-                  disabled={loading} 
-                  variant="destructive"
-                  className="w-full"
-                >
-                  🔧 CORRIGIR TODAS AS CREDENCIAIS
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Esta ação reseta a senha dos 3 usuários para @Hmcusinagem402 e testa o login
-                </p>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
