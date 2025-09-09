@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Download, Paperclip, Link } from "lucide-react";
+import { Eye, Paperclip, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FichaSalva } from "@/types/ficha-tecnica";
 import { generatePDF, generatePDFBlob } from "@/utils/pdfGenerator";
@@ -14,18 +14,34 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
 
 
 
-  const exportToPDFFile = () => {
+  const previewPDF = async () => {
     try {
-      generatePDF(ficha);
-      toast({
-        title: "PDF Exportado",
-        description: `Arquivo PDF da FTC ${ficha.numeroFTC} baixado com sucesso.`,
-      });
+      const pdfBlob = await generatePDFBlob(ficha);
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      
+      const newWindow = window.open(pdfUrl, '_blank');
+      if (newWindow) {
+        newWindow.onload = () => {
+          URL.revokeObjectURL(pdfUrl);
+        };
+        toast({
+          title: "PDF Aberto",
+          description: `Visualização do PDF da ficha ${ficha.numeroFTC} aberta em nova aba!`,
+        });
+      } else {
+        URL.revokeObjectURL(pdfUrl);
+        toast({
+          title: "Erro",
+          description: "Não foi possível abrir o PDF. Verifique se o bloqueador de pop-ups está desabilitado.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
+      console.error('Erro ao gerar preview do PDF:', error);
       toast({
-        title: "Erro ao exportar PDF",
-        description: "Não foi possível exportar o PDF. Tente novamente.",
-        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao gerar visualização do PDF",
+        variant: "destructive"
       });
     }
   };
@@ -139,13 +155,13 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       <Button
-        onClick={(e) => { e.stopPropagation(); exportToPDFFile(); }} 
+        onClick={(e) => { e.stopPropagation(); previewPDF(); }} 
         variant="outline" 
         size="sm"
         className="bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800"
       >
-        <Download className="h-3 w-3" />
-        PDF
+        <Eye className="h-3 w-3" />
+        Visualizar PDF
       </Button>
 
 
