@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2 } from "lucide-react";
+import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { FormData, Material, Foto, FichaSalva, Calculos } from "@/types/ficha-tecnica";
 import { exportToHTML } from "@/utils/htmlExporter";
+import { generatePDF } from "@/utils/pdfGenerator";
 import { calculateTotals, formatCurrency } from "@/utils/calculations";
 import { getCurrentDate } from "@/utils/helpers";
 
@@ -65,6 +66,25 @@ export function PostSaveActionsModal({
       toast({
         title: "Erro na Exportação",
         description: "Não foi possível gerar o arquivo HTML.",
+        variant: "destructive"
+      });
+    }
+    onOpenChange(false);
+  };
+
+  const exportToPDFFile = () => {
+    try {
+      const tempFicha = createTempFicha();
+      generatePDF(tempFicha);
+      
+      toast({
+        title: "PDF Exportado",
+        description: "Download do arquivo PDF iniciado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na Exportação",
+        description: "Não foi possível gerar o arquivo PDF.",
         variant: "destructive"
       });
     }
@@ -150,10 +170,14 @@ export function PostSaveActionsModal({
           {/* Exportar Seção */}
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Exportar</h4>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button onClick={exportToHTMLFile} variant="outline" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 HTML
+              </Button>
+              <Button onClick={exportToPDFFile} variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800">
+                <Download className="h-4 w-4" />
+                PDF
               </Button>
             </div>
           </div>

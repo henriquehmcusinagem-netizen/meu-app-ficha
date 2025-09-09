@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { FileText, Printer, Mail, MessageCircle } from "lucide-react";
+import { FileText, Printer, Mail, MessageCircle, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FichaSalva } from "@/types/ficha-tecnica";
 import { exportToHTML } from "@/utils/htmlExporter";
+import { generatePDF } from "@/utils/pdfGenerator";
 import { ConsultaPrintLayout } from "./ConsultaPrintLayout";
 import { createRoot } from "react-dom/client";
 
@@ -25,6 +26,22 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
       toast({
         title: "Erro ao exportar HTML",
         description: "Não foi possível exportar o HTML. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportToPDFFile = () => {
+    try {
+      generatePDF(ficha);
+      toast({
+        title: "PDF Exportado",
+        description: `Arquivo PDF da FTC ${ficha.numeroFTC} baixado com sucesso.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao exportar PDF",
+        description: "Não foi possível exportar o PDF. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -125,6 +142,16 @@ Equipe HMC`;
       >
         <FileText className="h-3 w-3" />
         HTML
+      </Button>
+
+      <Button
+        onClick={(e) => { e.stopPropagation(); exportToPDFFile(); }} 
+        variant="outline" 
+        size="sm"
+        className="bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800"
+      >
+        <Download className="h-3 w-3" />
+        PDF
       </Button>
 
       <Button 
