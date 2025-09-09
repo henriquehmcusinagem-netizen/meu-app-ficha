@@ -375,26 +375,34 @@ export function useFichaTecnica() {
 
   // Load ficha from location state if needed
   useEffect(() => {
-    const loadFichaId = location.state?.loadFichaId || sessionStorage.getItem('loadFichaId');
-    console.log('🔍 useEffect carregamento - loadFichaId:', loadFichaId, 'isInitialized:', isInitialized, 'fichaId:', fichaId);
-    console.log('📍 Fontes do loadFichaId:', {
-      fromLocationState: location.state?.loadFichaId,
-      fromSessionStorage: sessionStorage.getItem('loadFichaId'),
-      final: loadFichaId
-    });
+    const locationState = location.state as { loadFichaId?: string };
+    const sessionStorageId = sessionStorage.getItem('loadFichaId');
+    const loadFichaId = locationState?.loadFichaId || sessionStorageId;
     
-    if (loadFichaId && !fichaId) {
-      console.log('✅ useFichaTecnica - Carregando ficha:', loadFichaId);
-      // Clear sessionStorage after using it
-      sessionStorage.removeItem('loadFichaId');
+    console.log('🔍 useEffect carregamento - DETALHADO');
+    console.log('🔍 location.state:', location.state);
+    console.log('🔍 locationState?.loadFichaId:', locationState?.loadFichaId);
+    console.log('🔍 sessionStorage loadFichaId:', sessionStorageId);
+    console.log('🔍 loadFichaId final:', loadFichaId);
+    console.log('🔍 Estado atual:', { isInitialized, fichaId, isLoading });
+    
+    if (loadFichaId && !fichaId && !isLoading) {
+      console.log('🎯 CONDIÇÕES ATENDIDAS - Iniciando carregamento da ficha:', loadFichaId);
+      sessionStorage.removeItem('loadFichaId'); // Clean up after loading
       carregarFichaTecnica(loadFichaId);
     } else {
-      console.log('❌ Não carregou ficha - Motivos:', {
+      console.log('❌ Não carregou ficha - Análise detalhada:', {
         hasLoadFichaId: !!loadFichaId,
-        hasFichaId: !!fichaId
+        loadFichaIdValue: loadFichaId,
+        hasFichaId: !!fichaId,
+        fichaIdValue: fichaId,
+        isLoading,
+        decisão: !loadFichaId ? 'Sem loadFichaId' : 
+                 fichaId ? 'Já tem fichaId' : 
+                 isLoading ? 'Já carregando' : 'Condições não atendidas'
       });
     }
-  }, [location.state?.loadFichaId, fichaId, carregarFichaTecnica]);
+  }, [location.state?.loadFichaId, fichaId, carregarFichaTecnica, isLoading]);
 
   return {
     // Original data

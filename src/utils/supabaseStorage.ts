@@ -106,14 +106,24 @@ async function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]
       let preview: string | undefined = undefined;
       
       if (foto.storage_path) {
-        // Get real photo URL from Supabase Storage
-        const { data: signedUrl } = await supabase.storage
-          .from('ficha-fotos')
-          .createSignedUrl(foto.storage_path, 3600); // 1 hour expiry
-        
-        if (signedUrl) {
-          preview = signedUrl.signedUrl;
+        try {
+          console.log(`🖼️ Carregando foto salva: ${foto.name}, path: ${foto.storage_path}`);
+          // Get real photo URL from Supabase Storage
+          const { data: signedUrl, error } = await supabase.storage
+            .from('ficha-fotos')
+            .createSignedUrl(foto.storage_path, 3600); // 1 hour expiry
+          
+          if (error) {
+            console.error(`❌ Erro ao carregar foto ${foto.name}:`, error);
+          } else if (signedUrl) {
+            preview = signedUrl.signedUrl;
+            console.log(`✅ Foto carregada com sucesso: ${foto.name}`);
+          }
+        } catch (error) {
+          console.error(`💥 Exceção ao carregar foto ${foto.name}:`, error);
         }
+      } else {
+        console.warn(`⚠️ Foto ${foto.name} sem storage_path - foto corrompida`);
       }
       
       return {
@@ -417,21 +427,41 @@ export async function salvarFicha(
           if (foto.file) {
             // Upload new photo to Supabase Storage
             console.log(`📤 Fazendo upload de nova foto: ${foto.name}`);
-            const fileName = `${savedFichaId}/${Date.now()}_${index}_${foto.name}`;
+            // Sanitize filename
+            const sanitizedName = foto.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const fileName = `${savedFichaId}/${Date.now()}_${index}_${sanitizedName}`;
             console.log(`📤 Nome do arquivo no storage: ${fileName}`);
             
             try {
+              // Check if file is valid
+              if (!foto.file.type.startsWith('image/')) {
+                console.error('❌ Arquivo não é uma imagem:', foto.file.type);
+                throw new Error('Tipo de arquivo inválido');
+              }
+              
+              if (foto.file.size > 5 * 1024 * 1024) { // 5MB limit
+                console.error('❌ Arquivo muito grande:', foto.file.size);
+                throw new Error('Arquivo muito grande');
+              }
+              
+              console.log(`📤 Fazendo upload - Size: ${foto.file.size}, Type: ${foto.file.type}`);
+              
               const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('ficha-fotos')
-                .upload(fileName, foto.file);
+                .upload(fileName, foto.file, {
+                  cacheControl: '3600',
+                  upsert: false
+                });
                 
               if (uploadError) {
                 console.error('❌ Erro no upload da foto:', foto.name, uploadError);
                 console.error('❌ Detalhes do erro:', uploadError.message);
-                // Continue with other photos even if one fails
-              } else {
-                storagePath = uploadData?.path;
+                // Don't save photo metadata if upload failed
+              } else if (uploadData?.path) {
+                storagePath = uploadData.path;
                 console.log('✅ Upload bem-sucedido:', fileName, 'Path:', storagePath);
+              } else {
+                console.error('❌ Upload retornou dados inválidos:', uploadData);
               }
             } catch (uploadException) {
               console.error('💥 Exceção durante upload:', foto.name, uploadException);
