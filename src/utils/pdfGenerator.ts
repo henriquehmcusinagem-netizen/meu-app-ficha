@@ -1,465 +1,611 @@
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { FichaSalva } from '@/types/ficha-tecnica';
 import { formatCurrency } from './calculations';
 
-export function generatePDFBlob(ficha: FichaSalva): Blob {
+// Declaração de tipos para o plugin autotable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+    lastAutoTable: {
+      finalY: number;
+    };
+    getNumberOfPages: () => number;
+  }
+}
+
+export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
   const doc = new jsPDF('portrait', 'mm', 'a4');
   
-  // Configurações otimizadas para A4 (210mm x 297mm) - layout confortável para leitura e preenchimento
-  const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
-  const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
-  const margin = 12; // Margem confortável para impressão
-  const contentWidth = pageWidth - 2 * margin; // 186mm úteis
-  const contentHeight = pageHeight - 2 * margin; // 273mm úteis
+  // Configurações gerais
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 15;
+  const contentWidth = pageWidth - 2 * margin;
   let yPosition = margin;
   
-  // Configurações de fonte otimizadas para legibilidade e preenchimento manual
-  const titleFontSize = 12;
-  const sectionFontSize = 8;
-  const fieldFontSize = 7;
-  const lineHeight = 6; // Aumentado para melhor legibilidade
-  const sectionSpacing = 8; // Mais espaço entre seções
+  // Cores do tema
+  const primaryColor = [34, 56, 178] as const; // Azul primário
+  const secondaryColor = [245, 245, 245] as const; // Cinza claro para backgrounds
+  const textColor = [33, 37, 41] as const; // Texto principal
+  const mutedColor = [108, 117, 125] as const; // Texto secundário
   
-  // Funções auxiliares para formatação
+  // Configurações de fonte
+  doc.setFont('helvetica');
+  
+  // Funções auxiliares
   const formatRadioValue = (value: string) => {
-    if (value === 'sim') return 'Sim';
-    if (value === 'nao' || value === 'não') return 'Não';
-    return value || '_____';
+    if (!value) return '—';
+    if (value === 'sim') return '✓ Sim';
+    if (value === 'nao' || value === 'não') return '✗ Não';
+    return value;
   };
 
-  const formatCheckbox = (value: string | boolean) => {
-    if (value === true || value === 'true' || value === 'sim') return '☑';
-    if (value === false || value === 'false' || value === 'nao' || value === 'não') return '☐';
-    return '☐';
+  const formatCheckbox = (value: boolean) => {
+    return value ? '✓' : '✗';
   };
 
   const formatField = (value: string | undefined | null) => {
-    return value && value.trim() ? value : '__________'; // Linha mais curta para preenchimento
+    return value && value.trim() ? value : '—';
   };
 
-  // Função para título de seção - espaçamento melhorado
-  const addSectionTitle = (title: string) => {
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, yPosition, contentWidth, 5, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(sectionFontSize);
-    doc.setTextColor(0, 0, 0);
-    doc.text(title, margin + 2, yPosition + 3.5);
-    yPosition += sectionSpacing;
+  // Função para adicionar quebra de página se necessário
+  const checkPageBreak = (requiredSpace: number) => {
+    if (yPosition + requiredSpace > pageHeight - margin) {
+      doc.addPage();
+      yPosition = margin;
+      return true;
+    }
+    return false;
   };
 
-  // Função para adicionar campo em coluna específica
-  const addField = (label: string, value: string, x: number, bold: boolean = false) => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(fieldFontSize);
-    doc.text(`${label}:`, x, yPosition);
+  // Função para desenhar seção com título
+  const drawSection = (title: string, height: number = 8) => {
+    checkPageBreak(height + 10);
     
-    doc.setFont('helvetica', bold ? 'bold' : 'normal');
-    const labelWidth = doc.getTextWidth(`${label}: `);
-    doc.text(value, x + labelWidth, yPosition);
+    // Fundo do título
+    doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.rect(margin, yPosition, contentWidth, height, 'F');
+    
+    // Borda
+    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(margin, yPosition, contentWidth, height, 'S');
+    
+    // Texto do título
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(title, margin + 3, yPosition + 5.5);
+    
+    yPosition += height + 2;
+    
+    // Reset cores
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.setFont('helvetica', 'normal');
   };
 
-  // CABEÇALHO - melhor espaçamento
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(titleFontSize);
-  doc.text('FICHA TÉCNICA DE COTAÇÃO', pageWidth / 2, margin + 6, { align: 'center' });
-  
-  // Data e FTC
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(fieldFontSize);
-  const dataFormatada = ficha.dataCriacao ? new Date(ficha.dataCriacao).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
-  doc.text(`Data: ${dataFormatada}`, margin, margin + 12);
-  doc.text(`FTC Nº: ${ficha.numeroFTC}`, pageWidth - margin - 40, margin + 12);
-  
-  yPosition = margin + 18;
+  // CABEÇALHO COM LOGO E INFORMAÇÕES
+  const drawHeader = () => {
+    // Fundo do cabeçalho
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(margin, yPosition, contentWidth, 25, 'F');
+    
+    // Título principal
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text('FICHA TÉCNICA DE COTAÇÃO', pageWidth / 2, yPosition + 10, { align: 'center' });
+    
+    // Subtítulo
+    doc.setFontSize(12);
+    doc.text(`FTC Nº ${ficha.numeroFTC}`, pageWidth / 2, yPosition + 17, { align: 'center' });
+    
+    // Data
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const dataFormatada = ficha.dataCriacao ? new Date(ficha.dataCriacao).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+    doc.text(`Data: ${dataFormatada}`, margin + 3, yPosition + 22);
+    
+    // Status
+    const statusText = ficha.status === 'finalizada' ? 'FINALIZADA' : 'RASCUNHO';
+    const statusColor = ficha.status === 'finalizada' ? [40, 167, 69] : [255, 193, 7];
+    doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+    doc.rect(pageWidth - margin - 30, yPosition + 18, 28, 6, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.text(statusText, pageWidth - margin - 16, yPosition + 22, { align: 'center' });
+    
+    yPosition += 30;
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  };
 
-  // DADOS DO CLIENTE (3 colunas para melhor aproveitamento do espaço)
-  addSectionTitle('DADOS DO CLIENTE');
-  
-  const col1Width = contentWidth / 3;
-  const col2Start = margin + col1Width;
-  const col3Start = margin + (col1Width * 2);
-  
-  // Linha 1 - 3 campos
-  addField('Cliente', formatField(ficha.formData.cliente), margin + 2, false);
-  addField('Solicitante', formatField(ficha.formData.solicitante), col2Start, false);
-  addField('Fone/Email', formatField(ficha.formData.fone_email), col3Start, false);
-  yPosition += lineHeight;
-  
-  // Linha 2 - 2 campos com mais espaço
-  addField('Data Visita', formatField(ficha.formData.data_visita), margin + 2, false);
-  addField('Data Entrega', formatField(ficha.formData.data_entrega), col2Start, false);
-  yPosition += lineHeight + 3; // Espaço extra após seção
-
-  // DADOS DA PEÇA/EQUIPAMENTO (3 colunas para melhor aproveitamento)
-  addSectionTitle('DADOS DA PEÇA/EQUIPAMENTO');
-  
-  // Linha 1 - 3 campos
-  addField('Nome da Peça', formatField(ficha.formData.nome_peca), margin + 2, false);
-  addField('Quantidade', formatField(ficha.formData.quantidade), col2Start, false);
-  addField('Serviço', formatField(ficha.formData.servico), col3Start, false);
-  yPosition += lineHeight + 3; // Espaço extra após seção
-
-  // MATERIAL PARA COTAÇÃO (Tabela com melhor espaçamento) - SEMPRE 4 LINHAS
-  addSectionTitle('MATERIAL PARA COTAÇÃO');
-  
-  // Sempre exibir 4 linhas para garantir espaço para preenchimento confortável
-  const materiaisParaExibir = [];
-  const materiaisFiltrados = ficha.materiais?.filter(m => 
-    m.descricao || (m.quantidade && parseFloat(m.quantidade) > 0) || (m.valor_unitario && parseFloat(m.valor_unitario) > 0)
-  ) || [];
-  
-  // Adicionar materiais existentes
-  materiaisParaExibir.push(...materiaisFiltrados);
-  
-  // Completar com linhas vazias até 4 linhas
-  while (materiaisParaExibir.length < 4) {
-    materiaisParaExibir.push({
-      id: materiaisParaExibir.length,
-      descricao: '',
-      quantidade: '',
-      unidade: '',
-      valor_unitario: '',
-      fornecedor: '',
-      cliente_interno: '',
-      valor_total: ''
+  // DADOS DO CLIENTE
+  const drawClientData = () => {
+    drawSection('DADOS DO CLIENTE');
+    
+    const fields = [
+      { label: 'Cliente', value: ficha.formData.cliente, width: contentWidth * 0.5 },
+      { label: 'Solicitante', value: ficha.formData.solicitante, width: contentWidth * 0.5 },
+      { label: 'Contato', value: ficha.formData.fone_email, width: contentWidth * 0.33 },
+      { label: 'Data Visita', value: ficha.formData.data_visita, width: contentWidth * 0.33 },
+      { label: 'Data Entrega', value: ficha.formData.data_entrega, width: contentWidth * 0.34, highlight: true }
+    ];
+    
+    let xPos = margin;
+    
+    fields.forEach((field, index) => {
+      // Label
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+      doc.text(`${field.label}:`, xPos, yPosition);
+      
+      // Value
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      if (field.highlight) {
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setFont('helvetica', 'bold');
+      }
+      doc.text(formatField(field.value), xPos, yPosition + 4);
+      
+      xPos += field.width;
+      
+      // Nova linha após 2 campos
+      if (index === 1) {
+        yPosition += 10;
+        xPos = margin;
+      }
     });
+    
+    yPosition += 12;
+  };
+
+  // DADOS DA PEÇA/EQUIPAMENTO
+  const drawEquipmentData = () => {
+    drawSection('DADOS DA PEÇA/EQUIPAMENTO');
+    
+    // Nome da peça e quantidade
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+    doc.text('Nome da Peça:', margin, yPosition);
+    doc.text('Quantidade:', margin + contentWidth * 0.7, yPosition);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.text(formatField(ficha.formData.nome_peca), margin, yPosition + 4);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(formatField(ficha.formData.quantidade), margin + contentWidth * 0.7, yPosition + 4);
+    
+    yPosition += 10;
+    
+    // Serviço
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+    doc.text('Serviço a ser realizado:', margin, yPosition);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    const servicoLines = doc.splitTextToSize(formatField(ficha.formData.servico), contentWidth - 10);
+    doc.text(servicoLines, margin, yPosition + 4);
+    
+    yPosition += 4 + (servicoLines.length * 4) + 5;
+  };
+
+  // MATERIAIS - Usando autoTable para melhor formatação
+  const drawMaterials = () => {
+    const materiaisPreenchidos = ficha.materiais.filter(m => 
+      m.descricao.trim() || Number(m.quantidade) > 0 || Number(m.valor_unitario) > 0
+    );
+    
+    if (materiaisPreenchidos.length > 0) {
+      drawSection('MATERIAL PARA COTAÇÃO');
+      
+      const tableData = materiaisPreenchidos.map(material => [
+        material.descricao || '—',
+        material.quantidade || '—',
+        material.unidade || 'UN',
+        material.fornecedor || '—',
+        material.cliente_interno || '—',
+        material.valor_unitario ? formatCurrency(Number(material.valor_unitario)) : '—',
+        material.valor_total ? formatCurrency(Number(material.valor_total)) : '—'
+      ]);
+      
+      // Adicionar total
+      const totalMaterial = materiaisPreenchidos.reduce((sum, m) => sum + (Number(m.valor_total) || 0), 0);
+      
+      doc.autoTable({
+        startY: yPosition,
+        head: [['Descrição', 'Qtd', 'Un', 'Fornecedor', 'Cliente Int.', 'Valor Unit.', 'Valor Total']],
+        body: tableData,
+        foot: [['', '', '', '', '', 'TOTAL:', formatCurrency(totalMaterial)]],
+        theme: 'grid',
+        headStyles: {
+          fillColor: primaryColor,
+          fontSize: 9,
+          fontStyle: 'bold'
+        },
+        footStyles: {
+          fillColor: secondaryColor,
+          textColor: textColor,
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 2
+        },
+        columnStyles: {
+          0: { cellWidth: 50 }, // Descrição
+          1: { cellWidth: 15, halign: 'center' }, // Qtd
+          2: { cellWidth: 12, halign: 'center' }, // Un
+          3: { cellWidth: 35 }, // Fornecedor
+          4: { cellWidth: 30 }, // Cliente Int
+          5: { cellWidth: 25, halign: 'right' }, // Valor Unit
+          6: { cellWidth: 25, halign: 'right', fontStyle: 'bold' } // Valor Total
+        },
+        margin: { left: margin, right: margin }
+      });
+      
+      yPosition = doc.lastAutoTable.finalY + 5;
+    }
+  };
+
+  // EXECUÇÃO E DETALHES
+  const drawExecutionDetails = () => {
+    drawSection('EXECUÇÃO E DETALHES');
+    
+    const details = [
+      { label: 'Execução', value: formatRadioValue(ficha.formData.execucao) },
+      { label: 'Visita Técnica', value: formatRadioValue(ficha.formData.visita_tecnica) },
+      { label: 'Horas Visita', value: formatField(ficha.formData.visita_horas) },
+      { label: 'Peça Amostra', value: formatRadioValue(ficha.formData.tem_peca_amostra) },
+      { label: 'Projeto por', value: formatField(ficha.formData.projeto_desenvolvido_por) },
+      { label: 'Desenho', value: formatField(ficha.formData.desenho_peca) },
+      { label: 'Finalizado', value: formatRadioValue(ficha.formData.desenho_finalizado) }
+    ];
+    
+    const colWidth = contentWidth / 4;
+    let xPos = margin;
+    let row = 0;
+    
+    details.forEach((detail, index) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+      doc.text(`${detail.label}:`, xPos, yPosition + row * 8);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.text(detail.value, xPos, yPosition + row * 8 + 3.5);
+      
+      xPos += colWidth;
+      if ((index + 1) % 4 === 0) {
+        row++;
+        xPos = margin;
+      }
+    });
+    
+    yPosition += (Math.ceil(details.length / 4) * 8) + 5;
+  };
+
+  // TRANSPORTE
+  const drawTransport = () => {
+    drawSection('TRANSPORTE', 7);
+    
+    const transportOptions = [
+      { label: 'Caminhão HMC', value: ficha.formData.transporte_caminhao_hmc },
+      { label: 'Pickup HMC', value: ficha.formData.transporte_pickup_hmc },
+      { label: 'Cliente', value: ficha.formData.transporte_cliente }
+    ];
+    
+    const colWidth = contentWidth / 3;
+    let xPos = margin;
+    
+    transportOptions.forEach((option) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      
+      // Checkbox
+      const checkmark = formatCheckbox(option.value);
+      if (option.value) {
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setFont('helvetica', 'bold');
+      } else {
+        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+      }
+      
+      doc.text(`${checkmark} ${option.label}`, xPos, yPosition);
+      xPos += colWidth;
+    });
+    
+    yPosition += 8;
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  };
+
+  // HORAS DE SERVIÇO
+  const drawServiceHours = () => {
+    const horasServicos = [
+      { label: 'Torno Grande', value: ficha.formData.torno_grande },
+      { label: 'Torno Pequeno', value: ficha.formData.torno_pequeno },
+      { label: 'CNC T/F', value: ficha.formData.cnc_tf },
+      { label: 'Fresa/Furad.', value: ficha.formData.fresa_furad },
+      { label: 'Plasma/Oxicorte', value: ficha.formData.plasma_oxicorte },
+      { label: 'Dobra', value: ficha.formData.dobra },
+      { label: 'Calandra', value: ficha.formData.calandra },
+      { label: 'Maçarico/Solda', value: ficha.formData.macarico_solda },
+      { label: 'Des/Montagem', value: ficha.formData.des_montg },
+      { label: 'Balanceamento', value: ficha.formData.balanceamento },
+      { label: 'Mandrilhamento', value: ficha.formData.mandrilhamento },
+      { label: 'Tratamento', value: ficha.formData.tratamento },
+      { label: 'Pintura', value: ficha.formData.pintura_horas },
+      { label: 'Lavagem/Acab.', value: ficha.formData.lavagem_acab },
+      { label: 'Prog. CAM', value: ficha.formData.programacao_cam },
+      { label: 'Eng/Técnico', value: ficha.formData.eng_tec }
+    ].filter(h => parseFloat(h.value || '0') > 0);
+    
+    if (horasServicos.length > 0) {
+      drawSection('HORAS DE SERVIÇO');
+      
+      const colWidth = contentWidth / 4;
+      let xPos = margin;
+      let row = 0;
+      
+      horasServicos.forEach((hora, index) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+        doc.text(`${hora.label}:`, xPos, yPosition + row * 6);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text(`${hora.value}h`, xPos + 25, yPosition + row * 6);
+        
+        xPos += colWidth;
+        if ((index + 1) % 4 === 0) {
+          row++;
+          xPos = margin;
+        }
+      });
+      
+      yPosition += (Math.ceil(horasServicos.length / 4) * 6) + 5;
+    }
+  };
+
+  // RESUMO DOS CÁLCULOS
+  const drawSummary = () => {
+    checkPageBreak(35);
+    
+    // Fundo destacado
+    doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.rect(margin, yPosition, contentWidth, 30, 'F');
+    
+    // Borda
+    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setLineWidth(1);
+    doc.rect(margin, yPosition, contentWidth, 30, 'S');
+    
+    // Título
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text('RESUMO DOS CÁLCULOS', pageWidth / 2, yPosition + 6, { align: 'center' });
+    
+    // Grid de valores
+    const summaryData = [
+      { label: 'HORAS/PEÇA', value: `${ficha.calculos.horasPorPeca.toFixed(1)}h` },
+      { label: 'HORAS TOTAL', value: `${ficha.calculos.horasTodasPecas.toFixed(1)}h` },
+      { label: 'MATERIAL/PEÇA', value: formatCurrency(ficha.calculos.materialPorPeca) },
+      { label: 'MATERIAL TOTAL', value: formatCurrency(ficha.calculos.materialTodasPecas), highlight: true }
+    ];
+    
+    const boxWidth = (contentWidth - 15) / 4;
+    let xPos = margin + 2;
+    
+    summaryData.forEach((item) => {
+      // Box
+      if (item.highlight) {
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(xPos, yPosition + 10, boxWidth, 15, 'F');
+      } else {
+        doc.setFillColor(255, 255, 255);
+        doc.rect(xPos, yPosition + 10, boxWidth, 15, 'F');
+        doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setLineWidth(0.5);
+        doc.rect(xPos, yPosition + 10, boxWidth, 15, 'S');
+      }
+      
+      // Label
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      if (item.highlight) {
+        doc.setTextColor(255, 255, 255);
+      } else {
+        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+      }
+      doc.text(item.label, xPos + boxWidth / 2, yPosition + 14, { align: 'center' });
+      
+      // Value
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      if (item.highlight) {
+        doc.setTextColor(255, 255, 255);
+      } else {
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      }
+      doc.text(item.value, xPos + boxWidth / 2, yPosition + 21, { align: 'center' });
+      
+      xPos += boxWidth + 3.5;
+    });
+    
+    yPosition += 35;
+  };
+
+  // FOTOS (se houver)
+  const drawPhotos = async () => {
+    const fotosComPreview = ficha.fotos.filter(f => f.preview);
+    
+    if (fotosComPreview.length > 0) {
+      drawSection('REGISTRO FOTOGRÁFICO');
+      
+      const photoSize = 40; // 40mm x 40mm
+      const photosPerRow = 4;
+      const spacing = (contentWidth - (photosPerRow * photoSize)) / (photosPerRow - 1);
+      
+      for (let i = 0; i < fotosComPreview.length; i += photosPerRow) {
+        checkPageBreak(photoSize + 15);
+        
+        const rowPhotos = fotosComPreview.slice(i, i + photosPerRow);
+        let xPos = margin;
+        
+        for (const foto of rowPhotos) {
+          if (foto.preview) {
+            try {
+              // Adicionar imagem
+              doc.addImage(foto.preview, 'JPEG', xPos, yPosition, photoSize, photoSize);
+              
+              // Borda da foto
+              doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+              doc.setLineWidth(0.3);
+              doc.rect(xPos, yPosition, photoSize, photoSize, 'S');
+              
+              // Nome da foto
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(7);
+              doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+              const photoName = foto.name.length > 15 ? foto.name.substring(0, 12) + '...' : foto.name;
+              doc.text(photoName, xPos + photoSize / 2, yPosition + photoSize + 3, { align: 'center' });
+            } catch (error) {
+              console.error('Erro ao adicionar foto ao PDF:', error);
+              
+              // Placeholder para foto com erro
+              doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+              doc.rect(xPos, yPosition, photoSize, photoSize, 'F');
+              doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+              doc.setFontSize(8);
+              doc.text('Foto indisponível', xPos + photoSize / 2, yPosition + photoSize / 2, { align: 'center' });
+            }
+          }
+          
+          xPos += photoSize + spacing;
+        }
+        
+        yPosition += photoSize + 10;
+      }
+    }
+  };
+
+  // RODAPÉ
+  const drawFooter = () => {
+    const footerY = pageHeight - 10;
+    
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+    
+    // Linha separadora
+    doc.setDrawColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+    doc.setLineWidth(0.1);
+    doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+    
+    // Texto do rodapé
+    doc.text('Sistema de Fichas Técnicas - HMC', margin, footerY);
+    doc.text(`Página ${doc.getNumberOfPages()}`, pageWidth - margin, footerY, { align: 'right' });
+  };
+
+  // GERAR O PDF
+  drawHeader();
+  drawClientData();
+  drawEquipmentData();
+  drawMaterials();
+  drawExecutionDetails();
+  drawTransport();
+  drawServiceHours();
+  
+  // Tratamentos e acabamentos
+  const tratamentos = [
+    { label: 'Pintura', value: ficha.formData.pintura, extra: ficha.formData.cor_pintura },
+    { label: 'Galvanização', value: ficha.formData.galvanizacao, extra: ficha.formData.peso_peca_galv },
+    { label: 'Tratamento Térmico', value: ficha.formData.tratamento_termico, extra: ficha.formData.tempera_reven }
+  ].filter(t => t.value === 'sim');
+  
+  if (tratamentos.length > 0) {
+    drawSection('TRATAMENTOS E ACABAMENTOS');
+    
+    tratamentos.forEach((trat, index) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(`✓ ${trat.label}`, margin, yPosition + index * 5);
+      
+      if (trat.extra) {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.text(` - ${trat.extra}`, margin + 30, yPosition + index * 5);
+      }
+    });
+    
+    yPosition += tratamentos.length * 5 + 5;
   }
   
-  // Cabeçalho da tabela - com melhor espaçamento
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(fieldFontSize);
-  
-  const colWidths = [45, 12, 10, 22, 28, 22, 20]; // Total: 159mm - mais espaçoso
-  let xPos = margin + 2;
-  
-  doc.text('Descrição', xPos, yPosition);
-  xPos += colWidths[0];
-  doc.text('Qtd', xPos, yPosition);
-  xPos += colWidths[1];
-  doc.text('Un', xPos, yPosition);
-  xPos += colWidths[2];
-  doc.text('Valor Unit', xPos, yPosition);
-  xPos += colWidths[3];
-  doc.text('Fornecedor', xPos, yPosition);
-  xPos += colWidths[4];
-  doc.text('Cliente Int', xPos, yPosition);
-  xPos += colWidths[5];
-  doc.text('Total', xPos, yPosition);
-  yPosition += 4;
-  
-  // Linhas da tabela - 4 linhas com altura adequada para preenchimento
-  doc.setFont('helvetica', 'normal');
-  materiaisParaExibir.slice(0, 4).forEach(material => {
-    xPos = margin + 2;
+  // Controle
+  if (ficha.formData.num_orcamento || ficha.formData.num_os || ficha.formData.num_nf_remessa) {
+    drawSection('CONTROLE', 7);
     
-    doc.text(formatField(material.descricao).substring(0, 22), xPos, yPosition);
-    xPos += colWidths[0];
-    doc.text(formatField(material.quantidade), xPos, yPosition);
-    xPos += colWidths[1];
-    doc.text(formatField(material.unidade), xPos, yPosition);
-    xPos += colWidths[2];
+    const controles = [
+      { label: 'Orçamento', value: ficha.formData.num_orcamento },
+      { label: 'OS', value: ficha.formData.num_os },
+      { label: 'NF Remessa', value: ficha.formData.num_nf_remessa }
+    ].filter(c => c.value);
     
-    const valorUnit = material.valor_unitario && parseFloat(material.valor_unitario) > 0 
-      ? formatCurrency(parseFloat(material.valor_unitario)).substring(0, 10) 
-      : '__________';
-    doc.text(valorUnit, xPos, yPosition);
-    xPos += colWidths[3];
+    const colWidth = contentWidth / controles.length;
+    let xPos = margin;
     
-    doc.text(formatField(material.fornecedor).substring(0, 14), xPos, yPosition);
-    xPos += colWidths[4];
-    doc.text(formatField(material.cliente_interno).substring(0, 12), xPos, yPosition);
-    xPos += colWidths[5];
+    controles.forEach((ctrl) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+      doc.text(`${ctrl.label}:`, xPos, yPosition);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(ctrl.value, xPos + 20, yPosition);
+      
+      xPos += colWidth;
+    });
     
-    const total = material.valor_total && parseFloat(material.valor_total) > 0 
-      ? formatCurrency(parseFloat(material.valor_total)).substring(0, 10) 
-      : '__________';
-    doc.text(total, xPos, yPosition);
-    
-    yPosition += lineHeight; // Usar lineHeight consistente
-  });
-  yPosition += 3; // Espaço após tabela
-
-  // EXECUÇÃO E DETALHES (Grid 3 colunas para melhor legibilidade)
-  addSectionTitle('EXECUÇÃO E DETALHES');
-  
-  const gridWidth = contentWidth / 3;
-  
-  // Linha 1 - 3 campos
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(fieldFontSize);
-  doc.text('Execução:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.execucao), margin + 18, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Visita Técnica:', margin + 2 + gridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.visita_tecnica), margin + 22 + gridWidth, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Horas Visita:', margin + 2 + (gridWidth * 2), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.visita_horas), margin + 20 + (gridWidth * 2), yPosition);
-  yPosition += lineHeight;
-  
-  // Linha 2 - 3 campos
-  doc.setFont('helvetica', 'bold');
-  doc.text('Amostra:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.tem_peca_amostra), margin + 16, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Projeto Por:', margin + 2 + gridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.projeto_desenvolvido_por), margin + 18 + gridWidth, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Desenho Peça:', margin + 2 + (gridWidth * 2), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.desenho_peca), margin + 22 + (gridWidth * 2), yPosition);
-  yPosition += lineHeight;
-  
-  // Linha 3 - 1 campo
-  doc.setFont('helvetica', 'bold');
-  doc.text('Desenho Finalizado:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.desenho_finalizado), margin + 26, yPosition);
-  yPosition += lineHeight + 3; // Espaço extra após seção
-
-  // TRANSPORTE (1 linha mais espaçada)
-  addSectionTitle('TRANSPORTE');
-  
-  const transportGridWidth = contentWidth / 3;
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Caminhão HMC:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatCheckbox(ficha.formData.transporte_caminhao_hmc), margin + 22, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Pickup HMC:', margin + 2 + transportGridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');  
-  doc.text(formatCheckbox(ficha.formData.transporte_pickup_hmc), margin + 18 + transportGridWidth, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Cliente:', margin + 2 + (transportGridWidth * 2), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatCheckbox(ficha.formData.transporte_cliente), margin + 12 + (transportGridWidth * 2), yPosition);
-  yPosition += lineHeight + 3; // Espaço consistente após seção
-
-  // TRATAMENTOS E ACABAMENTOS (Grid 4x4 - melhor espaçamento)
-  addSectionTitle('TRATAMENTOS E ACABAMENTOS');
-  
-  const treatGridWidth = contentWidth / 4;
-  
-  // Linha 1
-  doc.setFont('helvetica', 'bold');
-  doc.text('Pintura:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.pintura), margin + 14, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Cor:', margin + 2 + treatGridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.cor_pintura), margin + 10 + treatGridWidth, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Galvanização:', margin + 2 + (treatGridWidth * 2), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.galvanizacao), margin + 18 + (treatGridWidth * 2), yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Peso Galv:', margin + 2 + (treatGridWidth * 3), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.peso_peca_galv), margin + 16 + (treatGridWidth * 3), yPosition);
-  yPosition += lineHeight;
-  
-  // Linha 2
-  doc.setFont('helvetica', 'bold');
-  doc.text('Trat Térmico:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.tratamento_termico), margin + 18, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Peso Trat:', margin + 2 + treatGridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.peso_peca_trat), margin + 16 + treatGridWidth, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Têmpera/Rev:', margin + 2 + (treatGridWidth * 2), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.tempera_reven), margin + 18 + (treatGridWidth * 2), yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Cementação:', margin + 2 + (treatGridWidth * 3), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.cementacao), margin + 18 + (treatGridWidth * 3), yPosition);
-  yPosition += lineHeight;
-  
-  // Linha 3
-  doc.setFont('helvetica', 'bold');
-  doc.text('Dureza:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.dureza), margin + 12, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Teste LP:', margin + 2 + treatGridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.teste_lp), margin + 14 + treatGridWidth, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Bal Campo:', margin + 2 + (treatGridWidth * 2), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.balanceamento_campo), margin + 16 + (treatGridWidth * 2), yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Rotação:', margin + 2 + (treatGridWidth * 3), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.rotacao), margin + 13 + (treatGridWidth * 3), yPosition);
-  yPosition += 3;
-
-  // SERVIÇOS ADICIONAIS (Grid 3 colunas - melhor legibilidade)
-  addSectionTitle('SERVIÇOS ADICIONAIS');
-  
-  const serviceGridWidth = contentWidth / 3;
-  
-  // Linha 1
-  doc.setFont('helvetica', 'bold');
-  doc.text('Forn Desenho:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.fornecimento_desenho), margin + 20, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Fotos Relatório:', margin + 2 + serviceGridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.fotos_relatorio), margin + 22 + serviceGridWidth, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Relatório Téc:', margin + 2 + (serviceGridWidth * 2), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.relatorio_tecnico), margin + 20 + (serviceGridWidth * 2), yPosition);
-  yPosition += lineHeight;
-  
-  // Linha 2
-  doc.setFont('helvetica', 'bold');
-  doc.text('ART:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatRadioValue(ficha.formData.emissao_art), margin + 8, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Terceirizados:', margin + 2 + serviceGridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');
-  const terceirizados = formatField(ficha.formData.servicos_terceirizados);
-  doc.text(terceirizados.length > 15 ? terceirizados.substring(0, 15) + '...' : terceirizados, margin + 18 + serviceGridWidth, yPosition);
-  yPosition += 3;
-
-  // HORAS DE SERVIÇO (Grid 4x5 - TODOS OS CAMPOS, melhor legibilidade)
-  addSectionTitle('HORAS DE SERVIÇO');
-  
-  const horasServicos = [
-    { label: "Material/Peça", value: ficha.formData.material_por_peca },
-    { label: "Material Total", value: ficha.formData.material_todas_pecas },
-    { label: "Horas/Peça", value: ficha.formData.horas_por_peca },
-    { label: "Horas Total", value: ficha.formData.horas_todas_pecas },
-    { label: "Torno Grande", value: ficha.formData.torno_grande },
-    { label: "Torno Pequeno", value: ficha.formData.torno_pequeno },
-    { label: "CNC TF", value: ficha.formData.cnc_tf },
-    { label: "Fresa/Furadeira", value: ficha.formData.fresa_furad },
-    { label: "Plasma/Oxicorte", value: ficha.formData.plasma_oxicorte },
-    { label: "Dobra", value: ficha.formData.dobra },
-    { label: "Calandra", value: ficha.formData.calandra },
-    { label: "Maçarico/Solda", value: ficha.formData.macarico_solda },
-    { label: "Des/Montagem", value: ficha.formData.des_montg },
-    { label: "Balanceamento", value: ficha.formData.balanceamento },
-    { label: "Mandrilhamento", value: ficha.formData.mandrilhamento },
-    { label: "Tratamento", value: ficha.formData.tratamento },
-    { label: "Pintura Horas", value: ficha.formData.pintura_horas },
-    { label: "Lavagem/Acab", value: ficha.formData.lavagem_acab },
-    { label: "Programação CAM", value: ficha.formData.programacao_cam },
-    { label: "Eng/Técnico", value: ficha.formData.eng_tec }
-  ];
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(fieldFontSize);
-  
-  const horasGridWidth = contentWidth / 4;
-  let row = 0;
-  horasServicos.forEach((hora, index) => {
-    const col = index % 4;
-    const x = margin + 2 + col * horasGridWidth;
-    const y = yPosition + row * 4;
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${hora.label}:`, x, y);
-    doc.setFont('helvetica', 'normal');
-    const labelWidth = doc.getTextWidth(`${hora.label}: `);
-    doc.text(formatField(hora.value), x + labelWidth, y);
-    
-    if (col === 3) row++;
-  });
-  yPosition += Math.ceil(horasServicos.length / 4) * 4 + 3;
-
-  // CONTROLE (3 campos em linha com melhor espaçamento)
-  addSectionTitle('CONTROLE');
-  
-  const controlGridWidth = contentWidth / 3;
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Nº Orçamento:', margin + 2, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.num_orcamento), margin + 22, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Nº OS:', margin + 2 + controlGridWidth, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.num_os), margin + 12 + controlGridWidth, yPosition);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Nº NF Remessa:', margin + 2 + (controlGridWidth * 2), yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatField(ficha.formData.num_nf_remessa), margin + 24 + (controlGridWidth * 2), yPosition);
-  yPosition += 3;
-
-
-  // RESUMO DOS CÁLCULOS (4 campos em linha)
-  addSectionTitle('RESUMO DOS CÁLCULOS');
-  
-  if (ficha.calculos) {
-    doc.setFont('helvetica', 'bold');
-    doc.text('Horas/Peça:', margin + 1, yPosition);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${ficha.calculos.horasPorPeca?.toFixed(2) || '0'}h`, margin + 17, yPosition);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text('Mat/Peça:', margin + 1 + gridWidth, yPosition);
-    doc.setFont('helvetica', 'normal');
-    doc.text(formatCurrency(ficha.calculos.materialPorPeca || 0), margin + 13 + gridWidth, yPosition);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text('Tot Horas:', margin + 1 + (gridWidth * 2), yPosition);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${ficha.calculos.horasTodasPecas?.toFixed(2) || '0'}h`, margin + 15 + (gridWidth * 2), yPosition);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text('Tot Material:', margin + 1 + (gridWidth * 3), yPosition);
-    doc.setFont('helvetica', 'normal');
-    doc.text(formatCurrency(ficha.calculos.materialTodasPecas || 0), margin + 18 + (gridWidth * 3), yPosition);
-  } else {
-    // Campos vazios para preenchimento
-    doc.setFont('helvetica', 'bold');
-    doc.text('Horas/Peça: ______', margin + 1, yPosition);
-    doc.text('Mat/Peça: ______', margin + 1 + gridWidth, yPosition);
-    doc.text('Tot Horas: ______', margin + 1 + (gridWidth * 2), yPosition);
-    doc.text('Tot Material: ______', margin + 1 + (gridWidth * 3), yPosition);
+    yPosition += 8;
   }
-
+  
+  drawSummary();
+  await drawPhotos();
+  drawFooter();
+  
+  // Adicionar metadados ao PDF
+  doc.setProperties({
+    title: `Ficha Técnica FTC ${ficha.numeroFTC}`,
+    subject: `Cliente: ${ficha.formData.cliente}`,
+    author: 'Sistema HMC',
+    keywords: `FTC, ${ficha.numeroFTC}, ${ficha.formData.cliente}`,
+    creator: 'Sistema de Fichas Técnicas'
+  });
+  
   return doc.output('blob');
 }
 
-export function generatePDF(ficha: FichaSalva) {
+export async function generatePDF(ficha: FichaSalva) {
   try {
-    const blob = generatePDFBlob(ficha);
+    const blob = await generatePDFBlob(ficha);
     const filename = `FTC_${ficha.numeroFTC}_${ficha.formData.cliente?.replace(/[^a-zA-Z0-9]/g, '_') || 'SemCliente'}.pdf`;
     
     const url = URL.createObjectURL(blob);
@@ -470,6 +616,8 @@ export function generatePDF(ficha: FichaSalva) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    
+    return { success: true, filename };
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
     throw error;
