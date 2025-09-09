@@ -111,26 +111,10 @@ export function excluirFicha(id: string): boolean {
   }
 }
 
-// Validate required fields
+// Validate required fields (validation disabled - allow saving partial forms)
 export function validarCamposObrigatorios(formData: FormData, materiais: Material[]): string[] {
-  const erros: string[] = [];
-  
-  if (!formData.cliente.trim()) erros.push('Cliente é obrigatório');
-  if (!formData.solicitante.trim()) erros.push('Solicitante é obrigatório');
-  if (!formData.nome_peca.trim()) erros.push('Nome da Peça é obrigatório');
-  if (!formData.quantidade.trim()) erros.push('Quantidade é obrigatória');
-  if (!formData.servico.trim()) erros.push('Serviço é obrigatório');
-  
-  // Validate at least one material with valid data
-  const materiaisValidos = materiais.filter(m => 
-    m.descricao.trim() && m.quantidade.trim() && m.valor_unitario.trim()
-  );
-  
-  if (materiaisValidos.length === 0) {
-    erros.push('Pelo menos um material com dados completos é obrigatório');
-  }
-  
-  return erros;
+  // No validation - users can save partially filled forms
+  return [];
 }
 
 // Check storage quota
