@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { carregarFichasSalvas, excluirFicha, FichaSalva } from '@/utils/supabaseStorage';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/helpers';
+import { ConsultaActionButtons } from '@/components/FichaTecnica/ConsultaActionButtons';
 
 export default function ConsultarFichas() {
   const navigate = useNavigate();
@@ -289,27 +290,9 @@ export default function ConsultarFichas() {
                             {ficha.resumo.cliente}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLoadFicha(ficha.id);
-                            }}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => handleDeleteFicha(ficha.id, e)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <span className="text-xs bg-muted px-2 py-1 rounded">
+                          FTC {ficha.numeroFTC}
+                        </span>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -336,14 +319,41 @@ export default function ConsultarFichas() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex justify-between items-center pt-3 border-t">
-                        <p className="text-xs text-muted-foreground">
-                          {ficha.materiais.length} material(is) • {ficha.fotos.length} foto(s)
-                        </p>
-                        <div className="flex gap-2">
+                      <div className="pt-3 border-t space-y-3">
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs text-muted-foreground">
+                            {ficha.materiais.length} material(is) • {ficha.fotos.length} foto(s)
+                          </p>
                           <span className="text-xs bg-muted px-2 py-1 rounded">
                             Criada: {formatDate(ficha.dataCriacao)}
                           </span>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                          <ConsultaActionButtons ficha={ficha} />
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLoadFicha(ficha.id);
+                              }}
+                              className="flex items-center gap-1"
+                            >
+                              <Eye className="h-4 w-4" />
+                              Visualizar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleDeleteFicha(ficha.id, e)}
+                              className="text-destructive hover:text-destructive flex items-center gap-1"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
