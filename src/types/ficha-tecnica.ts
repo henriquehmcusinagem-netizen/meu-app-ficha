@@ -66,6 +66,17 @@ export interface FormData {
   programacao_cam: string;
   eng_tec: string;
   
+  // Campos Adicionais
+  observacoes: string;
+  descricao_geral: string;
+  material_base: string;
+  dimensoes: string;
+  tolerancia: string;
+  acabamento_superficie: string;
+  norma_aplicavel: string;
+  certificacao: string;
+  condicoes_especiais: string;
+  
   // Controle
   num_orcamento: string;
   num_os: string;
@@ -85,8 +96,8 @@ export interface Material {
 
 export interface Foto {
   id: number;
-  file: File;
-  preview: string;
+  file?: File;
+  preview?: string;
   name: string;
   size: number;
 }
@@ -116,7 +127,7 @@ export interface FichaSalva {
   status: 'rascunho' | 'finalizada';
   formData: FormData;
   materiais: Material[];
-  fotos: Omit<Foto, 'file' | 'preview'>[]; // Only metadata, no files
+  fotos: Foto[]; // Now includes both new photos and saved photos with real URLs
   calculos: Calculos;
   resumo: {
     cliente: string;

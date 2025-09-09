@@ -115,45 +115,46 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
               <div key={foto.id} className="relative group">
                 <div className="aspect-square rounded-lg overflow-hidden border bg-muted cursor-pointer">
                   {foto.preview ? (
-                    <img
-                      src={foto.preview}
-                      alt={foto.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <>
+                      <img
+                        src={foto.preview}
+                        alt={foto.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setSelectedFoto(foto)}
+                          >
+                            <ZoomIn className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[90vh] p-2">
+                          <div className="flex flex-col items-center">
+                            <img
+                              src={foto.preview}
+                              alt={foto.name}
+                              className="max-w-full max-h-[80vh] object-contain"
+                            />
+                            <div className="mt-4 text-center">
+                              <p className="font-medium">{foto.name}</p>
+                              <p className="text-sm text-muted-foreground">{formatFileSize(foto.size)}</p>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-secondary">
                       <div className="text-center">
                         <Camera className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Foto Salva</p>
+                        <p className="text-xs text-muted-foreground font-medium">{foto.name}</p>
                       </div>
                     </div>
-                  )}
-                  {foto.preview && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => setSelectedFoto(foto)}
-                        >
-                          <ZoomIn className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[90vh] p-2">
-                        <div className="flex flex-col items-center">
-                          <img
-                            src={foto.preview}
-                            alt={foto.name}
-                            className="max-w-full max-h-[80vh] object-contain"
-                          />
-                          <div className="mt-4 text-center">
-                            <p className="font-medium">{foto.name}</p>
-                            <p className="text-sm text-muted-foreground">{formatFileSize(foto.size)}</p>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
                   )}
                 </div>
                 <Button

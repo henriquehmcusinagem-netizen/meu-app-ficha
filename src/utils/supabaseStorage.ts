@@ -7,7 +7,7 @@ function generateId(): string {
 }
 
 // Convert database row to FichaSalva format
-function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): FichaSalva {
+async function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Promise<FichaSalva> {
   const formData: FormData = {
     // Dados do Cliente
     cliente: row.cliente || '',
@@ -31,19 +31,19 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
     visita_horas: row.horas_visita?.toString() || '',
     tem_peca_amostra: row.peca_amostra || '',
     projeto_desenvolvido_por: row.origem_projeto || '',
-    desenho_peca: '',
+    desenho_peca: row.desenho || '',
     desenho_finalizado: row.desenho_finalizado || '',
     transporte_caminhao_hmc: row.transporte === 'HMC' || row.transporte === 'CAMINHAO_HMC',
-    transporte_pickup_hmc: false, // Ajustar se houver outros tipos específicos no banco
+    transporte_pickup_hmc: row.transporte === 'PICKUP_HMC',
     transporte_cliente: row.transporte === 'CLIENTE' || !row.transporte,
     
     // Tratamentos e Acabamentos
     pintura: row.pintura || '',
     cor_pintura: row.cor_pintura || '',
     galvanizacao: row.galvanizacao || '',
-    peso_peca_galv: row.peso_peca_galv?.toString() || '',
+    peso_peca_galv: row.peso_peca_galv || '',
     tratamento_termico: row.tratamento_termico || '',
-    peso_peca_trat: row.peso_peca_trat?.toString() || '',
+    peso_peca_trat: row.peso_peca_trat || '',
     tempera_reven: row.tempera_reven || '',
     cementacao: row.cementacao || '',
     dureza: row.dureza || '',
@@ -56,25 +56,36 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
     emissao_art: row.emissao_art || '',
     servicos_terceirizados: row.servicos_terceirizados || '',
     
-    // Horas de Serviço
+    // Horas de Serviço - usando as novas colunas criadas
     horas_por_peca: '',
     horas_todas_pecas: '',
-    torno_grande: row.horas_torno?.toString() || '',
-    torno_pequeno: row.horas_torno_pequeno?.toString() || '',
-    cnc_tf: row.horas_cnc?.toString() || '',
-    fresa_furad: row.horas_fresa?.toString() || '',
-    plasma_oxicorte: row.horas_plasma?.toString() || '',
-    dobra: row.horas_dobra?.toString() || '',
-    calandra: row.horas_calandra?.toString() || '',
-    macarico_solda: row.horas_solda?.toString() || '',
-    des_montg: row.horas_montagem?.toString() || '',
-    balanceamento: row.horas_balanceamento?.toString() || '',
-    mandrilhamento: row.horas_mandrilhamento?.toString() || '',
-    tratamento: row.horas_tratamento?.toString() || '',
-    pintura_horas: row.horas_pintura?.toString() || '',
-    lavagem_acab: row.horas_lavagem?.toString() || '',
-    programacao_cam: row.horas_programacao?.toString() || '',
-    eng_tec: row.horas_engenharia?.toString() || '',
+    torno_grande: row.torno_grande?.toString() || '',
+    torno_pequeno: row.torno_pequeno?.toString() || '',
+    cnc_tf: row.cnc_tf?.toString() || '',
+    fresa_furad: row.fresa_furad?.toString() || '',
+    plasma_oxicorte: row.plasma_oxicorte?.toString() || '',
+    dobra: row.dobra?.toString() || '',
+    calandra: row.calandra?.toString() || '',
+    macarico_solda: row.macarico_solda?.toString() || '',
+    des_montg: row.des_montg?.toString() || '',
+    balanceamento: row.balanceamento?.toString() || '',
+    mandrilhamento: row.mandrilhamento?.toString() || '',
+    tratamento: row.tratamento?.toString() || '',
+    pintura_horas: row.pintura_horas?.toString() || '',
+    lavagem_acab: row.lavagem_acab?.toString() || '',
+    programacao_cam: row.programacao_cam?.toString() || '',
+    eng_tec: row.eng_tec?.toString() || '',
+    
+    // Campos adicionais
+    observacoes: row.observacoes || '',
+    descricao_geral: row.descricao_geral || '',
+    material_base: row.material_base || '',
+    dimensoes: row.dimensoes || '',
+    tolerancia: row.tolerancia || '',
+    acabamento_superficie: row.acabamento_superficie || '',
+    norma_aplicavel: row.norma_aplicavel || '',
+    certificacao: row.certificacao || '',
+    condicoes_especiais: row.condicoes_especiais || '',
     
     // Controle
     num_orcamento: row.numero_orcamento || '',
@@ -89,14 +100,31 @@ function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]): Fic
     materialTodasPecas: row.total_material_todas_pecas || 0
   };
 
-  // Convert fotos from database format - include preview placeholder for saved photos
-  const fotosMetadata: Foto[] = fotos.map((foto, index) => ({
-    id: index + 1, // Use index as numeric ID
-    name: foto.name,
-    size: foto.size,
-    file: undefined, // No file for saved photos
-    preview: undefined // No preview for saved photos - will be handled in component
-  }));
+  // Convert fotos from database format - get real photo URLs from Storage
+  const fotosMetadata: Foto[] = await Promise.all(
+    fotos.map(async (foto, index) => {
+      let preview: string | undefined = undefined;
+      
+      if (foto.storage_path) {
+        // Get real photo URL from Supabase Storage
+        const { data: signedUrl } = await supabase.storage
+          .from('ficha-fotos')
+          .createSignedUrl(foto.storage_path, 3600); // 1 hour expiry
+        
+        if (signedUrl) {
+          preview = signedUrl.signedUrl;
+        }
+      }
+      
+      return {
+        id: index + 1,
+        name: foto.name,
+        size: foto.size,
+        file: undefined, // No file for saved photos
+        preview // Real URL from Storage or undefined
+      };
+    })
+  );
 
   // Convert materials from database format to Material interface
   const materiaisConvertidos: Material[] = materiais.map((material, index) => ({
@@ -169,7 +197,7 @@ export async function carregarFichasSalvas(): Promise<FichaSalva[]> {
         const materiais = materiaisResult.data || [];
         const fotos = fotosResult.data || [];
 
-        return convertDbRowToFichaSalva(ficha, materiais, fotos);
+        return await convertDbRowToFichaSalva(ficha, materiais, fotos);
       })
     );
 
@@ -215,7 +243,7 @@ export async function salvarFicha(
       }
     }
 
-    // Convert form data to database format
+    // Convert form data to database format - include ALL new fields
     const dbData = {
       numero_ftc: finalNumeroFTC,
       status: formData.desenho_finalizado === 'SIM' ? 'finalizada' : 'rascunho',
@@ -231,17 +259,39 @@ export async function salvarFicha(
       visita_tecnica: formData.visita_tecnica,
       peca_amostra: formData.tem_peca_amostra,
       origem_projeto: formData.projeto_desenvolvido_por,
+      desenho: formData.desenho_peca,
       desenho_finalizado: formData.desenho_finalizado,
       transporte: formData.transporte_cliente ? 'CLIENTE' : 
                   formData.transporte_caminhao_hmc ? 'HMC' : 
                   formData.transporte_pickup_hmc ? 'PICKUP_HMC' : 'CLIENTE',
       pintura: formData.pintura,
+      cor_pintura: formData.cor_pintura,
       galvanizacao: formData.galvanizacao,
+      peso_peca_galv: formData.peso_peca_galv,
       tratamento_termico: formData.tratamento_termico,
+      tempera_reven: formData.tempera_reven,
       dureza: formData.dureza,
       ensaio_lp: formData.teste_lp,
       solda: '',
       usinagem: '',
+      // Horas de serviço - usando as novas colunas
+      torno_grande: parseFloat(formData.torno_grande) || 0,
+      torno_pequeno: parseFloat(formData.torno_pequeno) || 0,
+      cnc_tf: parseFloat(formData.cnc_tf) || 0,
+      fresa_furad: parseFloat(formData.fresa_furad) || 0,
+      plasma_oxicorte: parseFloat(formData.plasma_oxicorte) || 0,
+      dobra: parseFloat(formData.dobra) || 0,
+      calandra: parseFloat(formData.calandra) || 0,
+      macarico_solda: parseFloat(formData.macarico_solda) || 0,
+      des_montg: parseFloat(formData.des_montg) || 0,
+      balanceamento: parseFloat(formData.balanceamento) || 0,
+      mandrilhamento: parseFloat(formData.mandrilhamento) || 0,
+      tratamento: parseFloat(formData.tratamento) || 0,
+      pintura_horas: parseFloat(formData.pintura_horas) || 0,
+      lavagem_acab: parseFloat(formData.lavagem_acab) || 0,
+      programacao_cam: parseFloat(formData.programacao_cam) || 0,
+      eng_tec: parseFloat(formData.eng_tec) || 0,
+      // Horas antigas para compatibilidade
       horas_torno: parseFloat(formData.torno_grande) || 0,
       horas_fresa: parseFloat(formData.fresa_furad) || 0,
       horas_furadeira: 0,
@@ -249,6 +299,17 @@ export async function salvarFicha(
       horas_pintura: parseFloat(formData.pintura_horas) || 0,
       horas_montagem: parseFloat(formData.des_montg) || 0,
       horas_outros: 0,
+      // Campos adicionais
+      observacoes: formData.observacoes,
+      descricao_geral: formData.descricao_geral,
+      material_base: formData.material_base,
+      dimensoes: formData.dimensoes,
+      tolerancia: formData.tolerancia,
+      acabamento_superficie: formData.acabamento_superficie,
+      norma_aplicavel: formData.norma_aplicavel,
+      certificacao: formData.certificacao,
+      condicoes_especiais: formData.condicoes_especiais,
+      // Controle
       numero_orcamento: formData.num_orcamento,
       numero_os: formData.num_os,
       numero_nf: formData.num_nf_remessa,
@@ -328,24 +389,47 @@ export async function salvarFicha(
       }
     }
 
-    // Insert fotos metadata
+    // Upload real photos to Supabase Storage and save metadata
     if (fotos.length > 0) {
-      console.log(`📸 Inserindo ${fotos.length} fotos...`);
-      const fotosData = fotos.map(foto => ({
-        ficha_id: savedFichaId,
-        name: foto.name,
-        size: foto.size,
-        type: foto.file?.type || 'image/jpeg'
-      }));
+      console.log(`📸 Uploading ${fotos.length} fotos to storage...`);
+      
+      const fotosData = await Promise.all(
+        fotos.map(async (foto, index) => {
+          let storagePath = null;
+          
+          if (foto.file) {
+            // Upload new photo to Supabase Storage
+            const fileName = `${savedFichaId}/${Date.now()}_${index}_${foto.name}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('ficha-fotos')
+              .upload(fileName, foto.file);
+              
+            if (uploadError) {
+              console.error('❌ Erro ao fazer upload da foto:', uploadError);
+            } else {
+              storagePath = uploadData?.path;
+              console.log('✅ Foto uploaded:', fileName);
+            }
+          }
+          
+          return {
+            ficha_id: savedFichaId,
+            name: foto.name,
+            size: foto.size,
+            type: foto.file?.type || 'image/jpeg',
+            storage_path: storagePath
+          };
+        })
+      );
 
       const { error: fotosError } = await supabase
         .from('fotos')
         .insert(fotosData);
 
       if (fotosError) {
-        console.error('❌ Erro ao salvar fotos:', fotosError);
+        console.error('❌ Erro ao salvar metadados das fotos:', fotosError);
       } else {
-        console.log('✅ Fotos salvas com sucesso');
+        console.log('✅ Fotos e metadados salvos com sucesso');
       }
     }
 
@@ -386,7 +470,7 @@ export async function carregarFicha(id: string): Promise<FichaSalva | null> {
     const materiais = materiaisResult.data || [];
     const fotos = fotosResult.data || [];
 
-    return convertDbRowToFichaSalva(ficha, materiais, fotos);
+    return await convertDbRowToFichaSalva(ficha, materiais, fotos);
   } catch (error) {
     console.error('Erro ao carregar ficha:', error);
     return null;

@@ -16,17 +16,31 @@ export type Database = {
     Tables: {
       fichas_tecnicas: {
         Row: {
+          acabamento_superficie: string | null
+          balanceamento: number | null
+          calandra: number | null
+          certificacao: string | null
           cliente: string
+          cnc_tf: number | null
+          condicoes_especiais: string | null
           contato: string | null
+          cor_pintura: string | null
           criado_por: string | null
           data_criacao: string
           data_entrega: string | null
           data_ultima_edicao: string
           data_visita: string | null
+          des_montg: number | null
+          descricao_geral: string | null
+          desenho: string | null
           desenho_finalizado: string | null
+          dimensoes: string | null
+          dobra: number | null
           dureza: string | null
           editado_por: string | null
+          eng_tec: number | null
           ensaio_lp: string | null
+          fresa_furad: number | null
           galvanizacao: string | null
           horas_fresa: number | null
           horas_furadeira: number | null
@@ -36,40 +50,69 @@ export type Database = {
           horas_solda: number | null
           horas_torno: number | null
           id: string
+          lavagem_acab: number | null
+          macarico_solda: number | null
+          mandrilhamento: number | null
+          material_base: string | null
           nome_peca: string
+          norma_aplicavel: string | null
           numero_ftc: string
           numero_nf: string | null
           numero_orcamento: string | null
           numero_os: string | null
+          observacoes: string | null
           origem_projeto: string | null
           peca_amostra: string | null
+          peso_peca_galv: string | null
           pintura: string | null
+          pintura_horas: number | null
+          plasma_oxicorte: number | null
+          programacao_cam: number | null
           quantidade: string
           servico: string
           solda: string | null
           solicitante: string
           status: string
+          tempera_reven: string | null
           tipo_execucao: string | null
+          tolerancia: string | null
+          torno_grande: number | null
+          torno_pequeno: number | null
           total_horas_servico: number | null
           total_material_peca: number | null
           total_material_todas_pecas: number | null
           transporte: string | null
+          tratamento: number | null
           tratamento_termico: string | null
           usinagem: string | null
           visita_tecnica: string | null
         }
         Insert: {
+          acabamento_superficie?: string | null
+          balanceamento?: number | null
+          calandra?: number | null
+          certificacao?: string | null
           cliente: string
+          cnc_tf?: number | null
+          condicoes_especiais?: string | null
           contato?: string | null
+          cor_pintura?: string | null
           criado_por?: string | null
           data_criacao?: string
           data_entrega?: string | null
           data_ultima_edicao?: string
           data_visita?: string | null
+          des_montg?: number | null
+          descricao_geral?: string | null
+          desenho?: string | null
           desenho_finalizado?: string | null
+          dimensoes?: string | null
+          dobra?: number | null
           dureza?: string | null
           editado_por?: string | null
+          eng_tec?: number | null
           ensaio_lp?: string | null
+          fresa_furad?: number | null
           galvanizacao?: string | null
           horas_fresa?: number | null
           horas_furadeira?: number | null
@@ -79,40 +122,69 @@ export type Database = {
           horas_solda?: number | null
           horas_torno?: number | null
           id?: string
+          lavagem_acab?: number | null
+          macarico_solda?: number | null
+          mandrilhamento?: number | null
+          material_base?: string | null
           nome_peca: string
+          norma_aplicavel?: string | null
           numero_ftc: string
           numero_nf?: string | null
           numero_orcamento?: string | null
           numero_os?: string | null
+          observacoes?: string | null
           origem_projeto?: string | null
           peca_amostra?: string | null
+          peso_peca_galv?: string | null
           pintura?: string | null
+          pintura_horas?: number | null
+          plasma_oxicorte?: number | null
+          programacao_cam?: number | null
           quantidade: string
           servico: string
           solda?: string | null
           solicitante: string
           status?: string
+          tempera_reven?: string | null
           tipo_execucao?: string | null
+          tolerancia?: string | null
+          torno_grande?: number | null
+          torno_pequeno?: number | null
           total_horas_servico?: number | null
           total_material_peca?: number | null
           total_material_todas_pecas?: number | null
           transporte?: string | null
+          tratamento?: number | null
           tratamento_termico?: string | null
           usinagem?: string | null
           visita_tecnica?: string | null
         }
         Update: {
+          acabamento_superficie?: string | null
+          balanceamento?: number | null
+          calandra?: number | null
+          certificacao?: string | null
           cliente?: string
+          cnc_tf?: number | null
+          condicoes_especiais?: string | null
           contato?: string | null
+          cor_pintura?: string | null
           criado_por?: string | null
           data_criacao?: string
           data_entrega?: string | null
           data_ultima_edicao?: string
           data_visita?: string | null
+          des_montg?: number | null
+          descricao_geral?: string | null
+          desenho?: string | null
           desenho_finalizado?: string | null
+          dimensoes?: string | null
+          dobra?: number | null
           dureza?: string | null
           editado_por?: string | null
+          eng_tec?: number | null
           ensaio_lp?: string | null
+          fresa_furad?: number | null
           galvanizacao?: string | null
           horas_fresa?: number | null
           horas_furadeira?: number | null
@@ -122,24 +194,39 @@ export type Database = {
           horas_solda?: number | null
           horas_torno?: number | null
           id?: string
+          lavagem_acab?: number | null
+          macarico_solda?: number | null
+          mandrilhamento?: number | null
+          material_base?: string | null
           nome_peca?: string
+          norma_aplicavel?: string | null
           numero_ftc?: string
           numero_nf?: string | null
           numero_orcamento?: string | null
           numero_os?: string | null
+          observacoes?: string | null
           origem_projeto?: string | null
           peca_amostra?: string | null
+          peso_peca_galv?: string | null
           pintura?: string | null
+          pintura_horas?: number | null
+          plasma_oxicorte?: number | null
+          programacao_cam?: number | null
           quantidade?: string
           servico?: string
           solda?: string | null
           solicitante?: string
           status?: string
+          tempera_reven?: string | null
           tipo_execucao?: string | null
+          tolerancia?: string | null
+          torno_grande?: number | null
+          torno_pequeno?: number | null
           total_horas_servico?: number | null
           total_material_peca?: number | null
           total_material_todas_pecas?: number | null
           transporte?: string | null
+          tratamento?: number | null
           tratamento_termico?: string | null
           usinagem?: string | null
           visita_tecnica?: string | null
@@ -153,6 +240,7 @@ export type Database = {
           id: string
           name: string
           size: number
+          storage_path: string | null
           type: string
           uploaded_at: string
         }
@@ -162,6 +250,7 @@ export type Database = {
           id?: string
           name: string
           size: number
+          storage_path?: string | null
           type?: string
           uploaded_at?: string
         }
@@ -171,6 +260,7 @@ export type Database = {
           id?: string
           name?: string
           size?: number
+          storage_path?: string | null
           type?: string
           uploaded_at?: string
         }
