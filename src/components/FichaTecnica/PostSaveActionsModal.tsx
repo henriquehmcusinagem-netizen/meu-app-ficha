@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mail, Search, CheckCircle2, Eye, Paperclip, Link } from "lucide-react";
+import { Mail, Search, CheckCircle2, Download, Paperclip, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { FormData, Material, Foto, FichaSalva, Calculos } from "@/types/ficha-tecnica";
@@ -54,34 +54,19 @@ export function PostSaveActionsModal({
   };
 
 
-  const previewPDF = async () => {
+  const exportToPDFFile = () => {
     try {
       const tempFicha = createTempFicha();
-      const pdfBlob = await generatePDFBlob(tempFicha);
-      const pdfUrl = URL.createObjectURL(pdfBlob);
+      generatePDF(tempFicha);
       
-      const newWindow = window.open(pdfUrl, '_blank');
-      if (newWindow) {
-        newWindow.onload = () => {
-          URL.revokeObjectURL(pdfUrl);
-        };
-        toast({
-          title: "PDF Aberto",
-          description: "Visualização do PDF aberta em nova aba!",
-        });
-      } else {
-        URL.revokeObjectURL(pdfUrl);
-        toast({
-          title: "Erro",
-          description: "Não foi possível abrir o PDF. Verifique se o bloqueador de pop-ups está desabilitado.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao gerar preview do PDF:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao gerar visualização do PDF",
+        title: "PDF Exportado",
+        description: "Download do arquivo PDF iniciado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na Exportação",
+        description: "Não foi possível gerar o arquivo PDF.",
         variant: "destructive"
       });
     }
@@ -228,9 +213,9 @@ export function PostSaveActionsModal({
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Exportar</h4>
             <div className="grid grid-cols-1 gap-2">
-              <Button onClick={previewPDF} variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800">
-                <Eye className="h-4 w-4" />
-                Visualizar PDF
+              <Button onClick={exportToPDFFile} variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800">
+                <Download className="h-4 w-4" />
+                PDF
               </Button>
             </div>
           </div>
