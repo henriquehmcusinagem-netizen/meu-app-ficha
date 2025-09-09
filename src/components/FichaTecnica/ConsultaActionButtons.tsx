@@ -50,28 +50,43 @@ export function ConsultaActionButtons({ ficha }: ConsultaActionButtonsProps) {
   };
 
   const sendEmail = () => {
-    const valorTotal = ficha.calculos.materialTodasPecas;
     const subject = `Ficha Técnica de Cotação - ${ficha.resumo.cliente} - FTC ${ficha.numeroFTC}`;
-    const body = `Prezado(a),\n\n` +
-      `Segue informações da Ficha Técnica de Cotação:\n\n` +
-      `FTC: ${ficha.numeroFTC}\n` +
-      `Cliente: ${ficha.resumo.cliente}\n` +
-      `Solicitante: ${ficha.formData.solicitante || 'Não informado'}\n` +
-      `Serviço: ${ficha.resumo.servico}\n` +
-      `Peça/Equipamento: ${ficha.formData.nome_peca || 'Não informado'}\n` +
-      `Quantidade: ${ficha.formData.quantidade || '1'}\n` +
-      `Valor Total Material: R$ ${valorTotal.toFixed(2)}\n` +
-      `Horas Totais: ${ficha.calculos.horasTodasPecas.toFixed(1)}h\n` +
-      `Data de Criação: ${ficha.dataCriacao}\n\n` +
-      `Atenciosamente,\n` +
-      `Equipe HMC`;
     
-    const mailtoLink = `mailto:${ficha.formData.fone_email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoLink);
-    
-    toast({
-      title: "Email aberto",
-      description: "Cliente de email padrão aberto com os dados da ficha.",
+    // Import the HTML generator
+    import('@/utils/htmlGenerator').then(({ generateHTMLContent }) => {
+      const htmlContent = generateHTMLContent(ficha);
+      
+      const mailtoLink = `mailto:${ficha.formData.fone_email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(htmlContent)}`;
+      window.open(mailtoLink);
+      
+      toast({
+        title: "Email aberto",
+        description: "Cliente de email aberto com HTML completo da ficha técnica!",
+      });
+    }).catch(() => {
+      // Fallback to basic email if import fails
+      const valorTotal = ficha.calculos.materialTodasPecas;
+      const body = `Prezado(a),
+
+Segue informações da Ficha Técnica de Cotação:
+
+FTC: ${ficha.numeroFTC}
+Cliente: ${ficha.resumo.cliente}
+Solicitante: ${ficha.formData.solicitante || 'Não informado'}
+Serviço: ${ficha.resumo.servico}
+Valor Total Material: R$ ${valorTotal.toFixed(2)}
+Horas Totais: ${ficha.calculos.horasTodasPecas.toFixed(1)}h
+
+Atenciosamente,
+Equipe HMC`;
+      
+      const mailtoLink = `mailto:${ficha.formData.fone_email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.open(mailtoLink);
+      
+      toast({
+        title: "Email aberto",
+        description: "Cliente de email aberto com os dados da ficha.",
+      });
     });
   };
 

@@ -120,49 +120,32 @@ Ficha técnica gerada automaticamente`;
   };
 
   const sendEmail = () => {
-    const calculos = calculateTotals(materiais, formData);
-    const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
-    
+    const tempFicha = createTempFicha();
     const subject = `Ficha Técnica de Cotação - ${formData.cliente}`;
     
-    const body = `FICHA TÉCNICA DE COTAÇÃO
-
-FTC: ${tempFTCNumber}
-Data: ${getCurrentDate()}
-
-=== DADOS DO CLIENTE ===
-Cliente: ${formData.cliente}
-Solicitante: ${formData.solicitante}
-Contato: ${formData.fone_email}
-
-=== DADOS DA PEÇA/EQUIPAMENTO ===
-Nome da Peça: ${formData.nome_peca}
-Quantidade: ${formData.quantidade}
-Serviço: ${formData.servico}
-
-=== RESUMO FINANCEIRO ===
-Material Total: ${formatCurrency(calculos.materialTodasPecas)}
-Horas Totais: ${calculos.horasTodasPecas.toFixed(1)}h
-
-=== MATERIAIS ===
-${materiais
-  .filter(m => m.descricao && (parseFloat(m.quantidade) > 0 || parseFloat(m.valor_unitario || '0') > 0))
-  .map(material => 
-    `${material.descricao} - Qtd: ${material.quantidade} ${material.unidade} - Unit: ${formatCurrency(parseFloat(material.valor_unitario || '0'))} - Total: ${formatCurrency(parseFloat(material.valor_total || '0'))}`
-  ).join('\n')}
-
-${formData.observacoes ? `=== OBSERVAÇÕES ===\n${formData.observacoes}\n` : ''}
-
----
-Ficha técnica gerada automaticamente`;
-    
-    const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoLink);
-    
-    toast({
-      title: "E-mail Aberto",
-      description: "Cliente de e-mail aberto com os dados preenchidos!",
+    import('@/utils/htmlGenerator').then(({ generateHTMLContent }) => {
+      const htmlContent = generateHTMLContent(tempFicha);
+      const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(htmlContent)}`;
+      window.open(mailtoLink);
+      
+      toast({
+        title: "E-mail Aberto",
+        description: "Cliente de e-mail aberto com HTML completo da ficha técnica!",
+      });
+    }).catch(() => {
+      const calculos = calculateTotals(materiais, formData);
+      const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
+      
+      const basicBody = `FICHA TÉCNICA DE COTAÇÃO - FTC: ${tempFTCNumber}\nCliente: ${formData.cliente}\nMaterial Total: ${formatCurrency(calculos.materialTodasPecas)}`;
+      const mailtoLink = `mailto:${formData.fone_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(basicBody)}`;
+      window.open(mailtoLink);
+      
+      toast({
+        title: "E-mail Aberto", 
+        description: "Cliente de e-mail aberto!",
+      });
     });
+    
     onOpenChange(false);
   };
 
