@@ -164,7 +164,7 @@ export function FichasList({ onLoadFicha }: FichasListProps) {
                   </div>
                   <div className="mt-3 pt-3 border-t">
                     <p className="text-xs text-muted-foreground">
-                      {ficha.materiais.length} material(is) • {ficha.fotos.length} foto(s)
+                      {ficha.materiais.length} material(is)
                     </p>
                   </div>
                 </CardContent>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { FormData, Material, Foto, Calculos, FichaSalva } from '@/types/ficha-tecnica';
+import { FormData, Material, Calculos, FichaSalva } from '@/types/ficha-tecnica';
 import { calculateTotals } from '@/utils/calculations';
 import { getCurrentDate } from '@/utils/helpers';
 import { 
@@ -98,7 +98,6 @@ export function useFichaTecnica() {
   const location = useLocation();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [materiais, setMateriais] = useState<Material[]>([]);
-  const [fotos, setFotos] = useState<Foto[]>([]);
   const [numeroFTC, setNumeroFTC] = useState('');
   const [dataAtual, setDataAtual] = useState('');
   
@@ -218,24 +217,6 @@ export function useFichaTecnica() {
     setMateriais(prev => prev.filter(material => material.id !== id));
   }, []);
 
-  const addFoto = useCallback((foto: Foto) => {
-    console.log('📸 useFichaTecnica - addFoto chamado:', { 
-      foto: foto.name, 
-      fichaId, 
-      isInitialized,
-      currentFotosCount: fotos.length 
-    });
-    setFotos(prev => [...prev, foto]);
-    setIsModified(true);
-    setIsSaved(false);
-  }, [fichaId, isInitialized, fotos.length]);
-
-  const removeFoto = useCallback((id: number) => {
-    setFotos(prev => prev.filter(foto => foto.id !== id));
-    setIsModified(true);
-    setIsSaved(false);
-  }, []);
-
   // Save ficha function
   const salvarFichaTecnica = useCallback(async (): Promise<{ success: boolean; errors?: string[]; numeroFTC?: string }> => {
     console.log('💾 SALVAMENTO INICIADO');
@@ -247,10 +228,7 @@ export function useFichaTecnica() {
     });
     console.log('💾 Dados para salvar:', { 
       cliente: formData.cliente, 
-      materiais: materiais.length, 
-      fotos: fotos.length,
-      fotosComFile: fotos.filter(f => f.file).length,
-      fotosExistentes: fotos.filter(f => f.storagePath).length
+      materiais: materiais.length
     });
     
     setIsSaving(true);
@@ -275,11 +253,10 @@ export function useFichaTecnica() {
       console.log('💾 Chamando salvarFicha...');
       console.log('💾 Parâmetros:', { 
         fichaId: fichaId || undefined, 
-        numeroFTC,
-        fotosTotal: fotos.length 
+        numeroFTC
       });
       
-      const result = await salvarFicha(formData, materiais, fotos, calculos, numeroFTC, fichaId || undefined);
+      const result = await salvarFicha(formData, materiais, [], calculos, numeroFTC, fichaId || undefined);
       
       console.log('💾 Resultado do salvarFicha:', result);
       
@@ -320,7 +297,7 @@ export function useFichaTecnica() {
       setIsSaving(false);
       return { success: false, errors: ['Erro inesperado ao salvar'] };
     }
-  }, [formData, materiais, fotos, numeroFTC, fichaId]);
+  }, [formData, materiais, numeroFTC, fichaId]);
 
   // Load ficha function
   const carregarFichaTecnica = useCallback(async (id: string) => {
@@ -336,8 +313,7 @@ export function useFichaTecnica() {
           id: ficha.id,
           numeroFTC: ficha.numeroFTC,
           cliente: ficha.formData.cliente,
-          materiaisCount: ficha.materiais.length,
-          fotosCount: ficha.fotos.length
+          materiaisCount: ficha.materiais.length
         });
         
         // Set the loaded data
@@ -346,9 +322,6 @@ export function useFichaTecnica() {
         setMateriais(ficha.materiais);
         setNumeroFTC(ficha.numeroFTC);
         setDataAtual(getCurrentDate()); // Keep current date for editing
-        
-        // Load real fotos with Storage URLs
-        setFotos(ficha.fotos);
         
         setIsSaved(true);
         setIsModified(false);
@@ -388,7 +361,6 @@ export function useFichaTecnica() {
       cliente_interno: '',
       valor_total: '0',
     }]);
-    setFotos([]);
     setNumeroFTC('DRAFT-' + Date.now());
     setDataAtual(getCurrentDate());
     setIsSaved(false);
@@ -407,9 +379,6 @@ export function useFichaTecnica() {
     addMaterial,
     updateMaterial,
     removeMaterial,
-    fotos,
-    addFoto,
-    removeFoto,
     calculos,
     numeroFTC,
     dataAtual,

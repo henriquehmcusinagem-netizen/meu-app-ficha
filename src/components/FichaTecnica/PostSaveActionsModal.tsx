@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { FileText, Printer, Mail, MessageCircle, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { FormData, Material, Foto, FichaSalva } from "@/types/ficha-tecnica";
+import { FormData, Material, FichaSalva } from "@/types/ficha-tecnica";
 import { exportToHTML } from "@/utils/htmlExporter";
 import { calculateTotals } from "@/utils/calculations";
 import { getCurrentDate } from "@/utils/helpers";
@@ -13,15 +13,13 @@ interface PostSaveActionsModalProps {
   onOpenChange: (open: boolean) => void;
   formData: FormData;
   materiais: Material[];
-  fotos: Foto[];
 }
 
 export function PostSaveActionsModal({ 
   open, 
   onOpenChange, 
   formData, 
-  materiais, 
-  fotos 
+  materiais 
 }: PostSaveActionsModalProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -38,7 +36,7 @@ export function PostSaveActionsModal({
       status: 'rascunho',
       formData,
       materiais,
-      fotos,
+      fotos: [],
       calculos,
       resumo: {
         cliente: formData.cliente,
