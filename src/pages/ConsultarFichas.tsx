@@ -115,10 +115,20 @@ export default function ConsultarFichas() {
   };
 
   const handleLoadFicha = (id: string) => {
-    console.log('🔗 ConsultarFichas - Navegando para editar ficha:', id);
+    console.log('🔗 ConsultarFichas - Clicou para editar ficha:', id);
+    console.log('🔗 Type of ID:', typeof id, 'Value:', id);
+    
+    if (!id) {
+      console.error('❌ ID da ficha é inválido:', id);
+      return;
+    }
+    
     // Store in sessionStorage as backup
     sessionStorage.setItem('loadFichaId', id);
+    console.log('💾 Salvou no sessionStorage:', sessionStorage.getItem('loadFichaId'));
+    
     navigate('/nova-ficha', { state: { loadFichaId: id } });
+    console.log('🚀 Navegação executada para /nova-ficha com state:', { loadFichaId: id });
   };
 
   const formatDate = (dateString: string) => {
@@ -272,97 +282,103 @@ export default function ConsultarFichas() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredFichas.map((ficha) => (
-                  <Card 
-                    key={ficha.id} 
-                    className="cursor-pointer hover:bg-accent/50 transition-all duration-200 hover:shadow-md"
-                    onClick={() => handleLoadFicha(ficha.id)}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-3">
-                            <CardTitle className="text-lg font-semibold text-primary">
-                              FTC {ficha.numeroFTC}
-                            </CardTitle>
-                            <Badge variant={getStatusBadgeVariant(ficha.status)}>
-                              {getStatusLabel(ficha.status)}
-                            </Badge>
+                {filteredFichas.map((ficha) => {
+                  console.log('🎯 Renderizando ficha:', { id: ficha.id, numeroFTC: ficha.numeroFTC });
+                  return (
+                    <Card 
+                      key={ficha.id} 
+                      className="cursor-pointer hover:bg-accent/50 transition-all duration-200 hover:shadow-md"
+                      onClick={() => {
+                        console.log('🖱️ Card clicado! ID:', ficha.id);
+                        handleLoadFicha(ficha.id);
+                      }}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <CardTitle className="text-lg font-semibold text-primary">
+                                FTC {ficha.numeroFTC}
+                              </CardTitle>
+                              <Badge variant={getStatusBadgeVariant(ficha.status)}>
+                                {getStatusLabel(ficha.status)}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <User className="h-4 w-4" />
+                              {ficha.resumo.cliente}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <User className="h-4 w-4" />
-                            {ficha.resumo.cliente}
-                          </div>
-                        </div>
-                        <span className="text-xs bg-muted px-2 py-1 rounded">
-                          FTC {ficha.numeroFTC}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-                        <div>
-                          <p className="font-medium text-muted-foreground">Serviço</p>
-                          <p className="truncate">{ficha.resumo.servico}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Quantidade</p>
-                          <p>{ficha.resumo.quantidade}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Valor Total</p>
-                          <p className="font-semibold text-primary">
-                            {formatCurrency(ficha.resumo.valorTotal)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Última Edição</p>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <p className="text-xs">{formatDate(ficha.dataUltimaEdicao)}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="pt-3 border-t space-y-3">
-                        <div className="flex justify-between items-center">
-                          <p className="text-xs text-muted-foreground">
-                            {ficha.materiais.length} material(is) • {ficha.fotos.length} foto(s)
-                          </p>
                           <span className="text-xs bg-muted px-2 py-1 rounded">
-                            Criada: {formatDate(ficha.dataCriacao)}
+                            FTC {ficha.numeroFTC}
                           </span>
                         </div>
-                        
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                          <ConsultaActionButtons ficha={ficha} />
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleLoadFicha(ficha.id);
-                              }}
-                              className="flex items-center gap-1"
-                            >
-                              <Eye className="h-4 w-4" />
-                              Visualizar
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => handleDeleteFicha(ficha.id, e)}
-                              className="text-destructive hover:text-destructive flex items-center gap-1"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Excluir
-                            </Button>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                          <div>
+                            <p className="font-medium text-muted-foreground">Serviço</p>
+                            <p className="truncate">{ficha.resumo.servico}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-muted-foreground">Quantidade</p>
+                            <p>{ficha.resumo.quantidade}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-muted-foreground">Valor Total</p>
+                            <p className="font-semibold text-primary">
+                              {formatCurrency(ficha.resumo.valorTotal)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-muted-foreground">Última Edição</p>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <p className="text-xs">{formatDate(ficha.dataUltimaEdicao)}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="pt-3 border-t space-y-3">
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-muted-foreground">
+                              {ficha.materiais.length} material(is) • {ficha.fotos.length} foto(s)
+                            </p>
+                            <span className="text-xs bg-muted px-2 py-1 rounded">
+                              Criada: {formatDate(ficha.dataCriacao)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <ConsultaActionButtons ficha={ficha} />
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLoadFicha(ficha.id);
+                                }}
+                                className="flex items-center gap-1"
+                              >
+                                <Eye className="h-4 w-4" />
+                                Visualizar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => handleDeleteFicha(ficha.id, e)}
+                                className="text-destructive hover:text-destructive flex items-center gap-1"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Excluir
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>
