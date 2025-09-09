@@ -635,25 +635,39 @@ export async function generatePDFBlob(ficha: FichaSalva): Promise<Blob> {
     { label: 'Pintura', value: ficha.formData.pintura, extra: ficha.formData.cor_pintura },
     { label: 'Galvanização', value: ficha.formData.galvanizacao, extra: ficha.formData.peso_peca_galv },
     { label: 'Tratamento Térmico', value: ficha.formData.tratamento_termico, extra: ficha.formData.tempera_reven }
-  ].filter(t => t.value === 'sim');
+  ];
   
-  if (tratamentos.length > 0) {
+  // Show all treatments (both SIM and NÃO)
+  const treatmentsToShow = tratamentos.filter(t => t.value && t.value !== '');
+  
+  if (treatmentsToShow.length > 0) {
     drawSection('TRATAMENTOS E ACABAMENTOS');
     
-    tratamentos.forEach((trat, index) => {
+    treatmentsToShow.forEach((trat, index) => {
+      const isSelected = trat.value === 'sim';
+      const symbol = isSelected ? '✓' : '✗';
+      
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
-      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text(`✓ ${trat.label}`, margin, yPosition + index * 5);
       
-      if (trat.extra) {
+      // Use green for SIM, gray for NÃO
+      if (isSelected) {
+        doc.setTextColor(34, 197, 94); // Green for SIM
+      } else {
+        doc.setTextColor(107, 114, 128); // Gray for NÃO
+      }
+      
+      doc.text(`${symbol} ${trat.label}`, margin, yPosition + index * 5);
+      
+      // Only show extra info for selected treatments
+      if (trat.extra && isSelected) {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);
         doc.text(` - ${trat.extra}`, margin + 30, yPosition + index * 5);
       }
     });
     
-    yPosition += tratamentos.length * 5 + 5;
+    yPosition += treatmentsToShow.length * 5 + 5;
   }
   
   // Controle
