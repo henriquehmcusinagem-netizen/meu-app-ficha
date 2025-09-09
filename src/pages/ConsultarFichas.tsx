@@ -124,9 +124,11 @@ export default function ConsultarFichas() {
     }
     
     // Store in sessionStorage as backup
+    console.log('💾 Antes de salvar no sessionStorage');
     sessionStorage.setItem('loadFichaId', id);
     console.log('💾 Salvou no sessionStorage:', sessionStorage.getItem('loadFichaId'));
     
+    console.log('🚀 Antes de navegar - location.state will be:', { loadFichaId: id });
     navigate('/nova-ficha', { state: { loadFichaId: id } });
     console.log('🚀 Navegação executada para /nova-ficha com state:', { loadFichaId: id });
   };
