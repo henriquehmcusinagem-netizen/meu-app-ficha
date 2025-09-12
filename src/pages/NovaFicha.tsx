@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
 import { useToast } from "@/hooks/use-toast";
 import FichaTecnicaForm from "./FichaTecnicaForm";
+import BotaoVoz from "@/components/BotaoVoz";
 
 export default function NovaFicha() {
   const navigate = useNavigate();
@@ -64,6 +65,11 @@ export default function NovaFicha() {
           {isLoading && (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           )}
+        </div>
+        
+        {/* Voice Recording Button */}
+        <div className="mb-6">
+          <BotaoVoz />
         </div>
         
         {/* Render the original FichaTecnicaForm component */}
