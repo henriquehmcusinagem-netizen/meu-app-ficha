@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
 import { useToast } from "@/hooks/use-toast";
 import FichaTecnicaForm from "./FichaTecnicaForm";
-import BotaoVoz from "@/components/BotaoVoz";
+import VoiceFTC from "@/components/VoiceFTC";
 
 export default function NovaFicha() {
   const navigate = useNavigate();
@@ -69,7 +69,7 @@ export default function NovaFicha() {
         
         {/* Voice Recording Button */}
         <div className="mb-6">
-          <BotaoVoz />
+          <VoiceFTC />
         </div>
         
         {/* Render the original FichaTecnicaForm component */}
