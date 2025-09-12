@@ -21,53 +21,78 @@ serve(async (req) => {
 
     console.log("Creating new FTC draft...");
 
-    // Use Supabase function to get next FTC number
-    const { data: nextNumber, error: numberError } = await supabase
-      .rpc('get_next_ftc_number');
+    // Try up to 3 times to create a unique FTC number
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        // Use Supabase function to get next FTC number
+        const { data: nextNumber, error: numberError } = await supabase
+          .rpc('get_next_ftc_number');
 
-    if (numberError) {
-      console.error("Error getting next FTC number:", numberError);
-      throw numberError;
-    }
+        if (numberError) {
+          console.error("Error getting next FTC number:", numberError);
+          throw numberError;
+        }
 
-    console.log("Generated FTC number:", nextNumber);
+        console.log(`Generated FTC number (attempt ${attempts + 1}):`, nextNumber);
 
-    // Create new FTC record
-    const { data, error } = await supabase
-      .from("fichas_tecnicas")
-      .insert([{ 
-        numero_ftc: nextNumber, 
-        status: "rascunho",
-        cliente: "",
-        solicitante: "",
-        nome_peca: "",
-        quantidade: "",
-        servico: ""
-      }])
-      .select()
-      .single();
+        // Create new FTC record
+        const { data, error } = await supabase
+          .from("fichas_tecnicas")
+          .insert([{ 
+            numero_ftc: nextNumber, 
+            status: "rascunho",
+            cliente: "",
+            solicitante: "",
+            nome_peca: "",
+            quantidade: "",
+            servico: ""
+          }])
+          .select()
+          .single();
 
-    if (error) {
-      console.error("Error creating FTC:", error);
-      throw error;
-    }
+        if (error) {
+          // If it's a duplicate key error, try again with a new number
+          if (error.code === '23505' && error.message.includes('numero_ftc')) {
+            console.log(`Duplicate FTC number ${nextNumber}, retrying...`);
+            attempts++;
+            continue;
+          }
+          
+          console.error("Error creating FTC:", error);
+          throw error;
+        }
 
-    console.log("FTC created successfully:", data);
+        console.log("FTC created successfully:", data);
 
-    return new Response(
-      JSON.stringify({ 
-        ok: true, 
-        ftc_id: data.numero_ftc, 
-        id: data.id,
-        uuid: data.id
-      }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          "content-type": "application/json" 
-        } 
+        return new Response(
+          JSON.stringify({ 
+            ok: true, 
+            ftc_id: data.numero_ftc, 
+            id: data.id,
+            uuid: data.id
+          }),
+          { 
+            headers: { 
+              ...corsHeaders,
+              "content-type": "application/json" 
+            } 
+          }
+        );
+
+      } catch (innerError) {
+        if (innerError.code === '23505' && attempts < maxAttempts - 1) {
+          attempts++;
+          continue;
+        }
+        throw innerError;
       }
-    );
+    }
+    
+    // If we get here, all attempts failed
+    throw new Error(`Failed to create unique FTC number after ${maxAttempts} attempts`)
 
   } catch (error) {
     console.error("Error in ftc-rascunho function:", error);

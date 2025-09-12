@@ -1,4 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 type Props = {
   /** se já existir um rascunho na tela, pode passar; senão, criaremos */
@@ -14,6 +17,7 @@ export default function VoiceFTC({
   supabaseFnBase = "https://gobuakgvzqauzenaswow.supabase.co/functions/v1",
   appBaseUrl = window.location.origin,
 }: Props) {
+  const { toast } = useToast();
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [text, setText] = useState("");
@@ -29,7 +33,10 @@ export default function VoiceFTC({
   useEffect(() => {
     const w = window as any;
     const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR) {
+      console.log("Speech recognition not supported");
+      return;
+    }
 
     const r = new SR();
     r.lang = "pt-BR";
@@ -40,6 +47,7 @@ export default function VoiceFTC({
     let lastFinalChunk = "";
 
     r.onresult = (e: any) => {
+      console.log("Speech recognition result:", e);
       let interim = "";
 
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -60,45 +68,141 @@ export default function VoiceFTC({
       setText(display);
     };
 
-    r.onend = () => setListening(false);
+    r.onstart = () => {
+      console.log("Speech recognition started");
+    };
+
+    r.onerror = (e: any) => {
+      console.error("Speech recognition error:", e);
+      toast({
+        title: "Erro no reconhecimento de voz",
+        description: `Erro: ${e.error}. Verifique as permissões do microfone.`,
+        variant: "destructive",
+      });
+      setListening(false);
+    };
+
+    r.onend = () => {
+      console.log("Speech recognition ended");
+      setListening(false);
+    };
 
     recogRef.current = r;
     setSupported(true);
-  }, []);
+  }, [toast]);
 
   async function ensureDraft(): Promise<string> {
     if (currentFtc) return currentFtc;
-    const res = await fetch(`${supabaseFnBase}/ftc-rascunho`, { method: "POST" });
-    const data = await res.json();
-    if (!data?.ftc_id) throw new Error("Não consegui criar rascunho");
-    setCurrentFtc(data.ftc_id);
-    return data.ftc_id;
+    
+    console.log("Creating FTC draft...");
+    toast({
+      title: "Criando rascunho...",
+      description: "Preparando nova ficha técnica",
+    });
+
+    try {
+      const res = await fetch(`${supabaseFnBase}/ftc-rascunho`, { 
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      
+      console.log("FTC draft response status:", res.status);
+      const data = await res.json();
+      console.log("FTC draft response data:", data);
+      
+      if (!res.ok || !data?.ftc_id) {
+        throw new Error(data?.error || "Não consegui criar rascunho");
+      }
+      
+      setCurrentFtc(data.ftc_id);
+      toast({
+        title: "Rascunho criado",
+        description: `FTC ${data.ftc_id} criada com sucesso`,
+      });
+      
+      return data.ftc_id;
+    } catch (error) {
+      console.error("Error creating draft:", error);
+      throw error;
+    }
   }
 
   async function start() {
     try {
+      // Check microphone permission first
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          await navigator.mediaDevices.getUserMedia({ audio: true });
+          console.log("Microphone permission granted");
+        } catch (permError) {
+          console.error("Microphone permission denied:", permError);
+          toast({
+            title: "Permissão necessária",
+            description: "Por favor, permita o acesso ao microfone para usar o reconhecimento de voz",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       const id = await ensureDraft();
       setText("");
+      
+      console.log("Starting speech recognition...");
       recogRef.current?.start();
       setListening(true);
-      alert(
-        `Gravando…\nDiga com marcadores: "ftc início … ftc fim".\nEx.: cliente: BTP; solicitante: Leonardo; peça: eixo teste; processo: torno grande 3 horas; pintura: não.`
-      );
+      
+      toast({
+        title: "Gravando...",
+        description: 'Diga: "ftc início ... cliente: ... peça: ... ftc fim"',
+      });
     } catch (e: any) {
-      alert(e.message || String(e));
+      console.error("Error starting voice capture:", e);
+      toast({
+        title: "Erro ao iniciar gravação",
+        description: e.message || String(e),
+        variant: "destructive",
+      });
     }
   }
 
   function stop() {
+    console.log("Stopping speech recognition...");
     recogRef.current?.stop();
     setListening(false);
+    
+    toast({
+      title: "Gravação finalizada",
+      description: "Você pode editar o texto ou enviar para a ficha",
+    });
   }
 
   async function enviar() {
-    if (!currentFtc) return alert("Crie o rascunho primeiro.");
-    if (!text.trim()) return alert("Sem texto capturado.");
+    if (!currentFtc) {
+      toast({
+        title: "Erro",
+        description: "Crie o rascunho primeiro.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!text.trim()) {
+      toast({
+        title: "Erro",
+        description: "Sem texto capturado.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
+    
     try {
+      console.log("Sending transcription to import...", { ftc_id: currentFtc, text: text.slice(0, 100) + "..." });
+      
       const payload = {
         ftc_id: currentFtc,
         transcricao: text,
@@ -110,55 +214,84 @@ export default function VoiceFTC({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      
+      console.log("Import response status:", r.status);
       const j = await r.json();
-      if (!r.ok || j?.ok === false) throw new Error(j?.error || "Falha no import");
+      console.log("Import response data:", j);
+      
+      if (!r.ok || j?.ok === false) {
+        throw new Error(j?.error || "Falha no import");
+      }
 
-      window.location.href = `${appBaseUrl}/nova-ficha/${currentFtc}`;
+      toast({
+        title: "Sucesso!",
+        description: "Transcrição enviada. Redirecionando para a ficha...",
+      });
+      
+      // Redirect to the FTC form with the ID
+      setTimeout(() => {
+        window.location.href = `${appBaseUrl}/nova-ficha/${currentFtc}`;
+      }, 1000);
+      
     } catch (e: any) {
-      alert("Erro ao enviar: " + (e.message || String(e)));
+      console.error("Error sending transcription:", e);
+      toast({
+        title: "Erro ao enviar",
+        description: e.message || String(e),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4 p-4 border rounded-lg bg-card">
+      <h3 className="text-lg font-semibold">Captura por Voz</h3>
+      
       {!supported && (
-        <div className="text-sm text-red-600">
-          Seu navegador não suporta captura por voz. Use Safari no iPhone.
+        <div className="text-sm text-destructive bg-destructive/10 p-3 rounded">
+          Seu navegador não suporta captura por voz. Use Safari no iPhone ou Chrome no desktop.
         </div>
       )}
 
       <div className="flex flex-wrap gap-2 items-center">
-        <button
+        <Button
           onClick={listening ? stop : start}
-          className={`px-5 py-3 rounded-lg text-white font-semibold ${
-            listening ? "bg-red-600" : "bg-indigo-600"
-          }`}
+          variant={listening ? "destructive" : "default"}
           disabled={!supported || loading}
+          className="flex items-center gap-2"
         >
-          {listening ? "■ Parar" : "🎙️ Falar FTC"}
-        </button>
+          {listening ? "⏹️ Parar" : "🎙️ Falar FTC"}
+        </Button>
 
-        <button
+        <Button
           onClick={enviar}
-          className="px-5 py-3 rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-50"
+          variant="secondary"
           disabled={!text.trim() || loading}
-          title="Envia a transcrição para preencher a FTC"
+          className="flex items-center gap-2"
         >
-          ✅ Enviar para a Ficha
-        </button>
+          {loading ? "Enviando..." : "✅ Enviar para a Ficha"}
+        </Button>
       </div>
 
-      <textarea
-        className="w-full min-h-[120px] p-3 rounded border"
+      <Textarea
+        className="min-h-[120px]"
         placeholder='Diga: "ftc início … cliente: … peça: … processo: torno grande 3 horas … ftc fim"'
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
 
       {currentFtc && (
-        <div className="text-xs text-gray-500">FTC rascunho: {currentFtc}</div>
+        <div className="text-xs text-muted-foreground">
+          FTC rascunho: {currentFtc}
+        </div>
+      )}
+      
+      {listening && (
+        <div className="text-sm text-primary animate-pulse">
+          🎤 Gravando... Fale claramente
+        </div>
       )}
     </div>
   );
