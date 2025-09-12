@@ -206,7 +206,6 @@ export default function VoiceFTC({
       const payload = {
         ftc_id: currentFtc,
         transcricao: text,
-        device_time: new Date().toISOString(),
       };
 
       const r = await fetch(`${supabaseFnBase}/ftc-import`, {
