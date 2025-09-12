@@ -99,8 +99,16 @@ serve(async (req) => {
     );
 
     const body = await req.json();
+    console.log("Received request body:", JSON.stringify(body));
+    
     const { ftc_id, transcricao, ...direct } = body || {};
-    if (!ftc_id) {
+    
+    console.log("Extracted ftc_id:", ftc_id);
+    console.log("Extracted transcricao:", transcricao?.substring(0, 100) + "...");
+    console.log("Direct fields:", Object.keys(direct));
+    
+    if (!ftc_id || ftc_id.trim() === "") {
+      console.log("FTC_ID missing or empty");
       return new Response(JSON.stringify({ ok: false, error: "FTC_ID_REQUIRED" }), { 
         status: 400,
         headers: { 
@@ -113,13 +121,18 @@ serve(async (req) => {
     // se vier transcrição, extrai; se vier campos diretos, respeita
     const parsed = transcricao ? parseTranscricao(String(transcricao)) : {};
     const updatePayload = { ...parsed, ...direct };
+    
+    console.log("Update payload:", JSON.stringify(updatePayload));
 
     const { error } = await supabase
       .from("fichas_tecnicas")
       .update(updatePayload)
       .eq("numero_ftc", ftc_id);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase update error:", error);
+      throw error;
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { 
