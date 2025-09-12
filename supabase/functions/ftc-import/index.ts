@@ -51,16 +51,17 @@ function parseTranscricao(raw: string) {
   const txt = norm(raw);
   const out: any = { observacoes: txt };
 
-  // chave:valor simples
+  // chave:valor simples com parada em palavras-chave
   const kv = (key: string, re: RegExp) => {
     const m = txt.match(re);
     if (m) out[key] = m[1].trim();
   };
 
-  kv("cliente", /cliente[: ]+([a-z0-9\s\-_.]+)/i);
-  kv("solicitante", /solicitante[: ]+([a-z0-9\s\-_.]+)/i);
-  kv("nome_peca", /(peça|peca)[: ]+([a-z0-9\s\-_.]+)/i);
-  kv("servico", /servi[cç]o[: ]+([a-z0-9\s\-_.]+)/i);
+  // Regex melhorados para parar em palavras-chave subsequentes
+  kv("cliente", /cliente[: ]+([^:]+?)(?:\s+(?:solicitante|peça|peca|servi[cç]o|data|nome|ftc\s+fim)|$)/i);
+  kv("solicitante", /solicitante[: ]+([^:]+?)(?:\s+(?:cliente|peça|peca|servi[cç]o|data|nome|ftc\s+fim)|$)/i);
+  kv("nome_peca", /(peça|peca)[: ]+([^:]+?)(?:\s+(?:cliente|solicitante|servi[cç]o|data|nome|ftc\s+fim)|$)/i);
+  kv("servico", /servi[cç]o[: ]+([^:]+?)(?:\s+(?:cliente|solicitante|peça|peca|data|nome|ftc\s+fim)|$)/i);
 
   // dimensões em texto livre (opcional)
   const dim = txt.match(/(dimens(ões|oes)|medidas?)[: ]+([a-z0-9\s\-_.ºøØxmm,]+)/i);
