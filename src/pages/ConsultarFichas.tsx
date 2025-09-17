@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, FileText, Calendar, User, Search, Filter, Eye, Home, Download, Printer } from 'lucide-react';
+import { Trash2, FileText, Calendar, User, Search, Filter, Eye, Home, Download, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { FichaSalva } from '@/types/ficha-tecnica';
+import { FichaSalva, Foto } from '@/types/ficha-tecnica';
 import { formatCurrency } from '@/utils/helpers';
 import { ConsultaActionButtons } from '@/components/FichaTecnica/ConsultaActionButtons';
 import { useFichasQuery } from '@/hooks/useFichasQuery';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 export default function ConsultarFichas() {
   const navigate = useNavigate();
@@ -69,6 +70,93 @@ export default function ConsultarFichas() {
 
     setFilteredFichas(filtered);
   }, [fichas, searchTerm, statusFilter, sortBy, sortOrder]);
+
+  const FotosPreview = ({ fotos }: { fotos: Foto[] }) => {
+    const [selectedFoto, setSelectedFoto] = useState<number>(0);
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handlePrevious = () => {
+      setSelectedFoto((prev) => (prev === 0 ? fotos.length - 1 : prev - 1));
+    };
+
+    const handleNext = () => {
+      setSelectedFoto((prev) => (prev === fotos.length - 1 ? 0 : prev + 1));
+    };
+
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-muted-foreground">{fotos.length} foto(s):</span>
+        <div className="flex gap-1">
+          {fotos.slice(0, 3).map((foto, index) => (
+            <Dialog key={index} open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <button
+                  onClick={() => {
+                    setSelectedFoto(index);
+                    setIsOpen(true);
+                  }}
+                  className="w-8 h-8 rounded border overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all"
+                >
+                  <img
+                    src={foto.preview}
+                    alt={foto.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
+                </button>
+              </DialogTrigger>
+              
+              <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+                <div className="relative flex items-center justify-center bg-black">
+                  <img
+                    src={fotos[selectedFoto]?.preview}
+                    alt={fotos[selectedFoto]?.name}
+                    className="max-w-full max-h-[80vh] object-contain"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
+                  
+                  {fotos.length > 1 && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="absolute left-4 top-1/2 -translate-y-1/2"
+                        onClick={handlePrevious}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="absolute right-4 top-1/2 -translate-y-1/2"
+                        onClick={handleNext}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                  
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded text-sm">
+                    {selectedFoto + 1} de {fotos.length} - {fotos[selectedFoto]?.name}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          ))}
+          
+          {fotos.length > 3 && (
+            <div className="w-8 h-8 rounded border bg-muted flex items-center justify-center">
+              <span className="text-xs text-muted-foreground">+{fotos.length - 3}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const handleDeleteFicha = (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -298,9 +386,16 @@ export default function ConsultarFichas() {
                         </div>
                         <div className="pt-3 border-t space-y-3">
                           <div className="flex justify-between items-center">
-                            <p className="text-xs text-muted-foreground">
-                              {ficha.materiais.length} material(is) • {ficha.fotos.length} foto(s)
-                            </p>
+                            <div className="flex items-center gap-3">
+                              <p className="text-xs text-muted-foreground">
+                                {ficha.materiais.length} material(is)
+                              </p>
+                              {ficha.fotos.length > 0 ? (
+                                <FotosPreview fotos={ficha.fotos} />
+                              ) : (
+                                <p className="text-xs text-muted-foreground">0 fotos</p>
+                              )}
+                            </div>
                             <span className="text-xs bg-muted px-2 py-1 rounded">
                               Criada: {formatDate(ficha.dataCriacao)}
                             </span>

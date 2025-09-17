@@ -219,5 +219,51 @@ export default function VoiceFTC({
       setLoading(false);
     }
   }
-  return;
+  if (!supported) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        Reconhecimento de voz não suportado neste navegador
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 p-4 border rounded-lg bg-card">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button
+          variant={listening ? "destructive" : "default"}
+          onClick={listening ? stop : start}
+          disabled={loading}
+          className="flex-1"
+        >
+          {listening ? "Parar Gravação" : "Iniciar Gravação por Voz"}
+        </Button>
+        
+        <Button
+          variant="outline"
+          onClick={enviar}
+          disabled={!text.trim() || loading || !currentFtc}
+          className="flex-1"
+        >
+          {loading ? "Enviando..." : "Enviar para Ficha"}
+        </Button>
+      </div>
+
+      {text && (
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Sua transcrição aparecerá aqui..."
+          rows={6}
+          className="resize-none"
+        />
+      )}
+
+      {listening && (
+        <div className="text-center text-sm text-muted-foreground animate-pulse">
+          🎤 Ouvindo... Diga: "ftc início ... cliente: ... peça: ... ftc fim"
+        </div>
+      )}
+    </div>
+  );
 }
