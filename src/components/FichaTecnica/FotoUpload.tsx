@@ -18,6 +18,7 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [selectedFoto, setSelectedFoto] = useState<Foto | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('📸 FotoUpload - handleFileUpload iniciado');
@@ -130,36 +131,20 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
                         alt={foto.name}
                         className="w-full h-full object-cover"
                       />
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              console.log('📸 FotoUpload - Botão zoom clicado:', foto.name);
-                              setSelectedFoto(foto);
-                            }}
-                          >
-                            <ZoomIn className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] p-2">
-                          <div className="flex flex-col items-center">
-                            <img
-                              src={foto.preview}
-                              alt={foto.name}
-                              className="max-w-full max-h-[80vh] object-contain"
-                            />
-                            <div className="mt-4 text-center">
-                              <p className="font-medium">{foto.name}</p>
-                              <p className="text-sm text-muted-foreground">{formatFileSize(foto.size)}</p>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('📸 FotoUpload - Botão zoom clicado:', foto.name);
+                          setSelectedFoto(foto);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
                     </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-secondary">
@@ -192,6 +177,25 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
             ))}
           </div>
         )}
+        
+        {/* Dialog controlado por estado */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-2">
+            {selectedFoto && (
+              <div className="flex flex-col items-center">
+                <img
+                  src={selectedFoto.preview}
+                  alt={selectedFoto.name}
+                  className="max-w-full max-h-[80vh] object-contain"
+                />
+                <div className="mt-4 text-center">
+                  <p className="font-medium">{selectedFoto.name}</p>
+                  <p className="text-sm text-muted-foreground">{formatFileSize(selectedFoto.size)}</p>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
