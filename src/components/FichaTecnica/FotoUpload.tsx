@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Camera, X, Upload, ZoomIn } from "lucide-react";
+import { Camera, X, Upload, ZoomIn, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Foto } from "@/types/ficha-tecnica";
 import { formatFileSize } from "@/utils/helpers";
+import { compressImage, formatCompressionInfo } from "@/utils/imageCompression";
 
 interface FotoUploadProps {
   fotos: Foto[];
@@ -19,8 +20,9 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
   const { toast } = useToast();
   const [selectedFoto, setSelectedFoto] = useState<Foto | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('📸 FotoUpload - handleFileUpload iniciado');
     const files = Array.from(event.target.files || []);
     
@@ -39,45 +41,86 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
       return;
     }
 
-    files.forEach((file) => {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Arquivo inválido",
-          description: `${file.name} não é uma imagem válida.`,
-          variant: "destructive",
-        });
-        return;
+    setIsCompressing(true);
+    let processedCount = 0;
+
+    try {
+      for (const file of files) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          toast({
+            title: "Arquivo inválido",
+            description: `${file.name} não é uma imagem válida.`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        // Validate file size (max 50MB antes da compressão)
+        if (file.size > 50 * 1024 * 1024) {
+          toast({
+            title: "Arquivo muito grande",
+            description: `${file.name} é maior que 50MB.`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        try {
+          console.log(`📸 Comprimindo ${file.name}...`);
+          
+          // Comprimir imagem
+          const result = await compressImage(file, {
+            maxWidth: 1920,
+            maxHeight: 1920,
+            quality: 0.85,
+            format: 'jpeg'
+          });
+
+          console.log(`📸 ${file.name} comprimida: ${formatCompressionInfo(result.originalSize, result.compressedSize)}`);
+
+          // Criar objeto Foto
+          const foto: Foto = {
+            id: Date.now() + Math.random() * 10000,
+            file: result.file,
+            preview: result.preview,
+            name: result.file.name,
+            size: result.file.size,
+          };
+
+          onAddFoto(foto);
+          processedCount++;
+
+          // Toast de sucesso para cada foto
+          toast({
+            title: "Foto otimizada!",
+            description: `${file.name} foi comprimida e adicionada com sucesso.`,
+          });
+
+        } catch (compressionError) {
+          console.error(`Erro ao comprimir ${file.name}:`, compressionError);
+          toast({
+            title: "Erro na compressão",
+            description: `Falha ao otimizar ${file.name}. Tente novamente.`,
+            variant: "destructive",
+          });
+        }
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      if (processedCount > 0) {
         toast({
-          title: "Arquivo muito grande",
-          description: `${file.name} é maior que 5MB.`,
-          variant: "destructive",
+          title: "Fotos processadas!",
+          description: `${processedCount} foto(s) foram otimizadas e adicionadas.`,
         });
-        return;
       }
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const foto: Foto = {
-          id: Date.now() + Math.random() * 10000, // Ensure unique ID
-          file,
-          preview: e.target?.result as string,
-          name: file.name,
-          size: file.size,
-        };
-        onAddFoto(foto);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Clear input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    } finally {
+      setIsCompressing(false);
+      
+      // Clear input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -97,10 +140,19 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
           }}
           variant="outline"
           size="sm"
-          disabled={fotos.length >= 10}
+          disabled={fotos.length >= 10 || isCompressing}
         >
-          <Upload className="h-4 w-4 mr-2" />
-          Adicionar Fotos
+          {isCompressing ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Otimizando...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4 mr-2" />
+              Adicionar Fotos
+            </>
+          )}
         </Button>
       </CardHeader>
       <CardContent>
@@ -118,6 +170,9 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
             <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Nenhuma foto adicionada</p>
             <p className="text-sm">Clique em "Adicionar Fotos" para incluir imagens</p>
+            <p className="text-xs mt-2 opacity-75">
+              📸 As fotos são automaticamente otimizadas para carregamento rápido
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
