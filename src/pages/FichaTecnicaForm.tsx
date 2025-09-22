@@ -18,13 +18,15 @@ import { PostSaveActionsModal } from "@/components/FichaTecnica/PostSaveActionsM
 import { PrintLayout } from "@/components/FichaTecnica/PrintLayout";
 import { FotoUpload } from "@/components/FichaTecnica/FotoUpload";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
-import { clientesPredefinidos } from "@/types/ficha-tecnica";
+import { clientesPredefinidos, STATUS_CONFIG, StatusFicha } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/calculations";
 import { Calendar, FileText, Settings, Calculator, Plus, Home, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 export default function Index() {
   const [showActionsModal, setShowActionsModal] = useState(false);
+  const [fichaStatus, setFichaStatus] = useState<StatusFicha>('rascunho');
   const navigate = useNavigate();
+
   const {
     formData,
     materiais,
@@ -44,50 +46,59 @@ export default function Index() {
     isModified,
     isSaving,
     salvarFichaTecnica,
-    criarNovaFicha
+    criarNovaFicha,
+    fichaCarregada
   } = useFichaTecnica();
-  return <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <Card className="mb-6 bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+
+  // Sincronizar status quando uma ficha for carregada
+  useEffect(() => {
+    if (fichaCarregada?.status) {
+      setFichaStatus(fichaCarregada.status as StatusFicha);
+    }
+  }, [fichaCarregada]);
+
+  return (
+    <div className="space-y-3">
+        {/* Header - Compacto */}
+        <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
+          <CardHeader className="pb-2 pt-3">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-2">
               <div className="text-left">
-                <div className="text-sm text-muted-foreground">Data: {dataAtual}</div>
+                <div className="text-xs text-muted-foreground">Data: {dataAtual}</div>
                 <div className="flex items-center gap-2">
-                  <div className="text-lg font-bold text-primary">
+                  <div className="text-sm font-bold text-primary">
                     Nº FTC: {numeroFTC.startsWith('DRAFT') ? 'RASCUNHO' : numeroFTC}
                   </div>
-                  {isSaved && !isModified && !numeroFTC.startsWith('DRAFT') && <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
+                  {isSaved && !isModified && !numeroFTC.startsWith('DRAFT') && <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
                       SALVO
                     </span>}
-                  {(isModified || numeroFTC.startsWith('DRAFT')) && <span className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded-full">
+                  {(isModified || numeroFTC.startsWith('DRAFT')) && <span className="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">
                       {numeroFTC.startsWith('DRAFT') ? 'NOVO' : 'MODIFICADO'}
                     </span>}
                 </div>
               </div>
-              <CardTitle className="text-2xl md:text-3xl text-center">
+              <CardTitle className="text-base md:text-xl text-center">
                 FICHA TÉCNICA DE COTAÇÃO - FTC
               </CardTitle>
-              <div className="w-32"></div>
+              <div className="w-20"></div>
             </div>
           </CardHeader>
         </Card>
 
 
-        <form className="space-y-6">
+        <form className="space-y-3">
           {/* Dados do Cliente */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileText className="h-4 w-4" />
                 DADOS DO CLIENTE
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="cliente">CLIENTE:</Label>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-1">
+                  <Label htmlFor="cliente" className="text-sm">CLIENTE:</Label>
                   <div className="flex gap-2">
                     <Select value={formData.cliente} onValueChange={value => {
                     if (value && value !== "manual") {
@@ -107,24 +118,24 @@ export default function Index() {
                     <InputWithVoice value={formData.cliente} onChange={e => updateFormData("cliente", e.target.value)} onVoiceResult={text => updateFormData("cliente", text)} placeholder="Digite o nome do cliente" className="flex-2" required />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="solicitante">SOLICITANTE:</Label>
-                  <InputWithVoice value={formData.solicitante} onChange={e => updateFormData("solicitante", e.target.value)} onVoiceResult={text => updateFormData("solicitante", text)} />
+                <div className="space-y-1">
+                  <Label htmlFor="solicitante" className="text-sm">SOLICITANTE:</Label>
+                  <InputWithVoice value={formData.solicitante} onChange={e => updateFormData("solicitante", e.target.value)} onVoiceResult={text => updateFormData("solicitante", text)} className="h-9" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="fone_email">FONE/EMAIL:</Label>
-                  <InputWithVoice value={formData.fone_email} onChange={e => updateFormData("fone_email", e.target.value)} onVoiceResult={text => updateFormData("fone_email", text)} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="fone_email" className="text-sm">FONE/EMAIL:</Label>
+                  <InputWithVoice value={formData.fone_email} onChange={e => updateFormData("fone_email", e.target.value)} onVoiceResult={text => updateFormData("fone_email", text)} className="h-9" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="data_visita">DATA DA VISITA:</Label>
-                  <Input type="date" value={formData.data_visita} onChange={e => updateFormData("data_visita", e.target.value)} />
+                <div className="space-y-1">
+                  <Label htmlFor="data_visita" className="text-sm">DATA DA VISITA:</Label>
+                  <Input type="date" value={formData.data_visita} onChange={e => updateFormData("data_visita", e.target.value)} className="h-9" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="data_entrega">ENTREGAR PEÇA OU SERVIÇO NO DIA:</Label>
-                  <Input type="date" value={formData.data_entrega} onChange={e => updateFormData("data_entrega", e.target.value)} className="border-2 border-primary" required />
+                <div className="space-y-1">
+                  <Label htmlFor="data_entrega" className="text-sm">ENTREGAR PEÇA OU SERVIÇO NO DIA:</Label>
+                  <Input type="date" value={formData.data_entrega} onChange={e => updateFormData("data_entrega", e.target.value)} className="border-2 border-primary h-9" required />
                 </div>
               </div>
             </CardContent>
@@ -132,24 +143,24 @@ export default function Index() {
 
           {/* Dados da Peça/Equipamento */}
           <Card>
-            <CardHeader>
-              <CardTitle>DADOS DA PEÇA/EQUIPAMENTO</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">DADOS DA PEÇA/EQUIPAMENTO</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="nome_peca">NOME DA PEÇA / EQUIPAMENTO:</Label>
-                  <TextareaWithVoice value={formData.nome_peca} onChange={e => updateFormData("nome_peca", e.target.value)} onVoiceResult={text => updateFormData("nome_peca", text)} rows={2} />
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-1">
+                  <Label htmlFor="nome_peca" className="text-sm">NOME DA PEÇA / EQUIPAMENTO:</Label>
+                  <TextareaWithVoice value={formData.nome_peca} onChange={e => updateFormData("nome_peca", e.target.value)} onVoiceResult={text => updateFormData("nome_peca", text)} rows={2} className="text-sm" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="quantidade">QUANTIDADE:</Label>
-                  <Input type="number" value={formData.quantidade} onChange={e => updateFormData("quantidade", e.target.value)} min="1" />
+                <div className="space-y-1">
+                  <Label htmlFor="quantidade" className="text-sm">QUANTIDADE:</Label>
+                  <Input type="number" value={formData.quantidade} onChange={e => updateFormData("quantidade", e.target.value)} min="1" className="h-9" />
                 </div>
               </div>
 
-              <div className="space-y-2 mb-6">
-                <Label htmlFor="servico">SERVIÇO A SER REALIZADO:</Label>
-                <TextareaWithVoice value={formData.servico} onChange={e => updateFormData("servico", e.target.value)} onVoiceResult={text => updateFormData("servico", text)} rows={3} />
+              <div className="space-y-1 mb-4">
+                <Label htmlFor="servico" className="text-sm">SERVIÇO A SER REALIZADO:</Label>
+                <TextareaWithVoice value={formData.servico} onChange={e => updateFormData("servico", e.target.value)} onVoiceResult={text => updateFormData("servico", text)} rows={3} className="text-sm" />
               </div>
 
               <FotoUpload fotos={fotos} onAddFoto={addFoto} onRemoveFoto={removeFoto} />
@@ -158,16 +169,15 @@ export default function Index() {
 
           {/* Material para Cotação */}
           <Card>
-            <CardHeader>
-              <CardTitle>MATERIAL PARA COTAÇÃO</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">MATERIAL PARA COTAÇÃO</CardTitle>
             </CardHeader>
-            <CardContent>
-
-              <div className="space-y-4">
+            <CardContent className="pt-0">
+              <div className="space-y-2">
                 {materiais.map(material => <MaterialItem key={material.id} material={material} onUpdate={updateMaterial} onRemove={removeMaterial} />)}
               </div>
 
-              <Button type="button" onClick={addMaterial} className="mt-4 bg-gradient-to-r from-info to-info/80">
+              <Button type="button" onClick={addMaterial} className="mt-3 bg-gradient-to-r from-info to-info/80 h-9 text-sm">
                 ➕ Adicionar Material
               </Button>
             </CardContent>
@@ -175,124 +185,124 @@ export default function Index() {
 
           {/* Execução e Detalhes */}
           <Card>
-            <CardHeader>
-              <CardTitle>EXECUÇÃO E DETALHES</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">EXECUÇÃO E DETALHES</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {/* Primeira linha: SERÁ EXECUTADO EM, VISITA TÉCNICA, HORAS VISITA */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label>SERÁ EXECUTADO EM:</Label>
-                  <RadioGroup value={formData.execucao} onValueChange={value => updateFormData("execucao", value)} className="flex gap-4">
-                    <div className="flex items-center space-x-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="space-y-1">
+                  <Label className="text-sm">SERÁ EXECUTADO EM:</Label>
+                  <RadioGroup value={formData.execucao} onValueChange={value => updateFormData("execucao", value)} className="flex gap-3">
+                    <div className="flex items-center space-x-1">
                       <RadioGroupItem value="HMC" id="exec_hmc" />
-                      <Label htmlFor="exec_hmc">HMC</Label>
+                      <Label htmlFor="exec_hmc" className="text-sm">HMC</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <RadioGroupItem value="CLIENTE" id="exec_cliente" />
-                      <Label htmlFor="exec_cliente">CLIENTE</Label>
+                      <Label htmlFor="exec_cliente" className="text-sm">CLIENTE</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>VISITA TÉCNICA:</Label>
-                  <RadioGroup value={formData.visita_tecnica} onValueChange={value => updateFormData("visita_tecnica", value)} className="flex gap-4">
-                    <div className="flex items-center space-x-2">
+                <div className="space-y-1">
+                  <Label className="text-sm">VISITA TÉCNICA:</Label>
+                  <RadioGroup value={formData.visita_tecnica} onValueChange={value => updateFormData("visita_tecnica", value)} className="flex gap-3">
+                    <div className="flex items-center space-x-1">
                       <RadioGroupItem value="SIM" id="visita_sim" />
-                      <Label htmlFor="visita_sim">SIM</Label>
+                      <Label htmlFor="visita_sim" className="text-sm">SIM</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <RadioGroupItem value="NAO" id="visita_nao" />
-                      <Label htmlFor="visita_nao">NÃO</Label>
+                      <Label htmlFor="visita_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="visita_horas">HORAS VISITA:</Label>
-                  <Input id="visita_horas" type="number" value={formData.visita_horas} onChange={e => updateFormData("visita_horas", e.target.value)} step="0.5" />
+                <div className="space-y-1">
+                  <Label htmlFor="visita_horas" className="text-sm">HORAS VISITA:</Label>
+                  <Input id="visita_horas" type="number" value={formData.visita_horas} onChange={e => updateFormData("visita_horas", e.target.value)} step="0.5" className="h-9" />
                 </div>
               </div>
 
               {/* Segunda linha: TEM PEÇA DE AMOSTRA, PROJETO DESENVOLVIDO POR, DESENHO DA PEÇA, FINALIZADO */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label>TEM PEÇA DE AMOSTRA:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="space-y-1">
+                  <Label className="text-sm">TEM PEÇA DE AMOSTRA:</Label>
                   <RadioGroup value={formData.tem_peca_amostra} onValueChange={value => updateFormData("tem_peca_amostra", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="amostra_sim" />
-                      <Label htmlFor="amostra_sim">SIM</Label>
+                      <Label htmlFor="amostra_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="amostra_nao" />
-                      <Label htmlFor="amostra_nao">NÃO</Label>
+                      <Label htmlFor="amostra_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>PROJETO DESENVOLVIDO POR:</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">PROJETO DESENVOLVIDO POR:</Label>
                   <RadioGroup value={formData.projeto_desenvolvido_por} onValueChange={value => updateFormData("projeto_desenvolvido_por", value)} className="flex flex-col gap-2">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="HMC" id="projeto_hmc" />
-                      <Label htmlFor="projeto_hmc">HMC</Label>
+                      <Label htmlFor="projeto_hmc" className="text-sm">HMC</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="CLIENTE" id="projeto_cliente" />
-                      <Label htmlFor="projeto_cliente">CLIENTE</Label>
+                      <Label htmlFor="projeto_cliente" className="text-sm">CLIENTE</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="HMC/CLIENTE" id="projeto_ambos" />
-                      <Label htmlFor="projeto_ambos">HMC/CLIENTE</Label>
+                      <Label htmlFor="projeto_ambos" className="text-sm">HMC/CLIENTE</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>DESENHO DA PEÇA:</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">DESENHO DA PEÇA:</Label>
                   <RadioGroup value={formData.desenho_peca} onValueChange={value => updateFormData("desenho_peca", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="HMC" id="desenho_hmc" />
-                      <Label htmlFor="desenho_hmc">HMC</Label>
+                      <Label htmlFor="desenho_hmc" className="text-sm">HMC</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="CLIENTE" id="desenho_cliente" />
-                      <Label htmlFor="desenho_cliente">CLIENTE</Label>
+                      <Label htmlFor="desenho_cliente" className="text-sm">CLIENTE</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>FINALIZADO:</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">FINALIZADO:</Label>
                   <RadioGroup value={formData.desenho_finalizado} onValueChange={value => updateFormData("desenho_finalizado", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="finalizado_sim" />
-                      <Label htmlFor="finalizado_sim">SIM</Label>
+                      <Label htmlFor="finalizado_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="finalizado_nao" />
-                      <Label htmlFor="finalizado_nao">NÃO</Label>
+                      <Label htmlFor="finalizado_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
               </div>
 
               {/* Terceira linha: TRANSPORTE COLETA / ENTREGA */}
-              <div className="mb-6">
-                <Label className="text-base font-medium">TRANSPORTE COLETA / ENTREGA:</Label>
+              <div className="mb-3">
+                <Label className="text-sm font-medium">TRANSPORTE COLETA / ENTREGA:</Label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox id="transporte_caminhao" checked={formData.transporte_caminhao_hmc} onCheckedChange={checked => updateFormData("transporte_caminhao_hmc", checked as boolean)} />
-                    <Label htmlFor="transporte_caminhao">CAMINHÃO HMC</Label>
+                    <Label htmlFor="transporte_caminhao" className="text-sm">CAMINHÃO HMC</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="transporte_pickup" checked={formData.transporte_pickup_hmc} onCheckedChange={checked => updateFormData("transporte_pickup_hmc", checked as boolean)} />
-                    <Label htmlFor="transporte_pickup">PICKUP HMC</Label>
+                    <Label htmlFor="transporte_pickup" className="text-sm">PICKUP HMC</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="transporte_cliente" checked={formData.transporte_cliente} onCheckedChange={checked => updateFormData("transporte_cliente", checked as boolean)} />
-                    <Label htmlFor="transporte_cliente">CLIENTE</Label>
+                    <Label htmlFor="transporte_cliente" className="text-sm">CLIENTE</Label>
                   </div>
                 </div>
               </div>
@@ -306,168 +316,168 @@ export default function Index() {
               <CardTitle>TRATAMENTOS E ACABAMENTOS</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label>PINTURA:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                <div className="space-y-1">
+                  <Label className="text-sm">PINTURA:</Label>
                   <RadioGroup value={formData.pintura} onValueChange={value => updateFormData("pintura", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="pintura_sim" />
-                      <Label htmlFor="pintura_sim">SIM</Label>
+                      <Label htmlFor="pintura_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="pintura_nao" />
-                      <Label htmlFor="pintura_nao">NÃO</Label>
+                      <Label htmlFor="pintura_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cor_pintura">COR:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="cor_pintura" className="text-sm">COR:</Label>
                   <InputWithVoice value={formData.cor_pintura} onChange={e => updateFormData("cor_pintura", e.target.value)} onVoiceResult={text => updateFormData("cor_pintura", text)} />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>GALVANIZAÇÃO:</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">GALVANIZAÇÃO:</Label>
                   <RadioGroup value={formData.galvanizacao} onValueChange={value => updateFormData("galvanizacao", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="galv_sim" />
-                      <Label htmlFor="galv_sim">SIM</Label>
+                      <Label htmlFor="galv_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="galv_nao" />
-                      <Label htmlFor="galv_nao">NÃO</Label>
+                      <Label htmlFor="galv_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="peso_peca_galv">PESO PÇ (Galv):</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="peso_peca_galv" className="text-sm">PESO PÇ (Galv):</Label>
                   <Input type="number" value={formData.peso_peca_galv} onChange={e => updateFormData("peso_peca_galv", e.target.value)} step="0.1" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label>TRATAMENTO TÉRMICO:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                <div className="space-y-1">
+                  <Label className="text-sm">TRATAMENTO TÉRMICO:</Label>
                   <RadioGroup value={formData.tratamento_termico} onValueChange={value => updateFormData("tratamento_termico", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="trat_term_sim" />
-                      <Label htmlFor="trat_term_sim">SIM</Label>
+                      <Label htmlFor="trat_term_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="trat_term_nao" />
-                      <Label htmlFor="trat_term_nao">NÃO</Label>
+                      <Label htmlFor="trat_term_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="peso_peca_trat">PESO PÇ (Trat):</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="peso_peca_trat" className="text-sm">PESO PÇ (Trat):</Label>
                   <Input type="number" value={formData.peso_peca_trat} onChange={e => updateFormData("peso_peca_trat", e.target.value)} step="0.1" />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tempera_reven">TEMPERA / REVEN:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="tempera_reven" className="text-sm">TEMPERA / REVEN:</Label>
                   <InputWithVoice value={formData.tempera_reven} onChange={e => updateFormData("tempera_reven", e.target.value)} onVoiceResult={text => updateFormData("tempera_reven", text)} />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cementacao">CEMENTAÇÃO:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="cementacao" className="text-sm">CEMENTAÇÃO:</Label>
                   <InputWithVoice value={formData.cementacao} onChange={e => updateFormData("cementacao", e.target.value)} onVoiceResult={text => updateFormData("cementacao", text)} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="dureza">DUREZA:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                <div className="space-y-1">
+                  <Label htmlFor="dureza" className="text-sm">DUREZA:</Label>
                   <InputWithVoice value={formData.dureza} onChange={e => updateFormData("dureza", e.target.value)} onVoiceResult={text => updateFormData("dureza", text)} />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>TESTE DE LP:</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">TESTE DE LP:</Label>
                   <RadioGroup value={formData.teste_lp} onValueChange={value => updateFormData("teste_lp", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="teste_lp_sim" />
-                      <Label htmlFor="teste_lp_sim">SIM</Label>
+                      <Label htmlFor="teste_lp_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="teste_lp_nao" />
-                      <Label htmlFor="teste_lp_nao">NÃO</Label>
+                      <Label htmlFor="teste_lp_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="balanceamento_campo">BALANCEAMENTO:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="balanceamento_campo" className="text-sm">BALANCEAMENTO:</Label>
                   <InputWithVoice value={formData.balanceamento_campo} onChange={e => updateFormData("balanceamento_campo", e.target.value)} onVoiceResult={text => updateFormData("balanceamento_campo", text)} />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="rotacao">ROTAÇÃO:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="rotacao" className="text-sm">ROTAÇÃO:</Label>
                   <InputWithVoice value={formData.rotacao} onChange={e => updateFormData("rotacao", e.target.value)} onVoiceResult={text => updateFormData("rotacao", text)} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label>FORNECIMENTO DE DESENHO:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                <div className="space-y-1">
+                  <Label className="text-sm">FORNECIMENTO DE DESENHO:</Label>
                   <RadioGroup value={formData.fornecimento_desenho} onValueChange={value => updateFormData("fornecimento_desenho", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="forn_desenho_sim" />
-                      <Label htmlFor="forn_desenho_sim">SIM</Label>
+                      <Label htmlFor="forn_desenho_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="forn_desenho_nao" />
-                      <Label htmlFor="forn_desenho_nao">NÃO</Label>
+                      <Label htmlFor="forn_desenho_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>FOTOS PARA RELATÓRIO:</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">FOTOS PARA RELATÓRIO:</Label>
                   <RadioGroup value={formData.fotos_relatorio} onValueChange={value => updateFormData("fotos_relatorio", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="fotos_sim" />
-                      <Label htmlFor="fotos_sim">SIM</Label>
+                      <Label htmlFor="fotos_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="fotos_nao" />
-                      <Label htmlFor="fotos_nao">NÃO</Label>
+                      <Label htmlFor="fotos_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>RELATÓRIO TÉCNICO:</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">RELATÓRIO TÉCNICO:</Label>
                   <RadioGroup value={formData.relatorio_tecnico} onValueChange={value => updateFormData("relatorio_tecnico", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="relatorio_sim" />
-                      <Label htmlFor="relatorio_sim">SIM</Label>
+                      <Label htmlFor="relatorio_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="relatorio_nao" />
-                      <Label htmlFor="relatorio_nao">NÃO</Label>
+                      <Label htmlFor="relatorio_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>EMISSÃO DE ART:</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">EMISSÃO DE ART:</Label>
                   <RadioGroup value={formData.emissao_art} onValueChange={value => updateFormData("emissao_art", value)} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SIM" id="art_sim" />
-                      <Label htmlFor="art_sim">SIM</Label>
+                      <Label htmlFor="art_sim" className="text-sm">SIM</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="NAO" id="art_nao" />
-                      <Label htmlFor="art_nao">NÃO</Label>
+                      <Label htmlFor="art_nao" className="text-sm">NÃO</Label>
                     </div>
                   </RadioGroup>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="servicos_terceirizados">SERVIÇOS TERCEIRIZADOS:</Label>
+              <div className="space-y-1">
+                <Label htmlFor="servicos_terceirizados" className="text-sm">SERVIÇOS TERCEIRIZADOS:</Label>
                 <TextareaWithVoice value={formData.servicos_terceirizados} onChange={e => updateFormData("servicos_terceirizados", e.target.value)} onVoiceResult={text => updateFormData("servicos_terceirizados", text)} rows={2} />
               </div>
             </CardContent>
@@ -483,78 +493,78 @@ export default function Index() {
             </CardHeader>
             <CardContent>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="torno_grande">TORNO GRANDE:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                <div className="space-y-1">
+                  <Label htmlFor="torno_grande" className="text-sm">TORNO GRANDE:</Label>
                   <Input type="number" value={formData.torno_grande} onChange={e => updateFormData("torno_grande", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="torno_pequeno">TORNO PEQUENO:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="torno_pequeno" className="text-sm">TORNO PEQUENO:</Label>
                   <Input type="number" value={formData.torno_pequeno} onChange={e => updateFormData("torno_pequeno", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cnc_tf">CNC T/F:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="cnc_tf" className="text-sm">CNC T/F:</Label>
                   <Input type="number" value={formData.cnc_tf} onChange={e => updateFormData("cnc_tf", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fresa_furad">FRESA/FURAD:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="fresa_furad" className="text-sm">FRESA/FURAD:</Label>
                   <Input type="number" value={formData.fresa_furad} onChange={e => updateFormData("fresa_furad", e.target.value)} step="0.5" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="plasma_oxicorte">PLASMA/OXICORTE:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                <div className="space-y-1">
+                  <Label htmlFor="plasma_oxicorte" className="text-sm">PLASMA/OXICORTE:</Label>
                   <Input type="number" value={formData.plasma_oxicorte} onChange={e => updateFormData("plasma_oxicorte", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dobra">DOBRA:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="dobra" className="text-sm">DOBRA:</Label>
                   <Input type="number" value={formData.dobra} onChange={e => updateFormData("dobra", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="calandra">CALANDRA:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="calandra" className="text-sm">CALANDRA:</Label>
                   <Input type="number" value={formData.calandra} onChange={e => updateFormData("calandra", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="macarico_solda">MAÇARICO/SOLDA:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="macarico_solda" className="text-sm">MAÇARICO/SOLDA:</Label>
                   <Input type="number" value={formData.macarico_solda} onChange={e => updateFormData("macarico_solda", e.target.value)} step="0.5" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="des_montg">DES/MONTG:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                <div className="space-y-1">
+                  <Label htmlFor="des_montg" className="text-sm">DES/MONTG:</Label>
                   <Input type="number" value={formData.des_montg} onChange={e => updateFormData("des_montg", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="balanceamento">BALANCEAMENTO:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="balanceamento" className="text-sm">BALANCEAMENTO:</Label>
                   <Input type="number" value={formData.balanceamento} onChange={e => updateFormData("balanceamento", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mandrilhamento">MANDRILHAMENTO CAMPO:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="mandrilhamento" className="text-sm">MANDRILHAMENTO CAMPO:</Label>
                   <Input type="number" value={formData.mandrilhamento} onChange={e => updateFormData("mandrilhamento", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tratamento">TRATAMENTO:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="tratamento" className="text-sm">TRATAMENTO:</Label>
                   <Input type="number" value={formData.tratamento} onChange={e => updateFormData("tratamento", e.target.value)} step="0.5" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="pintura_horas">PINTURA:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="pintura_horas" className="text-sm">PINTURA:</Label>
                   <Input type="number" value={formData.pintura_horas} onChange={e => updateFormData("pintura_horas", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lavagem_acab">LAVAGEM/ACAB:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="lavagem_acab" className="text-sm">LAVAGEM/ACAB:</Label>
                   <Input type="number" value={formData.lavagem_acab} onChange={e => updateFormData("lavagem_acab", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="programacao_cam">PROGRAMAÇÃO CAM:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="programacao_cam" className="text-sm">PROGRAMAÇÃO CAM:</Label>
                   <Input type="number" value={formData.programacao_cam} onChange={e => updateFormData("programacao_cam", e.target.value)} step="0.5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eng_tec">ENG / TEC:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="eng_tec" className="text-sm">ENG / TEC:</Label>
                   <Input type="number" value={formData.eng_tec} onChange={e => updateFormData("eng_tec", e.target.value)} step="0.5" />
                 </div>
               </div>
@@ -567,18 +577,41 @@ export default function Index() {
               <CardTitle>CONTROLE</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="num_orcamento">Nº do orçamento:</Label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="space-y-1">
+                  <Label htmlFor="num_orcamento" className="text-sm">Nº do orçamento:</Label>
                   <InputWithVoice value={formData.num_orcamento} onChange={e => updateFormData("num_orcamento", e.target.value)} onVoiceResult={text => updateFormData("num_orcamento", text)} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="num_os">Nº da O.S:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="num_os" className="text-sm">Nº da O.S:</Label>
                   <InputWithVoice value={formData.num_os} onChange={e => updateFormData("num_os", e.target.value)} onVoiceResult={text => updateFormData("num_os", text)} placeholder="Número da Ordem de Serviço" className="border-2 border-success bg-success/5" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="num_nf_remessa">Nº da NF DE REMESSA DO CLIENTE:</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="num_nf_remessa" className="text-sm">Nº da NF DE REMESSA DO CLIENTE:</Label>
                   <InputWithVoice value={formData.num_nf_remessa} onChange={e => updateFormData("num_nf_remessa", e.target.value)} onVoiceResult={text => updateFormData("num_nf_remessa", text)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm">STATUS DA FICHA:</Label>
+                  <Select value={fichaStatus || 'rascunho'} onValueChange={(value: StatusFicha) => setFichaStatus(value)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <span>{config.icon}</span>
+                            <span>{config.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fichaStatus && (
+                    <p className="text-xs text-muted-foreground">
+                      {STATUS_CONFIG[fichaStatus]?.description}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -596,9 +629,9 @@ export default function Index() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-background border border-primary/20">
-                  <CardContent className="pt-6 text-center">
+                  <CardContent className="pt-3 text-center">
                     <div className="text-sm text-muted-foreground mb-1">HORAS POR PEÇA</div>
-                    <div className="text-lg font-bold text-primary">
+                    <div className="text-base font-bold text-primary">
                       {calculos.horasPorPeca.toFixed(1)} h
                     </div>
                   </CardContent>
@@ -607,9 +640,9 @@ export default function Index() {
                 
 
                 <Card className="bg-background border border-primary/20">
-                  <CardContent className="pt-6 text-center">
+                  <CardContent className="pt-3 text-center">
                     <div className="text-sm text-muted-foreground mb-1">MATERIAL POR PEÇA</div>
-                    <div className="text-lg font-bold text-primary">
+                    <div className="text-base font-bold text-primary">
                       {formatCurrency(calculos.materialPorPeca)}
                     </div>
                   </CardContent>
@@ -621,11 +654,11 @@ export default function Index() {
           </Card>
 
           {/* Botão Salvar Ficha */}
-          <SaveButton isSaved={isSaved} isModified={isModified} isSaving={isSaving} onSave={salvarFichaTecnica} onSaveSuccess={() => setShowActionsModal(true)} />
+          <SaveButton isSaved={isSaved} isModified={isModified} isSaving={isSaving} onSave={salvarFichaTecnica} onSaveSuccess={() => setShowActionsModal(true)} status={fichaStatus} materiais={materiais} formData={formData} numeroFTC={numeroFTC} />
 
         {/* Botões de Acesso Rápido */}
         <Card className="mt-6">
-          <CardContent className="pt-6">
+          <CardContent className="pt-3">
             <div className="flex flex-wrap gap-4 justify-center">
               <Button variant="outline" onClick={() => navigate('/')} className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700">
                 <Home className="h-4 w-4" />
@@ -656,7 +689,7 @@ export default function Index() {
 
         {/* Print Layout - Hidden on screen, visible only when printing */}
         <PrintLayout formData={formData} materiais={materiais} fotos={fotos} calculos={calculos} numeroFTC={numeroFTC} dataAtual={dataAtual} />
-        </form>
-      </div>
-    </div>;
+      </form>
+    </div>
+  );
 }

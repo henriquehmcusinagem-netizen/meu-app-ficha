@@ -109,13 +109,16 @@ export const clientesPredefinidos = [
   "ELDORADO"
 ];
 
+// Status da Ficha Técnica
+export type StatusFicha = 'rascunho' | 'preenchida' | 'aguardando_cotacao' | 'finalizada';
+
 // Interface for saved fichas
 export interface FichaSalva {
   id: string;
   numeroFTC: string;
   dataCriacao: string;
   dataUltimaEdicao: string;
-  status: 'rascunho' | 'finalizada';
+  status: StatusFicha;
   formData: FormData;
   materiais: Material[];
   fotos: Foto[]; // Now includes both new photos and saved photos with real URLs
@@ -127,3 +130,31 @@ export interface FichaSalva {
     valorTotal: number;
   };
 }
+
+// Configuração dos status com cores e labels
+export const STATUS_CONFIG = {
+  rascunho: {
+    label: 'Rascunho',
+    color: 'bg-gray-100 text-gray-800',
+    icon: '✏️',
+    description: 'Técnico ainda preenchendo'
+  },
+  preenchida: {
+    label: 'Preenchida',
+    color: 'bg-blue-100 text-blue-800',
+    icon: '📋',
+    description: 'Técnico finalizou, aguardando cotação'
+  },
+  aguardando_cotacao: {
+    label: 'Aguardando Cotação',
+    color: 'bg-yellow-100 text-yellow-800',
+    icon: '💰',
+    description: 'Comprador orçando materiais'
+  },
+  finalizada: {
+    label: 'Finalizada',
+    color: 'bg-green-100 text-green-800',
+    icon: '✅',
+    description: 'Processo completo'
+  }
+} as const;

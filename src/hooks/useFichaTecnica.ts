@@ -209,7 +209,7 @@ export function useFichaTecnica() {
   }, []);
 
   // Save ficha function
-  const salvarFichaTecnica = useCallback(async (): Promise<{ success: boolean; errors?: string[]; numeroFTC?: string }> => {
+  const salvarFichaTecnica = useCallback(async (status?: string): Promise<{ success: boolean; errors?: string[]; numeroFTC?: string }> => {
     console.log('💾 SALVAMENTO INICIADO');
     console.log('💾 Estado atual:', { 
       fichaId, 
@@ -251,7 +251,7 @@ export function useFichaTecnica() {
         fotosTotal: fotos.length 
       });
       
-      const result = await salvarFicha(formData, materiais, fotos, calculos, numeroFTC, fichaId || undefined);
+      const result = await salvarFicha(formData, materiais, fotos, calculos, numeroFTC, fichaId || undefined, status);
       
       console.log('💾 Resultado do salvarFicha:', result);
       
@@ -336,7 +336,7 @@ export function useFichaTecnica() {
     calculos,
     numeroFTC,
     dataAtual,
-    
+
     // Save functionality
     fichaId,
     isSaved,
@@ -345,5 +345,8 @@ export function useFichaTecnica() {
     isLoading,
     salvarFichaTecnica,
     criarNovaFicha,
+
+    // Status da ficha carregada
+    fichaCarregada
   };
 }

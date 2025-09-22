@@ -190,7 +190,8 @@ export async function salvarFicha(
   fotos: Foto[],
   calculos: Calculos,
   numeroFTC: string,
-  fichaId?: string
+  fichaId?: string,
+  status?: string
 ): Promise<{ success: boolean; id?: string; error?: string; numeroFTC?: string }> {
   try {
     console.log('🔄 Iniciando salvamento da ficha...');
@@ -221,7 +222,7 @@ export async function salvarFicha(
     // Convert form data to database format - include ALL new fields
     const dbData = {
       numero_ftc: finalNumeroFTC,
-      status: formData.desenho_finalizado === 'SIM' ? 'finalizada' : 'rascunho',
+      status: status || (formData.desenho_finalizado === 'SIM' ? 'finalizada' : 'rascunho'),
       cliente: formData.cliente,
       solicitante: formData.solicitante,
       contato: formData.fone_email,

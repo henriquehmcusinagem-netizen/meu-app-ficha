@@ -147,34 +147,33 @@ Equipe Técnica`;
 
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-0.5">
       <Button
-        onClick={(e) => { e.stopPropagation(); exportToPDFFile(); }} 
-        variant="outline" 
+        onClick={(e) => { e.stopPropagation(); exportToPDFFile(); }}
+        variant="outline"
         size="sm"
-        className="bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800"
+        className="h-6 w-6 p-0 bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800"
+        title="Baixar PDF"
       >
-        <Download className="h-3 w-3" />
-        PDF
+        <Download className="h-2.5 w-2.5" />
       </Button>
 
-
-      <Button 
-        onClick={(e) => { e.stopPropagation(); sendEmailWithPDF(); }} 
-        size="sm" 
-        className="bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800"
+      <Button
+        onClick={(e) => { e.stopPropagation(); sendEmailWithPDF(); }}
+        size="sm"
+        className="h-6 w-6 p-0 bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800"
+        title="Email com PDF"
       >
-        <Paperclip className="h-3 w-3" />
-        Email+PDF
+        <Paperclip className="h-2.5 w-2.5" />
       </Button>
 
-      <Button 
-        onClick={(e) => { e.stopPropagation(); sendWhatsAppWithPDF(); }} 
-        size="sm" 
-        className="bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-teal-800"
+      <Button
+        onClick={(e) => { e.stopPropagation(); sendWhatsAppWithPDF(); }}
+        size="sm"
+        className="h-6 w-6 p-0 bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-teal-800"
+        title="WhatsApp com PDF"
       >
-        <Link className="h-3 w-3" />
-        WA+PDF
+        <Link className="h-2.5 w-2.5" />
       </Button>
     </div>
   );

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Trash2, FileText, Calendar, User, Search, Filter, Eye, Home, Download, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { FichaSalva, Foto } from '@/types/ficha-tecnica';
+import { FichaSalva, Foto, STATUS_CONFIG, StatusFicha } from '@/types/ficha-tecnica';
 import { formatCurrency } from '@/utils/helpers';
 import { ConsultaActionButtons } from '@/components/FichaTecnica/ConsultaActionButtons';
 import { useFichasQuery } from '@/hooks/useFichasQuery';
@@ -216,87 +216,94 @@ export default function ConsultarFichas() {
     });
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: StatusFicha) => {
     switch (status) {
       case 'finalizada':
         return 'default';
-      case 'rascunho':
+      case 'preenchida':
+        return 'default';
+      case 'aguardando_cotacao':
         return 'secondary';
+      case 'rascunho':
+        return 'outline';
       default:
         return 'outline';
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'finalizada':
-        return 'Finalizada';
-      case 'rascunho':
-        return 'Rascunho';
-      default:
-        return status;
-    }
+  const getStatusLabel = (status: StatusFicha) => {
+    return STATUS_CONFIG[status]?.label || status;
+  };
+
+  const getStatusIcon = (status: StatusFicha) => {
+    return STATUS_CONFIG[status]?.icon || '';
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-2">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-1">
       <div className="max-w-7xl mx-auto">
-        {/* Navigation Header - Compacto */}
-        <div className="flex items-center gap-3 mb-4">
+        {/* Navigation Header - Ultra Compacto */}
+        <div className="flex items-center gap-2 mb-2">
           <Button
             variant="outline"
             onClick={() => navigate('/')}
-            className="flex items-center gap-1 px-3 py-1 text-sm"
+            className="flex items-center gap-1 px-2 py-1 text-xs h-6"
             size="sm"
           >
             <Home className="h-3 w-3" />
             Dashboard
           </Button>
           <div className="h-3 w-px bg-border" />
-          <h1 className="text-lg font-semibold text-muted-foreground">Consultar Fichas</h1>
+          <h1 className="text-sm font-semibold text-muted-foreground">Consultar Fichas</h1>
         </div>
 
-        {/* Filters and Search - Layout Horizontal Compacto */}
-        <Card className="mb-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Search className="h-4 w-4" />
-              Buscar e Filtrar
+        {/* Filters and Search - Layout Horizontal Ultra Compacto */}
+        <Card className="mb-2">
+          <CardHeader className="pb-1">
+            <CardTitle className="flex items-center gap-1 text-sm">
+              <Search className="h-3 w-3" />
+              Filtros
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="flex-1 min-w-[200px]">
-                <label className="text-xs font-medium mb-1 block">Buscar</label>
+          <CardContent className="pt-1">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex-1 min-w-[180px]">
+                <label className="text-[10px] font-medium mb-0.5 block text-muted-foreground">Buscar</label>
                 <div className="relative">
-                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 text-muted-foreground" />
                   <Input
                     placeholder="Cliente, FTC, Serviço..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-7 h-8 text-sm"
+                    className="pl-6 h-7 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="min-w-[100px]">
-                <label className="text-xs font-medium mb-1 block">Status</label>
+              <div className="min-w-[80px]">
+                <label className="text-[10px] font-medium mb-0.5 block text-muted-foreground">Status</label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="rascunho">Rascunho</SelectItem>
-                    <SelectItem value="finalizada">Finalizada</SelectItem>
+                    {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                      <SelectItem key={key} value={key}>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs">{config.icon}</span>
+                          <span>{config.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="min-w-[140px]">
-                <label className="text-xs font-medium mb-1 block">Ordenar por</label>
+              <div className="min-w-[120px]">
+                <label className="text-[10px] font-medium mb-0.5 block text-muted-foreground">Ordenar</label>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -309,10 +316,10 @@ export default function ConsultarFichas() {
                 </Select>
               </div>
 
-              <div className="min-w-[90px]">
-                <label className="text-xs font-medium mb-1 block">Ordem</label>
+              <div className="min-w-[70px]">
+                <label className="text-[10px] font-medium mb-0.5 block text-muted-foreground">Ordem</label>
                 <Select value={sortOrder} onValueChange={(value: 'asc' | 'desc') => setSortOrder(value)}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -325,14 +332,14 @@ export default function ConsultarFichas() {
           </CardContent>
         </Card>
 
-        {/* Results - Lista Compacta */}
+        {/* Results - Lista Ultra Compacta */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-sm">
               Fichas Encontradas ({filteredFichas.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
+          <CardContent className="pt-1">
             {isLoading ? (
               <div className="flex justify-center p-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -348,97 +355,132 @@ export default function ConsultarFichas() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredFichas.map((ficha) => {
-                  console.log('🎯 Renderizando ficha:', { id: ficha.id, numeroFTC: ficha.numeroFTC });
-                  return (
-                    <Card
-                      key={ficha.id}
-                      className="cursor-pointer hover:bg-accent/30 transition-all duration-150 hover:shadow-sm border-l-4 border-l-primary/30"
-                      onClick={() => {
-                        console.log('🖱️ Card clicado! ID:', ficha.id);
-                        handleLoadFicha(ficha.id);
-                      }}
-                    >
-                      <CardContent className="p-3">
-                        {/* Header Compacto */}
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-primary text-sm">FTC {ficha.numeroFTC}</span>
-                            <Badge variant={getStatusBadgeVariant(ficha.status)} className="text-xs px-1.5 py-0.5">
-                              {getStatusLabel(ficha.status)}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(ficha.dataUltimaEdicao)}
-                          </div>
-                        </div>
-
-                        {/* Info Principal em Grid Compacto */}
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs mb-2">
-                          <div>
-                            <span className="text-muted-foreground font-medium">Cliente:</span>
-                            <p className="font-medium truncate">{ficha.resumo.cliente}</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground font-medium">Serviço:</span>
-                            <p className="truncate">{ficha.resumo.servico}</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground font-medium">Qtd:</span>
-                            <p className="font-medium">{ficha.resumo.quantidade}</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground font-medium">Valor:</span>
-                            <p className="font-semibold text-primary text-sm">
-                              {formatCurrency(ficha.resumo.valorTotal)}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{ficha.materiais.length} mat.</span>
-                              {ficha.fotos.length > 0 ? (
-                                <FotosPreview fotos={ficha.fotos} />
-                              ) : (
-                                <span>0 fotos</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions Footer Compacto */}
-                        <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                          <ConsultaActionButtons ficha={ficha} />
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
+              <div className="overflow-x-auto">
+                <table className="w-full table-fixed">
+                  {/* Header da Tabela */}
+                  <thead className="border-b border-border/30">
+                    <tr className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                      <th className="text-left pb-1 w-[110px]">FTC</th>
+                      <th className="text-left pb-1 w-[100px]">CLIENTE</th>
+                      <th className="text-left pb-1 w-[160px] hidden sm:table-cell">PEÇA/EQUIP.</th>
+                      <th className="text-center pb-1 w-[50px] hidden md:table-cell">QTD</th>
+                      <th className="text-right pb-1 w-[80px]">VALOR</th>
+                      <th className="text-center pb-1 w-[60px]">FOTOS</th>
+                      <th className="text-center pb-1 w-[50px] hidden lg:table-cell">DATA</th>
+                      <th className="text-right pb-1 w-[130px]">AÇÕES</th>
+                    </tr>
+                  </thead>
+                  <tbody className="space-y-1">
+                    {filteredFichas.map((ficha) => {
+                      console.log('🎯 Renderizando ficha:', { id: ficha.id, numeroFTC: ficha.numeroFTC });
+                      return (
+                        <tr key={ficha.id} className="group">
+                          <td colSpan={8} className="p-0">
+                            <div
+                              className="cursor-pointer hover:bg-accent/40 transition-all duration-150 border rounded-md border-border/30 hover:border-primary/30 bg-card/50 m-1"
+                              onClick={() => {
+                                console.log('🖱️ Card clicado! ID:', ficha.id);
                                 handleLoadFicha(ficha.id);
                               }}
-                              className="h-7 px-2 text-xs"
                             >
-                              <Eye className="h-3 w-3 mr-1" />
-                              Ver
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => handleDeleteFicha(ficha.id, e)}
-                              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                              disabled={isDeleting}
-                            >
-                              <Trash2 className="h-3 w-3 mr-1" />
-                              Del
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                              <table className="w-full table-fixed">
+                                <tbody>
+                                  <tr className="text-xs">
+                                    {/* FTC + Status */}
+                                    <td className="p-2 w-[110px]">
+                                      <div className="flex items-center gap-1">
+                                        <span className="font-semibold text-primary text-xs">FTC {ficha.numeroFTC}</span>
+                                        <Badge variant={getStatusBadgeVariant(ficha.status)} className="text-[8px] px-1 py-0 leading-3">
+                                          <span className="mr-1">{getStatusIcon(ficha.status)}</span>
+                                          {getStatusLabel(ficha.status)}
+                                        </Badge>
+                                      </div>
+                                    </td>
+
+                                    {/* Cliente */}
+                                    <td className="p-2 w-[100px]">
+                                      <span className="font-medium truncate block" title={ficha.resumo.cliente}>
+                                        {ficha.resumo.cliente.length > 12 ? `${ficha.resumo.cliente.substring(0, 12)}...` : ficha.resumo.cliente}
+                                      </span>
+                                    </td>
+
+                                    {/* Nome da Peça/Equipamento */}
+                                    <td className="p-2 w-[160px] hidden sm:table-cell">
+                                      <span className="truncate block text-muted-foreground" title={ficha.formData?.nome_peca || ficha.resumo.servico}>
+                                        {(ficha.formData?.nome_peca || ficha.resumo.servico).length > 35 ? `${(ficha.formData?.nome_peca || ficha.resumo.servico).substring(0, 35)}...` : (ficha.formData?.nome_peca || ficha.resumo.servico)}
+                                      </span>
+                                    </td>
+
+                                    {/* Qtd + Materiais */}
+                                    <td className="p-2 w-[50px] text-center hidden md:table-cell">
+                                      <span className="font-medium block">{ficha.resumo.quantidade}</span>
+                                      <span className="text-[8px] text-muted-foreground">{ficha.materiais.length}m</span>
+                                    </td>
+
+                                    {/* Valor */}
+                                    <td className="p-2 w-[80px] text-right">
+                                      <span className="font-semibold text-primary text-xs">
+                                        {formatCurrency(ficha.resumo.valorTotal)}
+                                      </span>
+                                    </td>
+
+                                    {/* Fotos */}
+                                    <td className="p-2 w-[60px] text-center">
+                                      {ficha.fotos.length > 0 ? (
+                                        <FotosPreview fotos={ficha.fotos} />
+                                      ) : (
+                                        <span className="text-[10px] text-muted-foreground">0 fotos</span>
+                                      )}
+                                    </td>
+
+                                    {/* Data */}
+                                    <td className="p-2 w-[50px] text-center hidden lg:table-cell">
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {new Date(ficha.dataUltimaEdicao).toLocaleDateString('pt-BR', {
+                                          day: '2-digit',
+                                          month: '2-digit'
+                                        })}
+                                      </span>
+                                    </td>
+
+                                    {/* Actions */}
+                                    <td className="p-2 w-[130px]">
+                                      <div className="flex gap-0.5 justify-end">
+                                        <ConsultaActionButtons ficha={ficha} />
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleLoadFicha(ficha.id);
+                                          }}
+                                          className="h-6 w-6 p-0"
+                                          title="Visualizar/Editar"
+                                        >
+                                          <Eye className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => handleDeleteFicha(ficha.id, e)}
+                                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                          disabled={isDeleting}
+                                          title="Excluir ficha"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
