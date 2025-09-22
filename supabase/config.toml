@@ -1,0 +1,9 @@
+project_id = "gobuakgvzqauzenaswow"
+
+[functions.ftc-rascunho]
+verify_jwt = false
+
+[functions.ftc-import]
+verify_jwt = false
+
+[functions.send-email-with-pdf]
