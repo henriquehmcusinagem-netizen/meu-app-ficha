@@ -6,7 +6,7 @@ interface LazyPhotoProps {
   storagePath?: string;
   alt: string;
   className?: string;
-  placeholder?: boolean;
+  placeholder?: boolean; 
   onClick?: (e?: React.MouseEvent) => void;
 }
 
