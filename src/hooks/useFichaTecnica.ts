@@ -133,9 +133,9 @@ export function useFichaTecnica() {
       
       // Cleanup
       sessionStorage.removeItem('loadFichaId');
-    } else if (!editId && !fichaId && !isLoading && !hasUserData()) {
-      // Create new ficha only if user hasn't entered any data
-      console.log('✨ Criando nova ficha');
+    } else if (!editId && !fichaId && !isLoading && !numeroFTC) {
+      // Create new ficha only on first load without any existing data
+      console.log('✨ Criando nova ficha - primeira vez');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
       setMateriais([{
@@ -151,7 +151,7 @@ export function useFichaTecnica() {
       setIsSaved(false);
       setIsModified(false);
     }
-  }, [editId, fichaCarregada, fichaId, isLoading, hasUserData]);
+  }, [editId, fichaCarregada, fichaId, isLoading, numeroFTC]);
 
   const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
