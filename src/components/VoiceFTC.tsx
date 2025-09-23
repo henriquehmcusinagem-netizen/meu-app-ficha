@@ -2,17 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 type Props = {
   /** se já existir um rascunho na tela, pode passar; senão, criaremos */
   ftcId?: string;
-  /** base das Edge Functions do Supabase */
-  supabaseFnBase?: string; // ex: "https://gobuakgvzqauzenaswow.supabase.co/functions/v1"
   /** base do app para abrir a ficha */
   appBaseUrl?: string; // ex: "https://ftcweb.hmcusinagem.online"
 };
 export default function VoiceFTC({
   ftcId,
-  supabaseFnBase = "https://gobuakgvzqauzenaswow.supabase.co/functions/v1",
   appBaseUrl = window.location.origin
 }: Props) {
   const {
@@ -90,17 +88,14 @@ export default function VoiceFTC({
       description: "Preparando nova ficha técnica"
     });
     try {
-      const res = await fetch(`${supabaseFnBase}/ftc-rascunho`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        }
+      const { data, error } = await supabase.functions.invoke('ftc-rascunho', {
+        method: 'POST'
       });
-      console.log("FTC draft response status:", res.status);
-      const data = await res.json();
+      
       console.log("FTC draft response data:", data);
-      if (!res.ok || !data?.ftc_id) {
-        throw new Error(data?.error || "Não consegui criar rascunho");
+      
+      if (error || !data?.ftc_id) {
+        throw new Error(error?.message || data?.error || "Não consegui criar rascunho");
       }
       setCurrentFtc(data.ftc_id);
       toast({
@@ -186,18 +181,16 @@ export default function VoiceFTC({
         ftc_id: currentFtc,
         transcricao: text
       };
-      const r = await fetch(`${supabaseFnBase}/ftc-import`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
+      
+      const { data: j, error } = await supabase.functions.invoke('ftc-import', {
+        method: 'POST',
+        body: payload
       });
-      console.log("Import response status:", r.status);
-      const j = await r.json();
+      
       console.log("Import response data:", j);
-      if (!r.ok || j?.ok === false) {
-        throw new Error(j?.error || "Falha no import");
+      
+      if (error || j?.ok === false) {
+        throw new Error(error?.message || j?.error || "Falha no import");
       }
       toast({
         title: "Sucesso!",
