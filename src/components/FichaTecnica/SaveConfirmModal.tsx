@@ -37,7 +37,14 @@ export function SaveConfirmModal({
   const hasValidMaterials = materiais.some(m => m.descricao.trim() && m.quantidade.trim());
 
   const getTargetStatus = (): StatusFicha => {
+    // Verificar se já tem número de orçamento preenchido
+    const hasOrcamento = formData.num_orcamento && formData.num_orcamento.trim() !== '';
+
     if (selectedOption === 'finished') {
+      // Se já tem orçamento, vai para orçamento gerado
+      if (hasOrcamento) {
+        return 'orcamento_gerado';
+      }
       // Se terminou e tem materiais válidos, vai para aguardando cotação
       if (hasValidMaterials) {
         return 'aguardando_cotacao';
@@ -45,6 +52,12 @@ export function SaveConfirmModal({
       // Se terminou mas não tem materiais, vai para preenchida
       return 'preenchida';
     }
+
+    // Para rascunhos, verificar se tem orçamento e atualizar automaticamente
+    if (hasOrcamento) {
+      return 'orcamento_gerado';
+    }
+
     // Se ainda vai revisar, mantém como rascunho
     return 'rascunho';
   };
@@ -53,7 +66,16 @@ export function SaveConfirmModal({
     const cliente = formData.cliente || 'Cliente não informado';
     const peca = formData.nome_peca || 'Peça não informada';
     const qtd = formData.quantidade || '1';
-    const statusText = hasValidMaterials ? 'aguardando cotação dos materiais' : 'preenchida, aguardando cadastro de materiais';
+    const hasOrcamento = formData.num_orcamento && formData.num_orcamento.trim() !== '';
+
+    let statusText = '';
+    if (hasOrcamento) {
+      statusText = `orçamento gerado nº ${formData.num_orcamento}`;
+    } else if (hasValidMaterials) {
+      statusText = 'aguardando cotação dos materiais';
+    } else {
+      statusText = 'preenchida, aguardando cadastro de materiais';
+    }
 
     return `🔧 *FICHA TÉCNICA CONCLUÍDA*
 

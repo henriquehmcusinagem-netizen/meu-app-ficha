@@ -110,7 +110,7 @@ export const clientesPredefinidos = [
 ];
 
 // Status da Ficha Técnica
-export type StatusFicha = 'rascunho' | 'preenchida' | 'aguardando_cotacao' | 'finalizada';
+export type StatusFicha = 'rascunho' | 'preenchida' | 'aguardando_cotacao' | 'orcamento_gerado' | 'finalizada';
 
 // Interface for saved fichas
 export interface FichaSalva {
@@ -150,6 +150,12 @@ export const STATUS_CONFIG = {
     color: 'bg-yellow-100 text-yellow-800',
     icon: '💰',
     description: 'Comprador orçando materiais'
+  },
+  orcamento_gerado: {
+    label: 'Orçamento Gerado',
+    color: 'bg-purple-100 text-purple-800',
+    icon: '📊',
+    description: 'Comercial gerou orçamento'
   },
   finalizada: {
     label: 'Finalizada',
