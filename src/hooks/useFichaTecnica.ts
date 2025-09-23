@@ -108,6 +108,15 @@ export function useFichaTecnica() {
   const { data: fichaCarregada, isLoading, error } = useFichaQuery(editId);
   const { invalidateFichas } = useFichasQuery();
 
+  // Function to check if user has entered any significant data
+  const hasUserData = useCallback(() => {
+    return formData.cliente.trim() !== '' ||
+           formData.nome_peca.trim() !== '' ||
+           formData.servico.trim() !== '' ||
+           formData.num_orcamento.trim() !== '' ||
+           materiais.some(m => m.descricao.trim() !== '' || m.quantidade.trim() !== '');
+  }, [formData, materiais]);
+
   // Initialize ficha based on React Query data or create new
   useEffect(() => {
     if (editId && fichaCarregada && !fichaId) {
@@ -124,8 +133,8 @@ export function useFichaTecnica() {
       
       // Cleanup
       sessionStorage.removeItem('loadFichaId');
-    } else if (!editId && !fichaId && !isLoading) {
-      // Create new ficha
+    } else if (!editId && !fichaId && !isLoading && !hasUserData()) {
+      // Create new ficha only if user hasn't entered any data
       console.log('✨ Criando nova ficha');
       setNumeroFTC('DRAFT-' + Date.now());
       setDataAtual(getCurrentDate());
@@ -142,7 +151,7 @@ export function useFichaTecnica() {
       setIsSaved(false);
       setIsModified(false);
     }
-  }, [editId, fichaCarregada, fichaId, isLoading]);
+  }, [editId, fichaCarregada, fichaId, isLoading, hasUserData]);
 
   const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
