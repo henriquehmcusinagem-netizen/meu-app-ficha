@@ -220,6 +220,7 @@ _Mensagem gerada automaticamente pelo sistema HMC_`;
 
         <div className="flex justify-end gap-2 pt-4">
           <Button
+            type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
@@ -227,6 +228,7 @@ _Mensagem gerada automaticamente pelo sistema HMC_`;
             Cancelar
           </Button>
           <Button
+            type="button"
             onClick={handleConfirm}
             disabled={isSaving}
             className="min-w-[100px]"

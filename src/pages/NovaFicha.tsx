@@ -51,6 +51,7 @@ export default function NovaFicha() {
         {/* Navigation Header - Compacto */}
         <div className="flex items-center gap-2 mb-3">
           <Button
+            type="button"
             variant="outline"
             onClick={() => navigate('/')}
             className="flex items-center gap-1 px-3 py-1 text-sm h-8"

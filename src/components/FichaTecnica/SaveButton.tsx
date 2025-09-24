@@ -36,15 +36,20 @@ export function SaveButton({
   };
 
   const handleConfirmSave = async (selectedStatus: StatusFicha) => {
+    console.log('💾 SaveButton: Iniciando salvamento com status:', selectedStatus);
     const result = await onSave(selectedStatus);
-    
+    console.log('💾 SaveButton: Resultado do salvamento:', result);
+
     if (result.success) {
+      console.log('✅ SaveButton: Salvamento bem-sucedido, chamando onSaveSuccess');
       toast({
         title: "Ficha Salva com Sucesso",
         description: "Ficha técnica salva e número FTC gerado automaticamente.",
         variant: "default",
       });
+      console.log('📞 SaveButton: Chamando onSaveSuccess callback');
       onSaveSuccess?.();
+      console.log('🎯 SaveButton: onSaveSuccess executado');
     } else {
       toast({
         title: "Erro ao Salvar",
@@ -58,6 +63,7 @@ export function SaveButton({
     <>
       <div className="flex justify-center my-6">
         <Button
+          type="button"
           onClick={handleSaveClick}
           disabled={isSaving}
           size="lg"

@@ -119,9 +119,21 @@ export function useFichaTecnica() {
 
   // Initialize ficha based on React Query data or create new
   useEffect(() => {
+    console.log('🔄 useEffect triggered:', {
+      editId,
+      fichaCarregadaId: fichaCarregada?.id,
+      fichaCarregadaNumero: fichaCarregada?.numeroFTC,
+      fichaIdAtual: fichaId,
+      isLoading
+    });
+
     if (editId && fichaCarregada && !fichaId) {
       // Load existing ficha from React Query data
-      console.log('✅ Carregando ficha do cache/servidor:', editId);
+      console.log('✅ Carregando ficha do cache/servidor:', {
+        editId,
+        fichaCarregadaId: fichaCarregada.id,
+        numeroFTC: fichaCarregada.numeroFTC
+      });
       setFichaId(fichaCarregada.id);
       setFormData(fichaCarregada.formData);
       setMateriais(fichaCarregada.materiais);
@@ -130,7 +142,7 @@ export function useFichaTecnica() {
       setFotos(fichaCarregada.fotos);
       setIsSaved(true);
       setIsModified(false);
-      
+
       // Cleanup
       sessionStorage.removeItem('loadFichaId');
     } else if (!editId && !fichaId && !isLoading && !numeroFTC) {
@@ -219,12 +231,16 @@ export function useFichaTecnica() {
 
   // Save ficha function
   const salvarFichaTecnica = useCallback(async (status?: string): Promise<{ success: boolean; errors?: string[]; numeroFTC?: string }> => {
+    console.log('🚨 FUNÇÃO SALVAR CHAMADA - NÃO DEVE REDIRECIONAR!');
     console.log('💾 SALVAMENTO INICIADO');
-    console.log('💾 Estado atual:', { 
-      fichaId, 
-      isSaved, 
-      isModified, 
-      numeroFTC 
+    console.log('💾 Estado atual:', {
+      fichaId,
+      isSaved,
+      isModified,
+      numeroFTC,
+      editId,
+      fichaCarregadaId: fichaCarregada?.id,
+      numeroFTCCarregado: fichaCarregada?.numeroFTC
     });
     console.log('💾 Dados para salvar:', { 
       cliente: formData.cliente, 
@@ -267,30 +283,34 @@ export function useFichaTecnica() {
       if (result.success) {
         console.log('✅ SALVAMENTO BEM-SUCEDIDO!');
         console.log('✅ Atualizando estado...');
-        
+        console.log('✅ Estado ANTES da atualização:', {
+          fichaIdAntes: fichaId,
+          numeroFTCAntes: numeroFTC
+        });
+
         if (result.id) {
           console.log('🆔 Definindo fichaId para:', result.id);
           setFichaId(result.id);
         }
-        
+
         // Update FTC number with the real one from database
         if (result.numeroFTC) {
           console.log('🔢 Atualizando numeroFTC para:', result.numeroFTC);
           setNumeroFTC(result.numeroFTC);
         }
-        
+
         setIsSaved(true);
         setIsModified(false);
         setIsSaving(false);
-        
+
         // Invalidate React Query cache
         invalidateFichas();
-        
-        console.log('✅ Estado final após salvamento:', { 
-          fichaId: result.id, 
-          numeroFTC: result.numeroFTC 
+
+        console.log('✅ Estado final após salvamento:', {
+          fichaId: result.id,
+          numeroFTC: result.numeroFTC
         });
-        
+
         return { success: true };
       } else {
         console.error('❌ ERRO NO SALVAMENTO:', result.error);

@@ -162,6 +162,7 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
           FOTOS ({fotos.length}/10)
         </CardTitle>
         <Button
+          type="button"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -229,6 +230,7 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
                         />
                       )}
                       <Button
+                        type="button"
                         variant="secondary"
                         size="sm"
                         className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -256,6 +258,7 @@ export function FotoUpload({ fotos, onAddFoto, onRemoveFoto }: FotoUploadProps) 
                   )}
                 </div>
                 <Button
+                  type="button"
                   variant="destructive"
                   size="sm"
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"

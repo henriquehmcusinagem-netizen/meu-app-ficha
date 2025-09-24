@@ -149,6 +149,7 @@ Equipe Técnica`;
   return (
     <div className="flex gap-0.5">
       <Button
+        type="button"
         onClick={(e) => { e.stopPropagation(); exportToPDFFile(); }}
         variant="outline"
         size="sm"
@@ -159,6 +160,7 @@ Equipe Técnica`;
       </Button>
 
       <Button
+        type="button"
         onClick={(e) => { e.stopPropagation(); sendEmailWithPDF(); }}
         size="sm"
         className="h-6 w-6 p-0 bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800"
@@ -168,6 +170,7 @@ Equipe Técnica`;
       </Button>
 
       <Button
+        type="button"
         onClick={(e) => { e.stopPropagation(); sendWhatsAppWithPDF(); }}
         size="sm"
         className="h-6 w-6 p-0 bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-teal-800"

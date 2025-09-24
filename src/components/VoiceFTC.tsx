@@ -224,6 +224,7 @@ export default function VoiceFTC({
     <div className="space-y-4 p-4 border rounded-lg bg-card">
       <div className="flex flex-col sm:flex-row gap-3">
         <Button
+          type="button"
           variant={listening ? "destructive" : "default"}
           onClick={listening ? stop : start}
           disabled={loading}
@@ -233,6 +234,7 @@ export default function VoiceFTC({
         </Button>
         
         <Button
+          type="button"
           variant="outline"
           onClick={enviar}
           disabled={!text.trim() || loading || !currentFtc}

@@ -660,17 +660,17 @@ export default function Index() {
         <Card className="mt-6">
           <CardContent className="pt-3">
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button variant="outline" onClick={() => navigate('/')} className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700">
+              <Button type="button" variant="outline" onClick={() => navigate('/')} className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700">
                 <Home className="h-4 w-4" />
                 Dashboard
               </Button>
-              
-              <Button variant="outline" onClick={() => navigate('/consultar-fichas')} className="flex items-center gap-2 bg-green-50 hover:bg-green-100 border-green-300 text-green-700">
+
+              <Button type="button" variant="outline" onClick={() => navigate('/consultar-fichas')} className="flex items-center gap-2 bg-green-50 hover:bg-green-100 border-green-300 text-green-700">
                 <Search className="h-4 w-4" />
                 Consultar Fichas
               </Button>
-              
-              <Button variant="outline" onClick={() => {
+
+              <Button type="button" variant="outline" onClick={() => {
                 if (isModified) {
                   const confirm = window.confirm("Há alterações não salvas. Deseja continuar e criar uma nova ficha?");
                   if (!confirm) return;

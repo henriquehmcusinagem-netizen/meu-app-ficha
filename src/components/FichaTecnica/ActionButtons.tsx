@@ -56,32 +56,32 @@ export function ActionButtons({
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-wrap gap-3 justify-center">
-          <Button onClick={exportToPDF} className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80">
+          <Button type="button" onClick={exportToPDF} className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80">
             <FileText className="h-4 w-4" />
             Exportar PDF
           </Button>
 
-          <Button onClick={exportToHTML} variant="outline" className="flex items-center gap-2">
+          <Button type="button" onClick={exportToHTML} variant="outline" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Exportar HTML
           </Button>
 
-          <Button onClick={sendWhatsApp} className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800">
+          <Button type="button" onClick={sendWhatsApp} className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800">
             <MessageCircle className="h-4 w-4" />
             Enviar WhatsApp
           </Button>
 
-          <Button onClick={sendEmail} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800">
+          <Button type="button" onClick={sendEmail} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800">
             <Mail className="h-4 w-4" />
             Enviar E-mail
           </Button>
 
-          <Button onClick={() => window.print()} variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600">
+          <Button type="button" onClick={() => window.print()} variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600">
             <Printer className="h-4 w-4" />
             Imprimir
           </Button>
 
-          <Button onClick={consultarFichas} variant="secondary" className="flex items-center gap-2">
+          <Button type="button" onClick={consultarFichas} variant="secondary" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             Consultar Fichas
           </Button>

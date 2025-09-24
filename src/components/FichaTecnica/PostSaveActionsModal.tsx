@@ -210,6 +210,7 @@ Equipe Técnica`;
   };
 
   const consultarFichas = () => {
+    console.log('🚨 NAVEGAÇÃO DETECTADA: PostSaveActionsModal -> consultarFichas()');
     navigate('/consultar-fichas');
     toast({
       title: "Navegando para Consultas",
