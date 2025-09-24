@@ -15,14 +15,18 @@ interface PostSaveActionsModalProps {
   formData: FormData;
   materiais: Material[];
   fotos: Foto[];
+  numeroFTC?: string;
+  dataAtual?: string;
 }
 
-export function PostSaveActionsModal({ 
-  open, 
-  onOpenChange, 
-  formData, 
-  materiais, 
-  fotos 
+export function PostSaveActionsModal({
+  open,
+  onOpenChange,
+  formData,
+  materiais,
+  fotos,
+  numeroFTC,
+  dataAtual
 }: PostSaveActionsModalProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -31,12 +35,21 @@ export function PostSaveActionsModal({
   // Create temporary FichaSalva object for export compatibility
   const createTempFicha = (): FichaSalva => {
     const calculos = calculateTotals(materiais, formData);
-    const currentDate = getCurrentDate();
-    const tempFTCNumber = `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
-    
+    const currentDate = dataAtual || getCurrentDate();
+    // Use real FTC number if available, otherwise create temporary one
+    const realFTCNumber = numeroFTC && !numeroFTC.startsWith('DRAFT')
+      ? numeroFTC
+      : `${new Date().getFullYear()}${Date.now().toString().slice(-3)}`;
+
+    console.log('📋 PostSaveActionsModal - createTempFicha:', {
+      numeroFTCRecebido: numeroFTC,
+      numeroFTCFinal: realFTCNumber,
+      isDraft: numeroFTC?.startsWith('DRAFT')
+    });
+
     return {
       id: 'temp-' + Date.now(),
-      numeroFTC: tempFTCNumber,
+      numeroFTC: realFTCNumber,
       dataCriacao: currentDate,
       dataUltimaEdicao: currentDate,
       status: 'rascunho',

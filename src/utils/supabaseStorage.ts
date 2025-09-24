@@ -201,22 +201,39 @@ export async function salvarFicha(
       fotos: fotos.length,
       fichaId 
     });
-    // Generate FTC number if this is a new ficha (no fichaId) or if it's a draft
+    // Generate FTC number only for truly new fichas (no fichaId)
+    // For existing fichas (with fichaId), only generate new number if it's still a draft
     let finalNumeroFTC = numeroFTC;
-    if (!fichaId || numeroFTC.startsWith('DRAFT')) {
-      console.log('🔢 Gerando novo número FTC...');
+    if (!fichaId) {
+      console.log('🔢 Gerando novo número FTC para ficha nova...');
       const { data, error } = await supabase
         .rpc('get_next_ftc_number');
-        
+
       if (error) {
         console.error('❌ Erro ao gerar número FTC:', error);
         return { success: false, error: 'Erro ao gerar número FTC.' };
       }
-      
+
       if (data) {
         finalNumeroFTC = data;
         console.log('✅ Número FTC gerado:', finalNumeroFTC);
       }
+    } else if (fichaId && numeroFTC.startsWith('DRAFT')) {
+      console.log('🔢 Convertendo DRAFT para número FTC definitivo para ficha existente:', fichaId);
+      const { data, error } = await supabase
+        .rpc('get_next_ftc_number');
+
+      if (error) {
+        console.error('❌ Erro ao gerar número FTC:', error);
+        return { success: false, error: 'Erro ao gerar número FTC.' };
+      }
+
+      if (data) {
+        finalNumeroFTC = data;
+        console.log('✅ Número FTC definitivo gerado para ficha existente:', finalNumeroFTC);
+      }
+    } else {
+      console.log('🔄 Mantendo número FTC existente:', finalNumeroFTC);
     }
 
     // Convert form data to database format - include ALL new fields

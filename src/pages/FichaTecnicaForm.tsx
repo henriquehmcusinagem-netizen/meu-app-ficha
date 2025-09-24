@@ -685,7 +685,15 @@ export default function Index() {
         </Card>
 
         {/* Post-Save Actions Modal */}
-        <PostSaveActionsModal open={showActionsModal} onOpenChange={setShowActionsModal} formData={formData} materiais={materiais} fotos={fotos} />
+        <PostSaveActionsModal
+          open={showActionsModal}
+          onOpenChange={setShowActionsModal}
+          formData={formData}
+          materiais={materiais}
+          fotos={fotos}
+          numeroFTC={numeroFTC}
+          dataAtual={dataAtual}
+        />
 
         {/* Print Layout - Hidden on screen, visible only when printing */}
         <PrintLayout formData={formData} materiais={materiais} fotos={fotos} calculos={calculos} numeroFTC={numeroFTC} dataAtual={dataAtual} />
