@@ -5,8 +5,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { FormData, Material, Foto, FichaSalva, Calculos } from "@/types/ficha-tecnica";
 import { generatePDF, generatePDFBlob } from "@/utils/pdfGenerator";
+import { generateHTMLContent } from "@/utils/htmlGenerator";
 import { calculateTotals, formatCurrency } from "@/utils/calculations";
-import { getCurrentDate } from "@/utils/helpers";
+import { getCurrentDate, getAppBaseUrl } from "@/utils/helpers";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PostSaveActionsModalProps {
@@ -87,77 +88,148 @@ export function PostSaveActionsModal({
   };
 
 
-  const sendWhatsAppWithPDF = async () => {
+  const uploadHTMLAndGetLink = async (tempFicha: FichaSalva): Promise<string | null> => {
+    try {
+      const htmlContent = generateHTMLContent(tempFicha);
+      const fileName = `ficha-${tempFicha.numeroFTC}-${Date.now()}.html`;
+      const filePath = `temp/${fileName}`;
+
+      const htmlBlob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+
+      const { data, error } = await supabase.storage
+        .from('ficha-fotos')
+        .upload(filePath, htmlBlob, {
+          contentType: 'text/html',
+          upsert: true
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Retorna URL do visualizador interno ao invés do link direto
+      // Simplifica o path para compatibilidade com WhatsApp
+      const simplePath = filePath.replace('temp/', '');
+      const viewerUrl = `${getAppBaseUrl()}/view-html/${encodeURIComponent('temp/' + simplePath)}`;
+      return viewerUrl;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const sendWhatsAppWithHTML = async () => {
     const tempFicha = createTempFicha();
-    
+
     try {
       toast({
         title: "Gerando link...",
-        description: "Criando PDF e gerando link de compartilhamento...",
+        description: "Criando HTML e gerando link de compartilhamento...",
       });
 
-      const pdfLink = await uploadPDFAndGetLink(tempFicha);
-      if (!pdfLink) {
-        throw new Error('Não foi possível gerar o link do PDF');
+      const htmlLink = await uploadHTMLAndGetLink(tempFicha);
+      if (!htmlLink) {
+        throw new Error('Não foi possível gerar o link do HTML');
       }
 
       const calculos = calculateTotals(materiais, formData);
+
+      // Formatar horas dos equipamentos
+      const horasEquipamentos = [];
+      if (formData.torno_grande && parseFloat(formData.torno_grande) > 0) {
+        horasEquipamentos.push(`${formData.torno_grande}h Torno Grande`);
+      }
+      if (formData.torno_pequeno && parseFloat(formData.torno_pequeno) > 0) {
+        horasEquipamentos.push(`${formData.torno_pequeno}h Torno Pequeno`);
+      }
+      if (formData.fresa_furad && parseFloat(formData.fresa_furad) > 0) {
+        horasEquipamentos.push(`${formData.fresa_furad}h Fresa/Furad`);
+      }
+      if (formData.macarico_solda && parseFloat(formData.macarico_solda) > 0) {
+        horasEquipamentos.push(`${formData.macarico_solda}h Maçarico/Solda`);
+      }
+
+      const horasDetalhadas = horasEquipamentos.length > 0
+        ? ` (${horasEquipamentos.join(', ')})`
+        : '';
+
       const message = `🔧 *Ficha Técnica de Cotação*\n\n` +
         `📋 *FTC:* ${tempFicha.numeroFTC}\n` +
         `👤 *Cliente:* ${formData.cliente}\n` +
-        `⚙️ *Serviço:* ${formData.servico}\n` +
+        `⚙️ *Serviço:* ${formData.servico || formData.nome_peca || '—'}\n` +
+        `⏱️ *Total Horas:* ${calculos.horasTodasPecas}h${horasDetalhadas}\n` +
         `💰 *Valor Total:* R$ ${calculos.materialTodasPecas.toFixed(2)}\n` +
         `📅 *Data:* ${getCurrentDate()}\n\n` +
-        `📄 *PDF Completo:* ${pdfLink}\n\n` +
-        `_Clique no link acima para visualizar/baixar o PDF completo._`;
-      
+        `📄 *Visualizar Ficha Completa:*\n${htmlLink}\n\n` +
+        `_Clique no link acima para ver a ficha técnica completa._`;
+
       const encodedMessage = encodeURIComponent(message);
       window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
 
       toast({
         title: "Link gerado!",
-        description: "PDF salvo e link copiado para WhatsApp.",
+        description: "HTML salvo e link copiado para WhatsApp.",
       });
     } catch (error) {
-      console.error('Error creating WhatsApp link:', error);
       toast({
         title: "Erro ao gerar link",
-        description: "Não foi possível criar o link do PDF.",
+        description: "Não foi possível criar o link do HTML.",
         variant: "destructive",
       });
     }
-    
+
     onOpenChange(false);
   };
 
 
-  const sendEmailWithPDF = async () => {
+  const sendEmailWithHTML = async () => {
     const tempFicha = createTempFicha();
-    
+
     try {
       toast({
         title: "Preparando email...",
-        description: "Gerando PDF e preparando email...",
+        description: "Gerando HTML e preparando email...",
       });
 
-      const pdfLink = await uploadPDFAndGetLink(tempFicha);
-      if (!pdfLink) {
-        throw new Error('Não foi possível gerar o link do PDF');
+      const htmlLink = await uploadHTMLAndGetLink(tempFicha);
+      if (!htmlLink) {
+        throw new Error('Não foi possível gerar o link do HTML');
       }
 
       const valorTotal = tempFicha.calculos.materialTodasPecas;
+      const calculos = calculateTotals(materiais, formData);
+
+      // Formatar horas dos equipamentos para email
+      const horasEquipamentos = [];
+      if (formData.torno_grande && parseFloat(formData.torno_grande) > 0) {
+        horasEquipamentos.push(`${formData.torno_grande}h Torno Grande`);
+      }
+      if (formData.torno_pequeno && parseFloat(formData.torno_pequeno) > 0) {
+        horasEquipamentos.push(`${formData.torno_pequeno}h Torno Pequeno`);
+      }
+      if (formData.fresa_furad && parseFloat(formData.fresa_furad) > 0) {
+        horasEquipamentos.push(`${formData.fresa_furad}h Fresa/Furad`);
+      }
+      if (formData.macarico_solda && parseFloat(formData.macarico_solda) > 0) {
+        horasEquipamentos.push(`${formData.macarico_solda}h Maçarico/Solda`);
+      }
+
+      const horasDetalhadas = horasEquipamentos.length > 0
+        ? ` (${horasEquipamentos.join(', ')})`
+        : '';
+
       const subject = `Ficha Técnica - ${tempFicha.numeroFTC}`;
       const body = `Prezado(a),
 
 Segue em anexo a Ficha Técnica de Cotação:
 
 📋 FTC: ${tempFicha.numeroFTC}
-👤 Cliente: ${tempFicha.resumo.cliente}
-⚙️ Serviço: ${tempFicha.resumo.servico}
+👤 Cliente: ${formData.cliente}
+⚙️ Serviço: ${formData.servico || formData.nome_peca || '—'}
+⏱️ Total Horas: ${calculos.horasTodasPecas}h${horasDetalhadas}
 💰 Valor Total: R$ ${valorTotal.toFixed(2)}
-📅 Data: ${tempFicha.dataCriacao}
+📅 Data: ${getCurrentDate()}
 
-📄 Link para o PDF: ${pdfLink}
+📄 Link para o HTML: ${htmlLink}
 
 Atenciosamente,
 Equipe Técnica`;
@@ -167,17 +239,16 @@ Equipe Técnica`;
 
       toast({
         title: "Email preparado!",
-        description: "Seu cliente de email foi aberto com o PDF anexado.",
+        description: "HTML salvo e link incluído no email.",
       });
     } catch (error) {
-      console.error('Error preparing email with PDF:', error);
       toast({
         title: "Erro ao preparar email",
-        description: "Não foi possível preparar o email com PDF.",
+        description: "Não foi possível preparar o email com HTML.",
         variant: "destructive",
       });
     }
-    
+
     onOpenChange(false);
   };
 
@@ -248,13 +319,13 @@ Equipe Técnica`;
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Compartilhar</h4>
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={sendEmailWithPDF} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800">
+              <Button onClick={sendEmailWithHTML} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800">
                 <Paperclip className="h-4 w-4" />
-                E-mail + PDF
+                E-mail + HTML
               </Button>
-              <Button onClick={sendWhatsAppWithPDF} className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-teal-800">
+              <Button onClick={sendWhatsAppWithHTML} className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white hover:from-teal-700 hover:to-teal-800">
                 <Link className="h-4 w-4" />
-                WA + PDF
+                WA + HTML
               </Button>
             </div>
           </div>

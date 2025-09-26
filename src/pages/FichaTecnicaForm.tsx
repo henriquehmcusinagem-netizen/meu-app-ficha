@@ -18,13 +18,12 @@ import { PostSaveActionsModal } from "@/components/FichaTecnica/PostSaveActionsM
 import { PrintLayout } from "@/components/FichaTecnica/PrintLayout";
 import { FotoUpload } from "@/components/FichaTecnica/FotoUpload";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
-import { clientesPredefinidos, STATUS_CONFIG, StatusFicha } from "@/types/ficha-tecnica";
+import { clientesPredefinidos } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/calculations";
 import { Calendar, FileText, Settings, Calculator, Plus, Home, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 export default function Index() {
   const [showActionsModal, setShowActionsModal] = useState(false);
-  const [fichaStatus, setFichaStatus] = useState<StatusFicha>('rascunho');
   const navigate = useNavigate();
 
   const {
@@ -50,12 +49,6 @@ export default function Index() {
     fichaCarregada
   } = useFichaTecnica();
 
-  // Sincronizar status quando uma ficha for carregada
-  useEffect(() => {
-    if (fichaCarregada?.status) {
-      setFichaStatus(fichaCarregada.status as StatusFicha);
-    }
-  }, [fichaCarregada]);
 
   return (
     <div className="space-y-3">
@@ -69,10 +62,10 @@ export default function Index() {
                   <div className="text-sm font-bold text-primary">
                     Nº FTC: {numeroFTC.startsWith('DRAFT') ? 'RASCUNHO' : numeroFTC}
                   </div>
-                  {isSaved && !isModified && !numeroFTC.startsWith('DRAFT') && <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                  {isSaved && !isModified && !numeroFTC.startsWith('DRAFT') && <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300 rounded-full">
                       SALVO
                     </span>}
-                  {(isModified || numeroFTC.startsWith('DRAFT')) && <span className="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">
+                  {(isModified || numeroFTC.startsWith('DRAFT')) && <span className="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300 rounded-full">
                       {numeroFTC.startsWith('DRAFT') ? 'NOVO' : 'MODIFICADO'}
                     </span>}
                 </div>
@@ -590,29 +583,6 @@ export default function Index() {
                   <Label htmlFor="num_nf_remessa" className="text-sm">Nº da NF DE REMESSA DO CLIENTE:</Label>
                   <InputWithVoice value={formData.num_nf_remessa} onChange={e => updateFormData("num_nf_remessa", e.target.value)} onVoiceResult={text => updateFormData("num_nf_remessa", text)} />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-sm">STATUS DA FICHA:</Label>
-                  <Select value={fichaStatus || 'rascunho'} onValueChange={(value: StatusFicha) => setFichaStatus(value)}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                        <SelectItem key={key} value={key}>
-                          <div className="flex items-center gap-2">
-                            <span>{config.icon}</span>
-                            <span>{config.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {fichaStatus && (
-                    <p className="text-xs text-muted-foreground">
-                      {STATUS_CONFIG[fichaStatus]?.description}
-                    </p>
-                  )}
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -654,18 +624,29 @@ export default function Index() {
           </Card>
 
           {/* Botão Salvar Ficha */}
-          <SaveButton isSaved={isSaved} isModified={isModified} isSaving={isSaving} onSave={salvarFichaTecnica} onSaveSuccess={() => setShowActionsModal(true)} status={fichaStatus} materiais={materiais} formData={formData} numeroFTC={numeroFTC} />
+          <SaveButton
+            isSaved={isSaved}
+            isModified={isModified}
+            isSaving={isSaving}
+            onSave={salvarFichaTecnica}
+            onSaveSuccess={() => setShowActionsModal(true)}
+            materiais={materiais}
+            formData={formData}
+            numeroFTC={numeroFTC}
+            ficha={fichaCarregada}
+            currentStatus={fichaCarregada?.status}
+          />
 
         {/* Botões de Acesso Rápido */}
         <Card className="mt-6">
           <CardContent className="pt-3">
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button type="button" variant="outline" onClick={() => navigate('/')} className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700">
+              <Button type="button" variant="outline" onClick={() => navigate('/')} className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-950/20 dark:hover:bg-blue-950/30 dark:border-blue-800 dark:text-blue-300">
                 <Home className="h-4 w-4" />
                 Dashboard
               </Button>
 
-              <Button type="button" variant="outline" onClick={() => navigate('/consultar-fichas')} className="flex items-center gap-2 bg-green-50 hover:bg-green-100 border-green-300 text-green-700">
+              <Button type="button" variant="outline" onClick={() => navigate('/consultar-fichas')} className="flex items-center gap-2 bg-green-50 hover:bg-green-100 border-green-300 text-green-700 dark:bg-green-950/20 dark:hover:bg-green-950/30 dark:border-green-800 dark:text-green-300">
                 <Search className="h-4 w-4" />
                 Consultar Fichas
               </Button>
@@ -676,7 +657,7 @@ export default function Index() {
                   if (!confirm) return;
                 }
                 criarNovaFicha();
-              }} className="flex items-center gap-2 bg-orange-50 hover:bg-orange-100 border-orange-300 text-orange-700">
+              }} className="flex items-center gap-2 bg-orange-50 hover:bg-orange-100 border-orange-300 text-orange-700 dark:bg-orange-950/20 dark:hover:bg-orange-950/30 dark:border-orange-800 dark:text-orange-300">
                 <Plus className="h-4 w-4" />
                 Nova Ficha
               </Button>

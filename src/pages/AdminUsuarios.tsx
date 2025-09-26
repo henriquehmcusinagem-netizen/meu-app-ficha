@@ -309,9 +309,9 @@ export default function AdminUsuarios() {
                       </TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs ${
-                          user.email_confirmed_at 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
+                          user.email_confirmed_at
+                            ? 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-300'
                         }`}>
                           {user.email_confirmed_at ? 'Ativo' : 'Pendente'}
                         </span>

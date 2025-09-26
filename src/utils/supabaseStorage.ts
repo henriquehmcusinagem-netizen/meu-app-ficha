@@ -1,5 +1,14 @@
 import { supabase } from '@/integrations/supabase/client';
 import { FormData, Material, Foto, Calculos, FichaSalva } from '@/types/ficha-tecnica';
+import { mapInterfaceStatusToDatabase, mapDatabaseStatusToInterface } from './statusMapping';
+
+// Função wrapper para manter compatibilidade e logs
+function mapStatusToDatabase(status: string): string {
+  console.log('🔄 mapStatusToDatabase - Input status:', status);
+  const mappedStatus = mapInterfaceStatusToDatabase(status as any);
+  console.log('✅ mapStatusToDatabase - Output status:', mappedStatus);
+  return mappedStatus;
+}
 
 // Generate UUID
 function generateId(): string {
@@ -118,7 +127,7 @@ async function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]
     numeroFTC: row.numero_ftc,
     dataCriacao: row.data_criacao,
     dataUltimaEdicao: row.data_ultima_edicao,
-    status: row.status,
+    status: mapDatabaseStatusToInterface(row.status),
     formData,
     materiais: materiaisConvertidos,
     fotos: fotosMetadata,
@@ -237,9 +246,21 @@ export async function salvarFicha(
     }
 
     // Convert form data to database format - include ALL new fields
+    const rawStatus = status || (formData.desenho_finalizado === 'SIM' ? 'finalizada' : 'rascunho');
+    console.log('📝 Status RAW antes do mapeamento:', rawStatus);
+    const mappedStatus = mapStatusToDatabase(rawStatus);
+    console.log('🎯 Status FINAL para o banco:', mappedStatus);
+
+    // Log das horas de produção
+    console.log('⏱️ Horas de produção sendo salvas:');
+    console.log('  - Torno Grande:', formData.torno_grande);
+    console.log('  - Torno Pequeno:', formData.torno_pequeno);
+    console.log('  - CNC TF:', formData.cnc_tf);
+    console.log('  - Fresa/Furad:', formData.fresa_furad);
+
     const dbData = {
       numero_ftc: finalNumeroFTC,
-      status: status || (formData.desenho_finalizado === 'SIM' ? 'finalizada' : 'rascunho'),
+      status: mappedStatus,
       cliente: formData.cliente,
       solicitante: formData.solicitante,
       contato: formData.fone_email,
@@ -349,6 +370,8 @@ export async function salvarFicha(
     // Insert materials
     if (materiais.length > 0) {
       console.log(`📦 Inserindo ${materiais.length} materiais...`);
+      console.log('📋 Dados dos materiais a serem inseridos:', materiais);
+
       const materiaisData = materiais.map((material, index) => ({
         ficha_id: savedFichaId,
         ordem: index + 1,
@@ -361,12 +384,15 @@ export async function salvarFicha(
         valor_total: parseFloat(material.valor_total.toString()) || 0
       }));
 
+      console.log('🎯 Dados formatados para o banco:', materiaisData);
+
       const { error: materiaisError } = await supabase
         .from('materiais')
         .insert(materiaisData);
 
       if (materiaisError) {
         console.error('❌ Erro ao salvar materiais:', materiaisError);
+        console.error('📋 Dados que causaram erro:', materiaisData);
       } else {
         console.log('✅ Materiais salvos com sucesso');
       }

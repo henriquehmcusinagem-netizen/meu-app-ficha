@@ -29,7 +29,7 @@ export function CalculosSummary({ calculos }: CalculosSummaryProps) {
           </div>
 
           <div className="p-4 bg-muted rounded-lg text-center">
-            <p className="text-sm text-muted-foreground mb-1">Material por Peça</p>
+            <p className="text-sm text-muted-foreground mb-1">Soma de Materiais</p>
             <p className="text-lg font-bold">{formatCurrency(calculos.materialPorPeca)}</p>
           </div>
 

@@ -49,3 +49,18 @@ export function formatCurrency(value: number): string {
     currency: 'BRL',
   }).format(value);
 }
+
+export function getAppBaseUrl(): string {
+  // Em produção, use a variável de ambiente
+  if (import.meta.env.VITE_APP_URL) {
+    return import.meta.env.VITE_APP_URL;
+  }
+
+  // Em desenvolvimento local, use localhost na porta padrão
+  if (import.meta.env.DEV) {
+    return 'http://localhost:5173';
+  }
+
+  // Fallback para o origin atual
+  return window.location.origin;
+}

@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { SaveConfirmModal } from "./SaveConfirmModal";
-import { StatusFicha, Material, FormData } from "@/types/ficha-tecnica";
+import { StatusFicha, Material, FormData, FichaSalva } from "@/types/ficha-tecnica";
 
 interface SaveButtonProps {
   isSaved: boolean;
@@ -11,10 +12,11 @@ interface SaveButtonProps {
   isSaving: boolean;
   onSave: (status?: string) => Promise<{ success: boolean; errors?: string[] }>;
   onSaveSuccess?: () => void;
-  status?: string;
   materiais: Material[];
   formData: FormData;
   numeroFTC: string;
+  ficha?: FichaSalva; // Para integração com Outlook
+  currentStatus?: StatusFicha; // Status atual da ficha
 }
 
 export function SaveButton({
@@ -23,12 +25,14 @@ export function SaveButton({
   isSaving,
   onSave,
   onSaveSuccess,
-  status,
   materiais,
   formData,
-  numeroFTC
+  numeroFTC,
+  ficha,
+  currentStatus
 }: SaveButtonProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleSaveClick = () => {
@@ -44,12 +48,18 @@ export function SaveButton({
       console.log('✅ SaveButton: Salvamento bem-sucedido, chamando onSaveSuccess');
       toast({
         title: "Ficha Salva com Sucesso",
-        description: "Ficha técnica salva e número FTC gerado automaticamente.",
+        description: "Redirecionando para consulta de fichas...",
         variant: "default",
       });
       console.log('📞 SaveButton: Chamando onSaveSuccess callback');
       onSaveSuccess?.();
       console.log('🎯 SaveButton: onSaveSuccess executado');
+
+      // Redirecionar para consultas após pequeno delay
+      setTimeout(() => {
+        console.log('🔄 SaveButton: Redirecionando para /consultar-fichas');
+        navigate('/consultar-fichas');
+      }, 1500);
     } else {
       toast({
         title: "Erro ao Salvar",
@@ -82,11 +92,12 @@ export function SaveButton({
         open={showConfirmModal}
         onOpenChange={setShowConfirmModal}
         onConfirm={handleConfirmSave}
-        currentStatus={(status as StatusFicha) || 'rascunho'}
+        currentStatus={currentStatus || 'rascunho'}
         materiais={materiais}
         isSaving={isSaving}
         formData={formData}
         numeroFTC={numeroFTC}
+        ficha={ficha}
       />
     </>
   );

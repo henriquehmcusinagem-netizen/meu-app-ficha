@@ -1,13 +1,18 @@
 import { FichaSalva } from '@/types/ficha-tecnica';
 import { formatCurrency } from './calculations';
 
-export function exportToHTML(ficha: FichaSalva) {
-  const materiaisPreenchidos = ficha.materiais.filter(m => 
+export function exportToHTML(ficha: FichaSalva, isForCommercial: boolean = false) {
+  const materiaisPreenchidos = ficha.materiais.filter(m =>
     m.descricao.trim() || Number(m.quantidade) > 0 || Number(m.valor_unitario) > 0
   );
 
   const formatRadioValue = (value: string) => value || "—";
   const formatCheckbox = (value: boolean) => value ? "✓" : "—";
+
+  // Status badge baseado no contexto
+  const statusInfo = isForCommercial ?
+    { label: "AGUARDANDO ORÇAMENTO", color: "#8B5CF6", icon: "📊" } :
+    { label: "CONCLUÍDA", color: "#10B981", icon: "✅" };
 
   const horasServicos = [
     { label: "TORNO G", value: ficha.formData.torno_grande },
@@ -34,33 +39,55 @@ export function exportToHTML(ficha: FichaSalva) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ficha Técnica FTC ${ficha.numeroFTC}</title>
+    <title>FTC ${ficha.numeroFTC} - ${ficha.formData.cliente}</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
-        .header { text-align: center; border: 2px solid black; padding: 10px; margin-bottom: 15px; }
-        .section { border: 1px solid #333; margin-bottom: 10px; padding: 8px; }
-        .section-title { font-weight: bold; background: #f0f0f0; padding: 4px; margin: -8px -8px 8px -8px; }
-        .grid { display: grid; gap: 8px; }
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 15px; font-size: 11px; line-height: 1.3; }
+        .header { text-align: center; border: 2px solid #000; padding: 8px; margin-bottom: 12px; background: #f8f9fa; }
+        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; color: white; margin-left: 10px; }
+        .section { border: 1px solid #666; margin-bottom: 8px; padding: 6px; }
+        .section-title { font-weight: bold; background: #e9ecef; padding: 3px 6px; margin: -6px -6px 6px -6px; font-size: 11px; }
+        .commercial-highlight { background: #fff3cd; border: 2px solid #ffeaa7; margin-bottom: 12px; padding: 8px; }
+        .grid { display: grid; gap: 6px; }
         .grid-2 { grid-template-columns: 1fr 1fr; }
         .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
         .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
-        .field { border: 1px solid #ccc; padding: 4px; }
-        .label { font-weight: bold; font-size: 10px; }
-        .value { margin-top: 2px; }
-        table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-        th, td { border: 1px solid #333; padding: 4px; font-size: 10px; }
-        th { background: #f0f0f0; font-weight: bold; }
-        .totals { background: #f0f0f0; border: 2px solid #333; padding: 8px; margin-top: 15px; }
+        .field { border: 1px solid #ccc; padding: 3px 4px; background: #fafafa; }
+        .label { font-weight: bold; font-size: 9px; color: #495057; }
+        .value { margin-top: 2px; color: #212529; }
+        table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 10px; }
+        th, td { border: 1px solid #666; padding: 3px 4px; }
+        th { background: #e9ecef; font-weight: bold; text-align: center; }
+        .material-total { background: #d4edda; font-weight: bold; }
+        .totals { background: #f8f9fa; border: 2px solid #28a745; padding: 6px; margin-top: 12px; }
+        @media print { body { margin: 10px; font-size: 10px; } }
     </style>
 </head>
 <body>
     <div class="header">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span>Data: ${ficha.dataCriacao}</span>
-            <h1 style="margin: 0;">FICHA TÉCNICA DE COTAÇÃO - FTC</h1>
-            <span>Nº ${ficha.numeroFTC}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <span style="font-size: 10px;">Data: ${new Date().toLocaleDateString('pt-BR')}</span>
+            <h1 style="margin: 0; font-size: 16px;">FICHA TÉCNICA DE COTAÇÃO</h1>
+            <div style="text-align: right;">
+                <span style="font-size: 10px;">FTC Nº ${ficha.numeroFTC}</span>
+                <span class="status-badge" style="background-color: ${statusInfo.color};">${statusInfo.icon} ${statusInfo.label}</span>
+            </div>
         </div>
     </div>
+
+    ${isForCommercial ? `
+    <div class="commercial-highlight">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="font-size: 16px;">💰</span>
+            <strong>RESUMO PARA ORÇAMENTO</strong>
+        </div>
+        <div class="grid grid-3">
+            <div><strong>Total Materiais:</strong> R$ ${ficha.calculos.materialTodasPecas.toFixed(2)}</div>
+            <div><strong>Total Horas:</strong> ${ficha.calculos.horasTodasPecas}h</div>
+            <div><strong>Qtd Peças:</strong> ${ficha.formData.quantidade}</div>
+        </div>
+    </div>
+    ` : ''}
 
     <div class="section">
         <div class="section-title">DADOS DO CLIENTE</div>
@@ -279,7 +306,7 @@ export function exportToHTML(ficha: FichaSalva) {
                 <div class="value">${ficha.calculos.horasTodasPecas.toFixed(1)}h</div>
             </div>
             <div class="field" style="text-align: center;">
-                <div class="label">Material/Peça</div>
+                <div class="label">Soma de Materiais</div>
                 <div class="value">${formatCurrency(ficha.calculos.materialPorPeca)}</div>
             </div>
             <div class="field" style="text-align: center;">

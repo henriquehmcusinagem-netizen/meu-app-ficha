@@ -249,7 +249,7 @@ export function ConsultaPrintLayout({ ficha }: ConsultaPrintLayoutProps) {
             <div className="print-value">{ficha.calculos.horasTodasPecas.toFixed(1)}h</div>
           </div>
           <div className="total-item">
-            <div className="print-label">Material/Peça</div>
+            <div className="print-label">Soma de Materiais</div>
             <div className="print-value">{formatCurrency(ficha.calculos.materialPorPeca)}</div>
           </div>
           <div className="total-item">

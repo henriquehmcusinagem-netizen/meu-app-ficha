@@ -109,8 +109,12 @@ export const clientesPredefinidos = [
   "ELDORADO"
 ];
 
-// Status da Ficha Técnica
-export type StatusFicha = 'rascunho' | 'preenchida' | 'aguardando_cotacao' | 'orcamento_gerado' | 'finalizada';
+// Status da Ficha Técnica - Fluxo Completo
+export type StatusFicha =
+  | 'rascunho'                        // Técnico ainda preenchendo
+  | 'aguardando_cotacao_compras'      // Aguardando compras cotar materiais
+  | 'aguardando_orcamento_comercial'  // Compras cotou, aguardando comercial
+  | 'orcamento_enviado_cliente';      // Comercial gerou e enviou orçamento
 
 // Interface for saved fichas
 export interface FichaSalva {
@@ -131,36 +135,34 @@ export interface FichaSalva {
   };
 }
 
-// Configuração dos status com cores e labels
+// Configuração dos status com cores e labels - Fluxo Atualizado
 export const STATUS_CONFIG = {
   rascunho: {
     label: 'Rascunho',
     color: 'bg-gray-100 text-gray-800',
     icon: '✏️',
-    description: 'Técnico ainda preenchendo'
+    description: 'Técnico ainda preenchendo',
+    department: 'tecnico'
   },
-  preenchida: {
-    label: 'Preenchida',
-    color: 'bg-blue-100 text-blue-800',
-    icon: '📋',
-    description: 'Técnico finalizou, aguardando cotação'
-  },
-  aguardando_cotacao: {
-    label: 'Aguardando Cotação',
+  aguardando_cotacao_compras: {
+    label: 'Aguardando Cotação (Compras)',
     color: 'bg-yellow-100 text-yellow-800',
     icon: '💰',
-    description: 'Comprador orçando materiais'
+    description: 'Compras cotando materiais',
+    department: 'compras'
   },
-  orcamento_gerado: {
-    label: 'Orçamento Gerado',
+  aguardando_orcamento_comercial: {
+    label: 'Aguardando Orçamento (Comercial)',
     color: 'bg-purple-100 text-purple-800',
     icon: '📊',
-    description: 'Comercial gerou orçamento'
+    description: 'Comercial gerando orçamento',
+    department: 'comercial'
   },
-  finalizada: {
-    label: 'Finalizada',
+  orcamento_enviado_cliente: {
+    label: 'Orçamento Enviado',
     color: 'bg-green-100 text-green-800',
-    icon: '✅',
-    description: 'Processo completo'
+    icon: '📤',
+    description: 'Orçamento enviado ao cliente',
+    department: 'comercial'
   }
 } as const;

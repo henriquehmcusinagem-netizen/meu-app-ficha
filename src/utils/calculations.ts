@@ -31,8 +31,8 @@ export function calculateTotals(materiais: Material[], formData: FormData): Calc
   return {
     horasPorPeca: horasServico,
     horasTodasPecas: horasServico * quantidade,
-    materialPorPeca: materialTotal,
-    materialTodasPecas: materialTotal * quantidade,
+    materialPorPeca: materialTotal, // Soma total de todos os materiais
+    materialTodasPecas: materialTotal, // Manter o valor total como preenchido pelo técnico
   };
 }
 

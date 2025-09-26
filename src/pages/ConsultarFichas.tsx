@@ -4,15 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, FileText, Calendar, User, Search, Filter, Eye, Home, Download, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, FileText, Calendar, User, Search, Filter, Eye, Home, Download, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FichaSalva, Foto, STATUS_CONFIG, StatusFicha } from '@/types/ficha-tecnica';
 import { formatCurrency } from '@/utils/helpers';
 import { ConsultaActionButtons } from '@/components/FichaTecnica/ConsultaActionButtons';
 import { useFichasQuery } from '@/hooks/useFichasQuery';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { SimplePhotoPreview } from '@/components/SimplePhotoPreview';
-import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function ConsultarFichas() {
   const navigate = useNavigate();
@@ -21,26 +20,31 @@ export default function ConsultarFichas() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('dataUltimaEdicao');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  
+  const [showConfirmEdit, setShowConfirmEdit] = useState(false);
+  const [fichaToEdit, setFichaToEdit] = useState<FichaSalva | null>(null);
+
   // Use React Query for data management
-  const { fichas, isLoading, deleteFicha, isDeleting } = useFichasQuery();
+  const { fichas: rawFichas, isLoading, deleteFicha, isDeleting } = useFichasQuery();
+
+  // Fichas já vêm com status mapeado do supabaseStorage.ts
+  const fichas = rawFichas;
 
   useEffect(() => {
     let filtered = fichas.filter(ficha => {
-      const matchesSearch = 
+      const matchesSearch =
         ficha.numeroFTC.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ficha.resumo.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ficha.resumo.servico.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesStatus = statusFilter === 'all' || ficha.status === statusFilter;
-      
+
       return matchesSearch && matchesStatus;
     });
 
     // Sort filtered results
     filtered.sort((a, b) => {
       let aValue, bValue;
-      
+
       switch (sortBy) {
         case 'numeroFTC':
           aValue = a.numeroFTC;
@@ -73,114 +77,16 @@ export default function ConsultarFichas() {
     setFilteredFichas(filtered);
   }, [fichas, searchTerm, statusFilter, sortBy, sortOrder]);
 
-  const FotosPreview = ({ fotos }: { fotos: Foto[] }) => {
-    const [selectedFoto, setSelectedFoto] = useState<number>(0);
-    const [isOpen, setIsOpen] = useState(false);
-    const [fullSizeUrls, setFullSizeUrls] = useState<Map<number, string>>(new Map());
+  // Contar fichas por status para exibir nas abas
+  const countByStatus = fichas.reduce((acc: Record<string, number>, ficha) => {
+    acc[ficha.status] = (acc[ficha.status] || 0) + 1;
+    return acc;
+  }, {});
 
-    const handlePrevious = () => {
-      setSelectedFoto((prev) => (prev === 0 ? fotos.length - 1 : prev - 1));
-    };
-
-    const handleNext = () => {
-      setSelectedFoto((prev) => (prev === fotos.length - 1 ? 0 : prev + 1));
-    };
-
-    const openModal = async (index: number) => {
-      setSelectedFoto(index);
-      setIsOpen(true);
-
-      // Load full-size image if not already loaded
-      const foto = fotos[index];
-      if (foto.storagePath && !fullSizeUrls.has(index)) {
-        try {
-          const { data } = await supabase.storage
-            .from('ficha-fotos')
-            .createSignedUrl(foto.storagePath, 3600);
-
-          if (data?.signedUrl) {
-            setFullSizeUrls(prev => new Map(prev).set(index, data.signedUrl));
-          }
-        } catch (error) {
-          console.error('Erro ao carregar foto em tamanho completo:', error);
-        }
-      }
-    };
-
-    return (
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-muted-foreground">{fotos.length} fotos</span>
-        <div className="flex gap-0.5">
-          {fotos.slice(0, 2).map((foto, index) => (
-            <Dialog key={index} open={isOpen} onOpenChange={setIsOpen}>
-              <DialogTrigger asChild>
-                <SimplePhotoPreview
-                  storagePath={foto.storagePath}
-                  alt={foto.name}
-                  className="w-5 h-5 rounded border hover:ring-1 hover:ring-primary/50 transition-all"
-                  onClick={() => openModal(index)}
-                />
-              </DialogTrigger>
-
-              <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-                <div className="relative flex items-center justify-center bg-black">
-                  {fullSizeUrls.has(selectedFoto) ? (
-                    <img
-                      src={fullSizeUrls.get(selectedFoto)}
-                      alt={fotos[selectedFoto]?.name}
-                      className="max-w-full max-h-[80vh] object-contain"
-                      onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-[50vh]">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                    </div>
-                  )}
-
-                  {fotos.length > 1 && (
-                    <>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="absolute left-4 top-1/2 -translate-y-1/2"
-                        onClick={handlePrevious}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="absolute right-4 top-1/2 -translate-y-1/2"
-                        onClick={handleNext}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded text-sm">
-                    {selectedFoto + 1} de {fotos.length} - {fotos[selectedFoto]?.name}
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          ))}
-
-          {fotos.length > 2 && (
-            <div className="w-5 h-5 rounded border bg-muted flex items-center justify-center">
-              <span className="text-[10px] text-muted-foreground">+{fotos.length - 2}</span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   const handleDeleteFicha = (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    
+
     if (confirm('Tem certeza que deseja excluir esta ficha?')) {
       deleteFicha(id);
     }
@@ -189,21 +95,49 @@ export default function ConsultarFichas() {
   const handleLoadFicha = (id: string) => {
     console.log('🔗 ConsultarFichas - Clicou para editar ficha:', id);
     console.log('🔗 Type of ID:', typeof id, 'Value:', id);
-    
+
     if (!id) {
       console.error('❌ ID da ficha é inválido:', id);
       return;
     }
-    
+
+    // Find the ficha to edit
+    const ficha = fichas.find(f => f.id === id);
+    if (!ficha) {
+      console.error('❌ Ficha não encontrada para ID:', id);
+      return;
+    }
+
+    // Set ficha for confirmation dialog
+    setFichaToEdit(ficha);
+    setShowConfirmEdit(true);
+  };
+
+  const confirmEditFicha = () => {
+    if (!fichaToEdit) return;
+
+    const id = fichaToEdit.id;
+    console.log('✅ Confirmou edição da ficha:', id);
+
     // Store in sessionStorage as backup
     console.log('💾 Antes de salvar no sessionStorage');
     sessionStorage.setItem('loadFichaId', id);
     console.log('💾 Salvou no sessionStorage:', sessionStorage.getItem('loadFichaId'));
-    
+
     // Use URL params as primary method
     console.log('🚀 Antes de navegar - usando URL params');
     navigate(`/nova-ficha?edit=${id}`);
     console.log('🚀 Navegação executada para /nova-ficha?edit=' + id);
+
+    // Reset state
+    setShowConfirmEdit(false);
+    setFichaToEdit(null);
+  };
+
+  const cancelEditFicha = () => {
+    console.log('❌ Cancelou edição da ficha');
+    setShowConfirmEdit(false);
+    setFichaToEdit(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -257,15 +191,9 @@ export default function ConsultarFichas() {
           <h1 className="text-sm font-semibold text-muted-foreground">Consultar Fichas</h1>
         </div>
 
-        {/* Filters and Search - Layout Horizontal Ultra Compacto */}
-        <Card className="mb-2">
-          <CardHeader className="pb-1">
-            <CardTitle className="flex items-center gap-1 text-sm">
-              <Search className="h-3 w-3" />
-              Filtros
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-1">
+        {/* Filtros Compactos */}
+        <Card className="mb-4">
+          <CardContent className="pt-3">
             <div className="flex flex-wrap items-end gap-2">
               <div className="flex-1 min-w-[180px]">
                 <label className="text-[10px] font-medium mb-0.5 block text-muted-foreground">Buscar</label>
@@ -278,26 +206,6 @@ export default function ConsultarFichas() {
                     className="pl-6 h-7 text-xs"
                   />
                 </div>
-              </div>
-
-              <div className="min-w-[80px]">
-                <label className="text-[10px] font-medium mb-0.5 block text-muted-foreground">Status</label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs">{config.icon}</span>
-                          <span>{config.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="min-w-[120px]">
@@ -332,6 +240,54 @@ export default function ConsultarFichas() {
           </CardContent>
         </Card>
 
+        {/* Sistema de Abas por Status - ABAIXO do menu de busca */}
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-1 mb-4 p-1 bg-muted/30 rounded-lg">
+            {/* Nova ordem: Rascunho → Ag. Cotação → Ag. Orçamento → Enviadas → TODAS */}
+            <Button
+              variant={statusFilter === 'rascunho' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('rascunho')}
+              className="flex items-center gap-1 text-xs h-7"
+            >
+              <span>✏️ RASCUNHO ({countByStatus.rascunho || 0})</span>
+            </Button>
+            <Button
+              variant={statusFilter === 'aguardando_cotacao_compras' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('aguardando_cotacao_compras')}
+              className="flex items-center gap-1 text-xs h-7"
+            >
+              <span>💰 AG. COTAÇÃO ({countByStatus.aguardando_cotacao_compras || 0})</span>
+            </Button>
+            <Button
+              variant={statusFilter === 'aguardando_orcamento_comercial' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('aguardando_orcamento_comercial')}
+              className="flex items-center gap-1 text-xs h-7"
+            >
+              <span>📊 AG. ORÇAMENTO ({countByStatus.aguardando_orcamento_comercial || 0})</span>
+            </Button>
+            <Button
+              variant={statusFilter === 'orcamento_enviado_cliente' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('orcamento_enviado_cliente')}
+              className="flex items-center gap-1 text-xs h-7"
+            >
+              <span>📤 ENVIADAS ({countByStatus.orcamento_enviado_cliente || 0})</span>
+            </Button>
+            {/* ABA TODAS por último, lado direito */}
+            <Button
+              variant={statusFilter === 'all' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('all')}
+              className="flex items-center gap-1 text-xs h-7 ml-auto"
+            >
+              <span>📋 TODAS ({fichas.length})</span>
+            </Button>
+          </div>
+        </div>
+
         {/* Results - Lista Ultra Compacta */}
         <Card>
           <CardHeader className="pb-1">
@@ -361,13 +317,12 @@ export default function ConsultarFichas() {
                   <thead className="border-b border-border/30">
                     <tr className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
                       <th className="text-left pb-1 w-[110px]">FTC</th>
-                      <th className="text-left pb-1 w-[100px]">CLIENTE</th>
-                      <th className="text-left pb-1 w-[160px] hidden sm:table-cell">PEÇA/EQUIP.</th>
-                      <th className="text-center pb-1 w-[50px] hidden md:table-cell">QTD</th>
-                      <th className="text-right pb-1 w-[80px]">VALOR</th>
-                      <th className="text-center pb-1 w-[60px]">FOTOS</th>
-                      <th className="text-center pb-1 w-[50px] hidden lg:table-cell">DATA</th>
-                      <th className="text-right pb-1 w-[130px]">AÇÕES</th>
+                      <th className="text-left pb-1 w-[120px]">CLIENTE</th>
+                      <th className="text-left pb-1 w-[180px] hidden sm:table-cell">PEÇA/EQUIP.</th>
+                      <th className="text-center pb-1 w-[60px] hidden md:table-cell">QTD</th>
+                      <th className="text-right pb-1 w-[100px]">VALOR</th>
+                      <th className="text-center pb-1 w-[60px] hidden lg:table-cell">DATA</th>
+                      <th className="text-right pb-1 w-[150px]">AÇÕES</th>
                     </tr>
                   </thead>
                   <tbody className="space-y-1">
@@ -375,7 +330,7 @@ export default function ConsultarFichas() {
                       console.log('🎯 Renderizando ficha:', { id: ficha.id, numeroFTC: ficha.numeroFTC });
                       return (
                         <tr key={ficha.id} className="group">
-                          <td colSpan={8} className="p-0">
+                          <td colSpan={7} className="p-0">
                             <div
                               className="cursor-pointer hover:bg-accent/40 transition-all duration-150 border rounded-md border-border/30 hover:border-primary/30 bg-card/50 m-1"
                               onClick={() => {
@@ -398,43 +353,35 @@ export default function ConsultarFichas() {
                                     </td>
 
                                     {/* Cliente */}
-                                    <td className="p-2 w-[100px]">
+                                    <td className="p-2 w-[120px]">
                                       <span className="font-medium truncate block" title={ficha.resumo.cliente}>
-                                        {ficha.resumo.cliente.length > 12 ? `${ficha.resumo.cliente.substring(0, 12)}...` : ficha.resumo.cliente}
+                                        {ficha.resumo.cliente.length > 15 ? `${ficha.resumo.cliente.substring(0, 15)}...` : ficha.resumo.cliente}
                                       </span>
                                     </td>
 
                                     {/* Nome da Peça/Equipamento */}
-                                    <td className="p-2 w-[160px] hidden sm:table-cell">
+                                    <td className="p-2 w-[180px] hidden sm:table-cell">
                                       <span className="truncate block text-muted-foreground" title={ficha.formData?.nome_peca || ficha.resumo.servico}>
-                                        {(ficha.formData?.nome_peca || ficha.resumo.servico).length > 35 ? `${(ficha.formData?.nome_peca || ficha.resumo.servico).substring(0, 35)}...` : (ficha.formData?.nome_peca || ficha.resumo.servico)}
+                                        {(ficha.formData?.nome_peca || ficha.resumo.servico).length > 40 ? `${(ficha.formData?.nome_peca || ficha.resumo.servico).substring(0, 40)}...` : (ficha.formData?.nome_peca || ficha.resumo.servico)}
                                       </span>
                                     </td>
 
                                     {/* Qtd + Materiais */}
-                                    <td className="p-2 w-[50px] text-center hidden md:table-cell">
+                                    <td className="p-2 w-[60px] text-center hidden md:table-cell">
                                       <span className="font-medium block">{ficha.resumo.quantidade}</span>
                                       <span className="text-[8px] text-muted-foreground">{ficha.materiais.length}m</span>
                                     </td>
 
                                     {/* Valor */}
-                                    <td className="p-2 w-[80px] text-right">
+                                    <td className="p-2 w-[100px] text-right">
                                       <span className="font-semibold text-primary text-xs">
                                         {formatCurrency(ficha.resumo.valorTotal)}
                                       </span>
                                     </td>
 
-                                    {/* Fotos */}
-                                    <td className="p-2 w-[60px] text-center">
-                                      {ficha.fotos.length > 0 ? (
-                                        <FotosPreview fotos={ficha.fotos} />
-                                      ) : (
-                                        <span className="text-[10px] text-muted-foreground">0 fotos</span>
-                                      )}
-                                    </td>
 
                                     {/* Data */}
-                                    <td className="p-2 w-[50px] text-center hidden lg:table-cell">
+                                    <td className="p-2 w-[60px] text-center hidden lg:table-cell">
                                       <span className="text-[10px] text-muted-foreground">
                                         {new Date(ficha.dataUltimaEdicao).toLocaleDateString('pt-BR', {
                                           day: '2-digit',
@@ -444,7 +391,7 @@ export default function ConsultarFichas() {
                                     </td>
 
                                     {/* Actions */}
-                                    <td className="p-2 w-[130px]">
+                                    <td className="p-2 w-[150px]">
                                       <div className="flex gap-0.5 justify-end">
                                         <ConsultaActionButtons ficha={ficha} />
                                         <Button
@@ -486,6 +433,43 @@ export default function ConsultarFichas() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Confirmation Dialog for Edit */}
+      <AlertDialog open={showConfirmEdit} onOpenChange={setShowConfirmEdit}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Confirmar Edição
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {fichaToEdit && (
+                <div className="space-y-2">
+                  <p>
+                    Deseja editar a ficha <strong>FTC {fichaToEdit.numeroFTC}</strong>?
+                  </p>
+                  <div className="text-sm bg-muted/50 p-3 rounded-lg">
+                    <p><strong>Cliente:</strong> {fichaToEdit.resumo.cliente}</p>
+                    <p><strong>Serviço:</strong> {fichaToEdit.resumo.servico}</p>
+                    <p><strong>Status:</strong> {getStatusLabel(fichaToEdit.status)}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Você será redirecionado para a página de edição da ficha técnica.
+                  </p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelEditFicha}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmEditFicha}>
+              Editar Ficha
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

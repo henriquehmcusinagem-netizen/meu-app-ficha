@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { HTMLViewer } from "@/components/FichaTecnica/HTMLViewer";
 import Dashboard from "./pages/Dashboard";
 import NovaFicha from "./pages/NovaFicha";
 import ConsultarFichas from "./pages/ConsultarFichas";
@@ -20,6 +22,7 @@ const App = () => (
       <AuthProvider>
         <Toaster />
         <Sonner />
+        <ThemeToggle />
         <BrowserRouter>
           <div className="min-h-screen bg-background">
             <Routes>
@@ -49,6 +52,7 @@ const App = () => (
                   <AdminUsuarios />
                 </ProtectedRoute>
               } />
+              <Route path="/view-html/:filePath" element={<HTMLViewer />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, FileText, Calendar, User } from 'lucide-react';
-import { FichaSalva } from '@/types/ficha-tecnica';
+import { FichaSalva, STATUS_CONFIG } from '@/types/ficha-tecnica';
 import { carregarFichasSalvas, excluirFicha } from '@/utils/supabaseStorage';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/helpers';
@@ -124,8 +124,8 @@ export function FichasList({ onLoadFicha }: FichasListProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={ficha.status === 'finalizada' ? 'default' : 'secondary'}>
-                        {ficha.status === 'finalizada' ? 'Finalizada' : 'Rascunho'}
+                      <Badge variant={ficha.status === 'orcamento_enviado_cliente' ? 'default' : 'secondary'}>
+                        {STATUS_CONFIG[ficha.status]?.label || ficha.status}
                       </Badge>
                       <Button
                         variant="ghost"
