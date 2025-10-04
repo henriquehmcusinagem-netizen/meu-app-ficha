@@ -1,0 +1,77 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { Suspense, lazy } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { HTMLViewer } from "@/components/FichaTecnica/HTMLViewer";
+import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
+
+// Lazy load das rotas principais
+const NovaFicha = lazy(() => import("./pages/NovaFicha"));
+const ConsultarFichas = lazy(() => import("./pages/ConsultarFichas"));
+const AdminUsuarios = lazy(() => import("./pages/AdminUsuarios"));
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <ThemeToggle />
+        <BrowserRouter>
+          <div className="min-h-screen bg-background">
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/nova-ficha" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <NovaFicha />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/nova-ficha/:id" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <NovaFicha />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/consultar-fichas" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <ConsultarFichas />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/usuarios" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <AdminUsuarios />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/view-html/:filePath" element={<HTMLViewer />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
