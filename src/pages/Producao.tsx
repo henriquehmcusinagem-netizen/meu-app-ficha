@@ -192,45 +192,65 @@ export default function Producao() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Ag. Materiais</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Pendentes
+              </CardTitle>
+              <Clock className="h-4 w-4 text-yellow-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{aguardandoMateriais.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {aguardandoMateriais.length + aguardandoInicio.length}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {aguardandoMateriais.length} materiais + {aguardandoInicio.length} início
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Ag. Início</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{aguardandoInicio.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Em Produção</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Em Produção
+              </CardTitle>
+              <Factory className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{emProducao.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">ordens ativas</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Pausadas</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Pausadas
+              </CardTitle>
+              <Pause className="h-4 w-4 text-red-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{pausadas.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">requerem atenção</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Concluídas</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Concluídas
+              </CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{concluidas.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">ordens finalizadas</p>
           </CardContent>
         </Card>
       </div>
@@ -239,7 +259,7 @@ export default function Producao() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="aguardando">
-            ⏳ Ag. Materiais ({aguardandoMateriais.length})
+            📦 Ag. Materiais ({aguardandoMateriais.length})
           </TabsTrigger>
           <TabsTrigger value="inicio">
             🚀 Ag. Início ({aguardandoInicio.length})

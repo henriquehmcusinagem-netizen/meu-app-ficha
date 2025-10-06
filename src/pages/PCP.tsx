@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ClipboardCheck, CheckCircle2, XCircle, AlertCircle, FileText, Eye } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, CheckCircle2, XCircle, AlertCircle, FileText, Eye, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PCP() {
@@ -179,34 +179,58 @@ export default function PCP() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Aguardando Validação</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Aguardando Validação
+              </CardTitle>
+              <Clock className="h-4 w-4 text-yellow-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{aguardando.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">requisições pendentes</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Aprovados</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Aprovados
+              </CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{aprovados.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">liberados para compra</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Rejeitados</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Rejeitados
+              </CardTitle>
+              <XCircle className="h-4 w-4 text-red-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{rejeitados.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">não aprovados</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Alterações Solicitadas</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Alterações Solicitadas
+              </CardTitle>
+              <AlertCircle className="h-4 w-4 text-orange-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">{alteracoes.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">requerem ajustes</p>
           </CardContent>
         </Card>
       </div>
