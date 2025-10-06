@@ -1,14 +1,138 @@
-import { FichaSalva } from '@/types/ficha-tecnica';
+import { FichaSalva, OrcamentoData } from '@/types/ficha-tecnica';
 import { formatCurrency } from './helpers';
 import { getPhotosWithUrls, getPhotoGalleryCSS } from './photoHelpers';
 
 /**
+ * Escape HTML special characters to prevent XSS and syntax errors
+ * @param str - String to escape
+ * @returns Escaped string safe for HTML attributes
+ */
+function escapeHtml(str: string): string {
+  const htmlEscapeMap: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '\n': '&#10;',
+    '\r': '&#13;'
+  };
+  return str.replace(/[&<>"'\n\r]/g, (char) => htmlEscapeMap[char] || char);
+}
+
+/**
+ * Escape JavaScript string literals (for use inside JS strings)
+ * @param str - String to escape
+ * @returns Escaped string safe for JavaScript strings
+ */
+function escapeJs(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
+/**
+ * Generates HTML section for budget/quote data (client-facing version)
+ * Shows only commercial information, no internal cost breakdown
+ * @param orcamento - Budget data object
+ * @returns HTML string for budget section
+ */
+function generateBudgetSectionHTML(orcamento: OrcamentoData): string {
+  return `
+    <!-- SEÇÃO DE ORÇAMENTO -->
+    <div class="section-card" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0284c7;">
+      <div class="section-title" style="color: #0369a1;">💰 ORÇAMENTO COMERCIAL</div>
+
+      <!-- Valor Total Destacado -->
+      <div style="text-align: center; padding: 20px; background: white; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1);">
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Valor Total do Orçamento</div>
+        <div style="font-size: 36px; font-weight: 700; color: #0369a1;">
+          ${formatCurrency(orcamento.precoVendaFinal)}
+        </div>
+      </div>
+
+      <!-- Informações Comerciais -->
+      <div class="field-grid">
+        <div class="field">
+          <div class="field-label">Prazo de Entrega</div>
+          <div class="field-value">${orcamento.config.prazoEntrega} dias úteis</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Validade da Proposta</div>
+          <div class="field-value">${orcamento.config.validadeProposta} dias</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Prazo de Pagamento</div>
+          <div class="field-value">${orcamento.config.prazoPagamento} dias</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Garantia</div>
+          <div class="field-value">${orcamento.config.garantia} dias</div>
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <div class="field-label">Condições de Pagamento</div>
+          <div class="field-value">${orcamento.config.condicoesPagamento || '—'}</div>
+        </div>
+      </div>
+
+      ${orcamento.itens && orcamento.itens.length > 0 ? `
+      <!-- Itens do Orçamento -->
+      <div style="margin-top: 20px;">
+        <h4 style="margin-bottom: 15px; color: #0369a1; font-weight: 600;">📋 Itens do Orçamento</h4>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+            <thead>
+              <tr style="background: #0284c7; color: white;">
+                <th style="padding: 12px; text-align: left; font-weight: 600;">Item</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600;">Descrição</th>
+                <th style="padding: 12px; text-align: right; font-weight: 600;">Qtd</th>
+                <th style="padding: 12px; text-align: right; font-weight: 600;">Valor Unit.</th>
+                <th style="padding: 12px; text-align: right; font-weight: 600;">Valor Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orcamento.itens.map((item, index) => `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 10px;">${index + 1}</td>
+                  <td style="padding: 10px;">${item.descricao}</td>
+                  <td style="padding: 10px; text-align: right;">${item.quantidade}</td>
+                  <td style="padding: 10px; text-align: right;">${formatCurrency(item.valorUnitario)}</td>
+                  <td style="padding: 10px; text-align: right; font-weight: 600;">${formatCurrency(item.valorTotal)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+/**
  * Generates HTML with EXACT layout from FichaTecnicaForm
  * Optimized for printing in max 2 pages
+ * @param ficha - Technical specification data
+ * @param orcamento - Optional budget/quote data to include in HTML
  */
-export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<string> {
+export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: OrcamentoData | null): Promise<string> {
   // Load photos with signed URLs
+  console.log('🔍 DEBUG - Fotos da ficha:', {
+    totalFotos: ficha.fotos?.length || 0,
+    fotos: ficha.fotos
+  });
+
   const photosWithUrls = await getPhotosWithUrls(ficha.fotos || []);
+
+  console.log('🔍 DEBUG - Fotos com URLs:', {
+    totalComURL: photosWithUrls.length,
+    urls: photosWithUrls.map(f => ({ name: f.name, hasUrl: !!f.url }))
+  });
+
   const photoGalleryCSS = getPhotoGalleryCSS();
 
   const formatRadio = (value: any): string => {
@@ -54,19 +178,26 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
   );
 
   // Photo gallery HTML
-  const photoGalleryHTML = photosWithUrls.length > 0 ? `
+  const photoGalleryHTML = `
     <div class="section-card">
       <div class="section-title">📸 FOTOS DO PROJETO (${photosWithUrls.length})</div>
-      <div class="photo-grid">
-        ${photosWithUrls.map((foto, index) => `
-          <div class="photo-item" onclick="openPhotoModal(${index})">
-            <img src="${foto.url}" alt="${foto.name}" loading="lazy">
-            <div class="photo-name">${foto.name}</div>
-          </div>
-        `).join('')}
-      </div>
+      ${photosWithUrls.length > 0 ? `
+        <div class="photo-grid">
+          ${photosWithUrls.map((foto, index) => `
+            <div class="photo-item" onclick="openPhotoModal(${index})">
+              <img src="${foto.url}" alt="${escapeHtml(foto.name)}" loading="lazy">
+              <div class="photo-name">${escapeHtml(foto.name)}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div style="text-align: center; padding: 20px; color: #999; font-style: italic;">
+          Nenhuma foto anexada a esta ficha
+        </div>
+      `}
     </div>
 
+    ${photosWithUrls.length > 0 ? `
     <!-- Modal de Fotos -->
     <div id="photoModal" class="photo-modal" onclick="closePhotoModalOnBackdrop(event)">
       <button class="modal-close" onclick="closePhotoModal()">&times;</button>
@@ -79,14 +210,14 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
       <div class="modal-content">
         ${photosWithUrls.map((foto, index) => `
           <div class="modal-photo" id="modal-photo-${index}" style="display: ${index === 0 ? 'flex' : 'none'};">
-            <img src="${foto.url}" alt="${foto.name}">
+            <img src="${foto.url}" alt="${escapeHtml(foto.name)}">
             <div class="modal-photo-info">
-              <div class="modal-photo-name">${foto.name}</div>
+              <div class="modal-photo-name">${escapeHtml(foto.name)}</div>
               <div class="modal-photo-actions">
-                <button onclick="downloadModalPhoto('${foto.url}', '${foto.name}')" class="modal-btn">
+                <button onclick="downloadModalPhoto('${escapeJs(foto.url)}', '${escapeJs(foto.name)}')" class="modal-btn">
                   📥 Baixar
                 </button>
-                <button onclick="printModalPhoto('${foto.url}', '${foto.name}')" class="modal-btn">
+                <button onclick="printModalPhoto('${escapeJs(foto.url)}', '${escapeJs(foto.name)}')" class="modal-btn">
                   🖨️ Imprimir
                 </button>
               </div>
@@ -101,7 +232,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
         </div>
       ` : ''}
     </div>
-  ` : '';
+    ` : ''}
+  `;
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -159,8 +291,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
             background: #fff;
             border: 1px solid #dee2e6;
             border-radius: 4px;
-            padding: 8px;
-            margin-bottom: 6px;
+            padding: 6px;
+            margin-bottom: 4px;
             page-break-inside: avoid;
         }
 
@@ -169,13 +301,13 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
             font-weight: 700;
             color: #000;
             border-bottom: 1px solid #dee2e6;
-            padding-bottom: 4px;
-            margin-bottom: 6px;
+            padding-bottom: 3px;
+            margin-bottom: 4px;
         }
 
         .field-grid {
             display: grid;
-            gap: 4px;
+            gap: 3px;
         }
 
         .grid-2 { grid-template-columns: 1fr 1fr; }
@@ -391,8 +523,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
     <!-- DADOS DO CLIENTE -->
     <div class="section-card">
         <div class="section-title">👤 DADOS DO CLIENTE</div>
-        <div class="field-grid grid-4">
-            <div class="field" style="grid-column: span 2;">
+        <div class="field-grid grid-3">
+            <div class="field">
                 <div class="field-label">Cliente</div>
                 <div class="field-value highlight">${formatValue(ficha.formData.cliente)}</div>
             </div>
@@ -422,8 +554,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
     <!-- PEÇA/EQUIPAMENTO -->
     <div class="section-card">
         <div class="section-title">⚙️ DADOS DA PEÇA/EQUIPAMENTO</div>
-        <div class="field-grid grid-4">
-            <div class="field" style="grid-column: span 3;">
+        <div class="field-grid grid-3">
+            <div class="field" style="grid-column: span 2;">
                 <div class="field-label">Nome da Peça/Equipamento</div>
                 <div class="field-value highlight">${formatValue(ficha.formData.nome_peca)}</div>
             </div>
@@ -431,17 +563,17 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
                 <div class="field-label">Quantidade</div>
                 <div class="field-value">${formatValue(ficha.formData.quantidade)}</div>
             </div>
-        </div>
-        <div class="field" style="margin-top: 4px;">
-            <div class="field-label">Serviço a ser Realizado</div>
-            <div class="field-value">${formatValue(ficha.formData.servico)}</div>
+            <div class="field" style="grid-column: span 3;">
+                <div class="field-label">Serviço a ser Realizado</div>
+                <div class="field-value">${formatValue(ficha.formData.servico)}</div>
+            </div>
         </div>
     </div>
 
     <!-- 🔩 PEÇAS E AMOSTRAS -->
     <div class="section-card">
         <div class="section-title">🔩 PEÇAS E AMOSTRAS</div>
-        <div class="field-grid grid-4">
+        <div class="field-grid grid-3">
             <div class="field">
                 <div class="field-label">Cliente forneceu peça amostra</div>
                 <div class="field-value">${formatRadio(ficha.formData.tem_peca_amostra)}</div>
@@ -458,10 +590,10 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
                 <div class="field-label">Precisa peça de teste</div>
                 <div class="field-value">${formatRadio(ficha.formData.precisa_peca_teste)}</div>
             </div>
-        </div>
-        <div class="field" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
-            <div class="field-label">Responsável Técnico</div>
-            <div class="field-value" style="font-weight: 600; color: #3b82f6;">${formatValue(ficha.formData.responsavel_tecnico)}</div>
+            <div class="field" style="grid-column: span 2;">
+                <div class="field-label">Responsável Técnico</div>
+                <div class="field-value" style="font-weight: 600; color: #3b82f6;">${formatValue(ficha.formData.responsavel_tecnico)}</div>
+            </div>
         </div>
     </div>
 
@@ -628,8 +760,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
         <div class="section-title">⏱️ HORAS DE PRODUÇÃO</div>
 
         <!-- 🔧 GRUPO 1: TORNOS E USINAGEM -->
-        <div style="margin-bottom: 12px;">
-            <div style="font-size: 13px; font-weight: 600; color: #666; margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px solid #e0e0e0;">🔧 Tornos e Usinagem</div>
+        <div style="margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 4px; padding-bottom: 1px; border-bottom: 1px solid #e0e0e0;">🔧 Tornos e Usinagem</div>
             <div class="hours-grid">
                 <div class="hour-item"><span class="hour-label">Torno 1200mm:</span><span class="hour-value">${formatHours(ficha.formData.torno_grande)}</span></div>
                 <div class="hour-item"><span class="hour-label">Torno 650mm:</span><span class="hour-value">${formatHours(ficha.formData.torno_pequeno)}</span></div>
@@ -641,8 +773,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
         </div>
 
         <!-- ⚙️ GRUPO 2: CORTE E CONFORMAÇÃO -->
-        <div style="margin-bottom: 12px;">
-            <div style="font-size: 13px; font-weight: 600; color: #666; margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px solid #e0e0e0;">⚙️ Corte e Conformação</div>
+        <div style="margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 4px; padding-bottom: 1px; border-bottom: 1px solid #e0e0e0;">⚙️ Corte e Conformação</div>
             <div class="hours-grid">
                 <div class="hour-item"><span class="hour-label">Plasma/Oxicorte:</span><span class="hour-value">${formatHours(ficha.formData.plasma_oxicorte)}</span></div>
                 <div class="hour-item"><span class="hour-label">Maçarico:</span><span class="hour-value">${formatHours(ficha.formData.macarico)}</span></div>
@@ -655,8 +787,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
         </div>
 
         <!-- 🔩 GRUPO 3: MONTAGEM E ESPECIAIS -->
-        <div style="margin-bottom: 12px;">
-            <div style="font-size: 13px; font-weight: 600; color: #666; margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px solid #e0e0e0;">🔩 Montagem e Especiais</div>
+        <div style="margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 4px; padding-bottom: 1px; border-bottom: 1px solid #e0e0e0;">🔩 Montagem e Especiais</div>
             <div class="hours-grid">
                 <div class="hour-item"><span class="hour-label">Desmontagem:</span><span class="hour-value">${formatHours(ficha.formData.des_montg)}</span></div>
                 <div class="hour-item"><span class="hour-label">Montagem:</span><span class="hour-value">${formatHours(ficha.formData.montagem)}</span></div>
@@ -732,6 +864,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
         </div>
     </div>
 
+    ${orcamento ? generateBudgetSectionHTML(orcamento) : ''}
+
     <script>
       let currentPhotoIndex = 0;
       const totalPhotos = ${photosWithUrls.length};
@@ -783,13 +917,12 @@ export async function generateCompactHTMLContent(ficha: FichaSalva): Promise<str
       function printModalPhoto(url, photoName) {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
-        printWindow.document.write(\`
-          <!DOCTYPE html>
-          <html><head><title>Imprimir - \${photoName}</title>
-          <style>* { margin: 0; padding: 0; } body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-          img { max-width: 100%; max-height: 100vh; object-fit: contain; }</style>
-          </head><body><img src="\${url}" alt="\${photoName}" onload="window.print();"></body></html>
-        \`);
+
+        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Foto</title>';
+        html += '<style>*{margin:0;padding:0}body{display:flex;align-items:center;justify-content:center;min-height:100vh}';
+        html += 'img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body>';
+        html += '<img src="' + url + '" onload="window.print()"></body></html>';
+        printWindow.document.write(html);
         printWindow.document.close();
       }
 
@@ -833,4 +966,583 @@ export async function openHTMLInNewWindow(ficha: FichaSalva): Promise<void> {
     newWindow.document.write(htmlContent);
     newWindow.document.close();
   }
+}
+
+/**
+ * Gera os 3 modais de aprovação (aprovar, alterar, rejeitar)
+ */
+function gerarModaisAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: string, supabaseAnonKey: string, versaoFTC?: number): string {
+  return `
+    <!-- Modal Aprovar -->
+    <div id="modal-aprovar" class="modal">
+      <div class="modal-content-approval">
+        <button class="modal-close" onclick="fecharModal('aprovar')">&times;</button>
+        <div id="form-aprovar">
+          <h2 class="modal-title">✅ Aprovar Ficha Técnica</h2>
+          <form id="form-aprovacao-aprovar" onsubmit="submitAprovacao(event, 'aprovar')">
+            <div class="form-group">
+              <label class="form-label">Nome do Responsável *</label>
+              <input type="text" class="form-input" id="responsavel-aprovar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input type="email" class="form-input" id="email-aprovar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Telefone</label>
+              <input type="tel" class="form-input" id="telefone-aprovar" placeholder="(XX) XXXXX-XXXX">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Observações</label>
+              <textarea class="form-input" id="observacoes-aprovar"></textarea>
+            </div>
+            <button type="submit" class="btn-submit btn-submit-aprovar">✅ Confirmar Aprovação</button>
+          </form>
+        </div>
+        <div id="success-aprovar" class="success-message" style="display: none;">
+          <h3>✅ Ficha Aprovada!</h3>
+          <p>Sua aprovação foi registrada com sucesso. Obrigado!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Alterar -->
+    <div id="modal-alterar" class="modal">
+      <div class="modal-content-approval">
+        <button class="modal-close" onclick="fecharModal('alterar')">&times;</button>
+        <div id="form-alterar">
+          <h2 class="modal-title">🔄 Solicitar Alterações</h2>
+          <form id="form-aprovacao-alterar" onsubmit="submitAprovacao(event, 'alterar')">
+            <div class="form-group">
+              <label class="form-label">Nome do Responsável *</label>
+              <input type="text" class="form-input" id="responsavel-alterar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input type="email" class="form-input" id="email-alterar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Telefone</label>
+              <input type="tel" class="form-input" id="telefone-alterar" placeholder="(XX) XXXXX-XXXX">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Alterações Solicitadas *</label>
+              <textarea class="form-input" id="observacoes-alterar" required placeholder="Descreva as alterações necessárias..."></textarea>
+            </div>
+            <button type="submit" class="btn-submit btn-submit-alterar">🔄 Enviar Solicitação</button>
+          </form>
+        </div>
+        <div id="success-alterar" class="success-message" style="display: none;">
+          <h3>🔄 Alterações Solicitadas!</h3>
+          <p>Sua solicitação foi registrada. Entraremos em contato em breve!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Rejeitar -->
+    <div id="modal-rejeitar" class="modal">
+      <div class="modal-content-approval">
+        <button class="modal-close" onclick="fecharModal('rejeitar')">&times;</button>
+        <div id="form-rejeitar">
+          <h2 class="modal-title">❌ Rejeitar Ficha Técnica</h2>
+          <form id="form-aprovacao-rejeitar" onsubmit="submitAprovacao(event, 'rejeitar')">
+            <div class="form-group">
+              <label class="form-label">Nome do Responsável *</label>
+              <input type="text" class="form-input" id="responsavel-rejeitar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input type="email" class="form-input" id="email-rejeitar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Telefone</label>
+              <input type="tel" class="form-input" id="telefone-rejeitar" placeholder="(XX) XXXXX-XXXX">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Motivo da Rejeição *</label>
+              <textarea class="form-input" id="observacoes-rejeitar" required placeholder="Por favor, explique o motivo da rejeição..."></textarea>
+            </div>
+            <button type="submit" class="btn-submit btn-submit-rejeitar">❌ Confirmar Rejeição</button>
+          </form>
+        </div>
+        <div id="success-rejeitar" class="success-message" style="display: none;">
+          <h3>❌ Ficha Rejeitada</h3>
+          <p>Sua resposta foi registrada. Entraremos em contato em breve!</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Gera os scripts JavaScript para o sistema de aprovação
+ */
+function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: string, supabaseAnonKey: string, versaoFTC?: number): string {
+  // Usar string normal ao invés de template literal para evitar conflito de interpolação
+  return `
+  <script>
+    // Validação de status da ficha
+    window.validarStatusFicha = async function() {
+      console.log('🔍 Validando status da ficha...');
+
+      try {
+        const response = await fetch(
+          '${supabaseUrl}' + '/rest/v1/fichas_tecnicas?id=eq.' + '${fichaId}' + '&select=status,versao_ftc_atual',
+          {
+            method: 'GET',
+            headers: {
+              'apikey': '${supabaseAnonKey}',
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!response.ok) {
+          console.error('❌ Erro ao consultar status da ficha');
+          return false;
+        }
+
+        const fichas = await response.json();
+
+        if (!fichas || fichas.length === 0) {
+          console.error('❌ Ficha não encontrada');
+          return false;
+        }
+
+        const ficha = fichas[0];
+        const statusValidos = ['orcamento_enviado_cliente', 'aguardando_orcamento_comercial'];
+
+        console.log('📋 Status atual:', ficha.status);
+        console.log('📦 Versão FTC atual:', ficha.versao_ftc_atual);
+        console.log('📦 Versão desta FTC:', ${versaoFTC !== undefined ? versaoFTC : 'null'});
+
+        // Validar status
+        if (!statusValidos.includes(ficha.status)) {
+          console.warn('⚠️ Ficha não está em status válido');
+          alert(
+            '⚠️ FICHA TÉCNICA DESATUALIZADA\\n\\n' +
+            'Esta ficha técnica foi estornada ou modificada.\\n\\n' +
+            'Por favor, entre em contato conosco para obter uma versão atualizada.\\n\\n' +
+            'Contato: contato@hmcusinagem.com.br'
+          );
+          return false;
+        }
+
+        // Validar versão FTC
+        if (${versaoFTC !== undefined ? 'true' : 'false'}) {
+          if (ficha.versao_ftc_atual !== ${versaoFTC || 0}) {
+            console.warn('⚠️ Versão FTC desatualizada');
+            alert(
+              '⚠️ FICHA TÉCNICA DESATUALIZADA\\n\\n' +
+              'Esta é uma versão antiga da ficha técnica.\\n' +
+              'Uma versão mais recente foi gerada.\\n\\n' +
+              'Por favor, solicite a versão atualizada.\\n\\n' +
+              'Contato: contato@hmcusinagem.com.br'
+            );
+            return false;
+          }
+        }
+
+        console.log('✅ Status e versão válidos');
+        return true;
+      } catch (error) {
+        console.error('❌ Erro ao validar status:', error);
+        alert(
+          '⚠️ ERRO DE CONEXÃO\\n\\n' +
+          'Não foi possível validar o status desta ficha técnica.\\n\\n' +
+          'Por favor, tente novamente mais tarde ou entre em contato conosco.'
+        );
+        return false;
+      }
+    };
+
+    // Abrir modal
+    window.abrirModalAprovacao = async function(tipo) {
+      console.log('🔵 Abrindo modal:', tipo);
+
+      // Validar status antes de abrir modal
+      const statusValido = await window.validarStatusFicha();
+      if (!statusValido) {
+        console.log('❌ Status inválido, modal não será aberto');
+        return;
+      }
+
+      console.log('✅ Status válido, abrindo modal...');
+      const modal = document.getElementById('modal-' + tipo);
+      if (modal) {
+        modal.style.display = 'block';
+      }
+    };
+
+    // Fechar modal
+    window.fecharModal = function(tipo) {
+      const modal = document.getElementById('modal-' + tipo);
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    };
+
+    // Fechar ao clicar fora
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+      }
+    };
+
+    // Submit aprovação
+    window.submitAprovacao = async function(event, tipo) {
+      event.preventDefault();
+
+      const responsavel = document.getElementById('responsavel-' + tipo).value;
+      const email = document.getElementById('email-' + tipo).value;
+      const telefone = document.getElementById('telefone-' + tipo).value || null;
+      const observacoes = document.getElementById('observacoes-' + tipo).value || null;
+
+      try {
+        // Enviar para Supabase (tabela aprovacoes_ftc_cliente)
+        const response = await fetch(
+          '${supabaseUrl}' + '/rest/v1/aprovacoes_ftc_cliente',
+          {
+            method: 'POST',
+            headers: {
+              'apikey': '${supabaseAnonKey}',
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              ficha_id: '${fichaId}',
+              numero_ftc: '${numeroFTC}',
+              tipo: tipo,
+              responsavel: responsavel,
+              email: email,
+              telefone: telefone,
+              observacoes: observacoes,
+              versao_ftc: ${versaoFTC || 0},
+              ip_address: null,
+              user_agent: navigator.userAgent
+            })
+          }
+        );
+
+        if (response.ok) {
+          // Esconder formulário, mostrar sucesso
+          document.getElementById('form-' + tipo).style.display = 'none';
+          document.getElementById('success-' + tipo).style.display = 'block';
+
+          // Fechar modal após 3 segundos
+          setTimeout(() => {
+            fecharModal(tipo);
+            // Resetar para próxima vez
+            setTimeout(() => {
+              document.getElementById('form-' + tipo).style.display = 'block';
+              document.getElementById('success-' + tipo).style.display = 'none';
+              document.getElementById('form-aprovacao-' + tipo).reset();
+            }, 500);
+          }, 3000);
+        } else {
+          const errorData = await response.json();
+          console.error('Erro ao enviar aprovação:', errorData);
+          alert('Erro ao enviar aprovação. Por favor, tente novamente ou entre em contato conosco.');
+        }
+      } catch (error) {
+        console.error('Erro ao enviar aprovação:', error);
+        alert('Erro ao enviar aprovação. Por favor, verifique sua conexão e tente novamente.');
+      }
+    };
+
+    // Event listeners nos botões
+    document.addEventListener('DOMContentLoaded', function() {
+      const botoesAprovacao = document.querySelectorAll('.btn[data-tipo]');
+      console.log('🔘 Botões de aprovação encontrados:', botoesAprovacao.length);
+
+      botoesAprovacao.forEach(btn => {
+        const tipo = btn.getAttribute('data-tipo');
+        console.log('✅ Adicionando listener para botão:', tipo);
+
+        btn.addEventListener('click', function() {
+          console.log('🖱️ Botão clicado:', tipo);
+          abrirModalAprovacao(tipo);
+        });
+      });
+    });
+  </script>
+  `;
+}
+
+/**
+ * Interface para dados necessários ao sistema de aprovação
+ */
+interface ApprovalSystemData {
+  ficha: FichaSalva;
+  versaoFTC?: number;
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+}
+
+/**
+ * Gera HTML com sistema de aprovação integrado
+ * Usa o mesmo layout compacto do botão "Imprimir" + sistema de aprovação no final
+ */
+export async function generateHTMLWithApproval(dados: ApprovalSystemData): Promise<string> {
+  const { ficha, versaoFTC, supabaseUrl, supabaseAnonKey } = dados;
+
+  // 1. Parsear dados do orçamento se existirem
+  let orcamento: OrcamentoData | null = null;
+  if (ficha.formData?.dados_orcamento) {
+    try {
+      orcamento = typeof ficha.formData.dados_orcamento === 'string'
+        ? JSON.parse(ficha.formData.dados_orcamento)
+        : ficha.formData.dados_orcamento;
+    } catch (error) {
+      console.error('Erro ao parsear dados_orcamento:', error);
+    }
+  }
+
+  // 2. Gerar HTML compacto base com orçamento (se houver)
+  let htmlBase = await generateCompactHTMLContent(ficha, orcamento);
+
+  // 2. Injetar CSS adicional para modais de aprovação (antes de </style>)
+  const approvalCSS = `
+    /* ========== ESTILOS DE APROVAÇÃO ========== */
+    .approval-section {
+      margin-top: 40px;
+      padding: 30px;
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+      border-radius: 12px;
+      border: 2px solid #10b981;
+    }
+
+    .approval-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #065f46;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .btn-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 15px 25px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn-aprovar {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-aprovar:hover {
+      background: #059669;
+    }
+
+    .btn-alterar {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-alterar:hover {
+      background: #d97706;
+    }
+
+    .btn-rejeitar {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-rejeitar:hover {
+      background: #dc2626;
+    }
+
+    /* Modais de aprovação */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-content-approval {
+      background: white;
+      margin: 10% auto;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      position: relative;
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #111827;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-family: inherit;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    textarea.form-input {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-submit-aprovar {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-submit-aprovar:hover {
+      background: #059669;
+    }
+
+    .btn-submit-alterar {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-submit-alterar:hover {
+      background: #d97706;
+    }
+
+    .btn-submit-rejeitar {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-submit-rejeitar:hover {
+      background: #dc2626;
+    }
+
+    .success-message {
+      background: #d1fae5;
+      border: 2px solid #10b981;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .success-message h3 {
+      color: #065f46;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .success-message p {
+      color: #047857;
+    }
+
+    @media (max-width: 768px) {
+      .btn-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      .approval-section {
+        display: none !important;
+      }
+    }
+  `;
+
+  htmlBase = htmlBase.replace('</style>', approvalCSS + '\n    </style>');
+
+  // 3. Adicionar seção de aprovação (antes de </body>)
+  const approvalSection = `
+    <!-- SISTEMA DE APROVAÇÃO -->
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+      <div class="approval-section">
+        <div class="approval-title">
+          ✅ APROVAÇÃO DA FICHA TÉCNICA
+        </div>
+        <p style="text-align: center; color: #065f46; margin-bottom: 20px;">
+          Por favor, revise a ficha técnica acima e indique sua aprovação:
+        </p>
+        <div class="btn-container">
+          <button class="btn btn-aprovar" data-tipo="aprovar">
+            ✅ Aprovar Ficha
+          </button>
+          <button class="btn btn-alterar" data-tipo="alterar">
+            🔄 Solicitar Alterações
+          </button>
+          <button class="btn btn-rejeitar" data-tipo="rejeitar">
+            ❌ Rejeitar Ficha
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAIS DE APROVAÇÃO -->
+  ` + gerarModaisAprovacao(ficha.numeroFTC, ficha.id, supabaseUrl, supabaseAnonKey, versaoFTC) + `
+
+    <!-- SCRIPTS DE APROVAÇÃO -->
+  ` + gerarScriptsAprovacao(ficha.numeroFTC, ficha.id, supabaseUrl, supabaseAnonKey, versaoFTC);
+
+  // Substituir ÚLTIMA ocorrência de </body> (não a primeira que pode estar em strings JS)
+  const lastBodyIndex = htmlBase.lastIndexOf('</body>');
+  if (lastBodyIndex !== -1) {
+    htmlBase = htmlBase.substring(0, lastBodyIndex) + approvalSection + '\n' + htmlBase.substring(lastBodyIndex);
+  }
+
+  return htmlBase;
 }

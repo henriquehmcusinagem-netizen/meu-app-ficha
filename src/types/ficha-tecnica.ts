@@ -62,7 +62,8 @@ export interface FormData {
   // 🆕 NOVOS CAMPOS EXTRAS
   observacoes_adicionais: string; // Textarea para observações gerais
   prioridade: string; // Baixa | Normal | Alta | Emergência
-  
+  dados_orcamento?: string; // JSON estruturado do orçamento (OrcamentoData)
+
   // Horas de Serviço - CAMPOS ANTIGOS (manter por compatibilidade)
   horas_por_peca: string;
   horas_todas_pecas: string;
@@ -133,6 +134,58 @@ export interface Calculos {
   materialTodasPecas: number;
 }
 
+// 📊 ORÇAMENTO - Interfaces para geração de orçamentos
+export interface OrcamentoItem {
+  id: number;
+  item: string;                      // Numeração (1, 2, 3...)
+  quantidade: number;
+  descricao: string;                 // Nome da Peça
+  valorUnitario: number;
+  valorTotal: number;
+}
+
+export interface OrcamentoData {
+  // Itens do orçamento
+  itens: OrcamentoItem[];
+
+  // Formação de preço
+  custoBase: {
+    materiaisCotados: number;        // Auto-calculado dos materiais
+    materiasPrimaEstoque: number;    // Input manual
+    servicosTerceiros: number;       // Input manual
+    horasProducao: {
+      horas: number;                 // Auto-calculado (campos de produção)
+      valorHora: number;             // Input manual (R$/h) - padrão R$ 53,00
+      total: number;                 // Auto-calculado
+    };
+    horasDespesasFixas: {
+      horas: number;                 // Auto-calculado (eng, técnico, CAM, lavagem, acabamento)
+      valorHora: number;             // Input manual (R$/h) - padrão R$ 0,00
+      total: number;                 // Auto-calculado
+    };
+    totalCustoIndustrial: number;    // Auto-calculado
+  };
+
+  // Percentuais
+  percentuais: {
+    despesasVariaveis: number;       // % Input
+    despesasFixas: number;           // % Input
+    margemLucro: number;             // % Input
+  };
+
+  // Configurações
+  config: {
+    prazoEntrega: number;            // dias
+    validadeProposta: number;        // dias
+    prazoPagamento: number;          // dias
+    condicoesPagamento: string;
+    garantia: number;                // dias
+  };
+
+  // Preço final calculado
+  precoVendaFinal: number;
+}
+
 export const clientesPredefinidos = [
   "BTP", "TEG", "TEAG", "TES", "DPWORLD", "ECOPORTO", "T39", 
   "SANTOS BRASIL", "MILLS", "ADM", "CLI - RUMO", "TGG", "CMOC", 
@@ -143,15 +196,14 @@ export const clientesPredefinidos = [
 ];
 
 // Status da Ficha Técnica - Fluxo Completo
+// Atenção: Estes valores devem estar SINCRONIZADOS com a constraint do banco
+// Ver migration: 20250926104505_update_status_constraint.sql
 export type StatusFicha =
   | 'rascunho'                        // Técnico ainda preenchendo
-  | 'preenchida'                      // Técnico finalizou preenchimento
-  | 'finalizada'                      // Ficha completamente finalizada
-  | 'aguardando_cotacao'              // Aguardando cotação geral
-  | 'orcamento_gerado'                // Orçamento foi gerado
+  | 'preenchida'                      // Técnico finalizou preenchimento (status intermediário)
   | 'aguardando_cotacao_compras'      // Aguardando compras cotar materiais
-  | 'aguardando_orcamento_comercial'  // Compras cotou, aguardando comercial
-  | 'orcamento_enviado_cliente';      // Comercial gerou e enviou orçamento
+  | 'aguardando_orcamento_comercial'  // Compras cotou, aguardando comercial gerar orçamento
+  | 'orcamento_enviado_cliente';      // Comercial gerou e enviou orçamento ao cliente
 
 // Interface for saved fichas
 export interface FichaSalva {
@@ -160,6 +212,8 @@ export interface FichaSalva {
   dataCriacao: string;
   dataUltimaEdicao: string;
   status: StatusFicha;
+  versao_orcamento_atual?: number; // 🆕 Versão atual do orçamento (incrementada a cada geração)
+  versao_ftc_atual?: number; // 🆕 Versão atual da FTC Cliente (incrementada a cada geração)
   formData: FormData;
   materiais: Material[];
   fotos: Foto[]; // Now includes both new photos and saved photos with real URLs

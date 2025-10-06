@@ -17,6 +17,12 @@ const NovaFicha = lazy(() => import("./pages/NovaFicha"));
 const ConsultarFichas = lazy(() => import("./pages/ConsultarFichas"));
 const AdminUsuarios = lazy(() => import("./pages/AdminUsuarios"));
 
+// Lazy load dos novos módulos (Feature Flags)
+const Compras = lazy(() => import("./pages/Compras"));
+const Comercial = lazy(() => import("./pages/Comercial"));
+const PCP = lazy(() => import("./pages/PCP"));
+const Producao = lazy(() => import("./pages/Producao"));
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -64,6 +70,35 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/view-html/:filePath" element={<HTMLViewer />} />
+              {/* Novos módulos com Feature Flags */}
+              <Route path="/compras" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <Compras />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/comercial" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <Comercial />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/pcp" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <PCP />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/producao" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <Producao />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

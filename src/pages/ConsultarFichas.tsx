@@ -11,6 +11,7 @@ import { FichaSalva, Foto, STATUS_CONFIG, StatusFicha } from '@/types/ficha-tecn
 import { formatCurrency } from '@/utils/helpers';
 import { UniversalFichaTable } from '@/components/FichaTecnica/UniversalFichaTable';
 import { RevertConfirmModal } from '@/components/FichaTecnica/RevertConfirmModal';
+import { OrcamentoModal } from '@/components/FichaTecnica/OrcamentoModal';
 import { generateHTMLContent } from '@/utils/htmlGenerator';
 import { useFichasQuery } from '@/hooks/useFichasQuery';
 import { estornarFicha } from '@/utils/supabaseStorage';
@@ -32,6 +33,8 @@ export default function ConsultarFichas() {
   const [showRevertModal, setShowRevertModal] = useState(false);
   const [fichaToRevert, setFichaToRevert] = useState<FichaSalva | null>(null);
   const [isReverting, setIsReverting] = useState(false);
+  const [showOrcamentoModal, setShowOrcamentoModal] = useState(false);
+  const [fichaParaOrcamento, setFichaParaOrcamento] = useState<FichaSalva | null>(null);
 
   // Configuração da paginação - 8 fichas para melhor visualização
   const ITEMS_PER_PAGE = 8;
@@ -201,6 +204,20 @@ export default function ConsultarFichas() {
   const handleRevertFicha = (ficha: FichaSalva) => {
     setFichaToRevert(ficha);
     setShowRevertModal(true);
+  };
+
+  const handleGerarOrcamento = (ficha: FichaSalva) => {
+    setFichaParaOrcamento(ficha);
+    setShowOrcamentoModal(true);
+  };
+
+  const handleOrcamentoCriado = (orcamentoData: any) => {
+    toast({
+      title: "Orçamento criado e enviado!",
+      description: `Orçamento para FTC ${fichaParaOrcamento?.numeroFTC} foi criado e enviado com sucesso.`
+    });
+    setShowOrcamentoModal(false);
+    setFichaParaOrcamento(null);
   };
 
   const confirmRevertFicha = async (motivo: string) => {
@@ -434,7 +451,8 @@ export default function ConsultarFichas() {
                 onView={(ficha) => handleViewFicha(ficha.id)}
                 onClone={(ficha) => handleCloneFicha(ficha.id)}
                 onRevert={handleRevertFicha}
-                showActions={{ edit: true, delete: true, view: true, clone: true, share: true, revert: true }}
+                onOrcamento={handleGerarOrcamento}
+                showActions={{ edit: true, delete: true, view: true, clone: true, share: true, revert: true, orcamento: true }}
                 columns={{
                   numeroFTC: true,
                   cliente: true,
@@ -510,6 +528,17 @@ export default function ConsultarFichas() {
         onConfirm={confirmRevertFicha}
         ficha={fichaToRevert}
         isReverting={isReverting}
+      />
+
+      {/* Orçamento Modal */}
+      <OrcamentoModal
+        open={showOrcamentoModal}
+        onClose={() => {
+          setShowOrcamentoModal(false);
+          setFichaParaOrcamento(null);
+        }}
+        onCreateOrcamento={handleOrcamentoCriado}
+        fichaTecnica={fichaParaOrcamento || undefined}
       />
 
     </div>

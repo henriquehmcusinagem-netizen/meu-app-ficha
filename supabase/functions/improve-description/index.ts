@@ -22,7 +22,7 @@ serve(async (req) => {
   }
 
   try {
-    const { currentText } = await req.json();
+    const { currentText, imageUrls } = await req.json();
 
     if (!currentText?.trim()) {
       throw new Error('Texto não pode estar vazio');
@@ -43,6 +43,31 @@ serve(async (req) => {
     }
 
     console.log('Chamando OpenAI API para melhorar descrição...');
+    if (imageUrls?.length > 0) {
+      console.log(`📸 Analisando ${imageUrls.length} foto(s) da peça`);
+    }
+
+    // Construir mensagem do usuário com texto e imagens (se houver)
+    const userMessageContent: any[] = [
+      {
+        type: 'text',
+        text: `Melhore este descritivo técnico de serviço industrial:\n\n"${currentText}"`
+      }
+    ];
+
+    // Adicionar imagens se fornecidas (máximo 4 para não estourar o token limit)
+    if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0) {
+      const maxImages = Math.min(imageUrls.length, 4);
+      for (let i = 0; i < maxImages; i++) {
+        userMessageContent.push({
+          type: 'image_url',
+          image_url: {
+            url: imageUrls[i],
+            detail: 'low' // Usa menos tokens
+          }
+        });
+      }
+    }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -55,45 +80,35 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Você é um **Agente Técnico Especialista em Relatórios e Escopos da HMC Usinagem**.
-Sua função é transformar textos técnicos brutos enviados pelo usuário em **descrições claras, organizadas e profissionais**, sempre no formato **Análise de Peritagem + Escopo Técnico**.
+            content: `Você é um **Engenheiro Mecânico Especialista em Relatórios Técnicos da HMC Usinagem**.
 
-### **Regras de atuação**
+Sua função é transformar textos técnicos brutos em **análises profissionais e claras**, seguindo este formato:
 
-1. Sempre mostrar o resultado neste formato:
-
-\`\`\`
-Descritivo Técnico Melhorado pela IA
-Texto Original:
-(texto enviado pelo usuário)
-
-Texto Melhorado pela IA:
 ## Análise de Peritagem
-(descrição técnica resumida dos problemas ou justificativas para intervenção)
+(Primeiro parágrafo: descrição técnica resumida da peça, função e aplicação industrial)
 
 ## Escopo Técnico
-- (listar serviços de forma clara, técnica e profissional)
-- (incluir materiais, processos e observações importantes)
-\`\`\`
 
-2. O texto melhorado deve ser **mais técnico, convincente e fácil de entender**, destacando:
+- **Processos de Fabricação**: (Listar processos técnicos necessários - usinagem CNC, soldagem AWS, plasma, tratamentos superficiais, etc.)
 
-   * Materiais (aço SAE, ASTM, etc.).
-   * Processos (usinagem CNC, plasma, solda, pintura epóxi, testes LP etc.).
-   * Folgas, medidas, tolerâncias.
-   * Observações (quando não há garantia, quando depende de aprovação etc.).
+- **Requisitos de Qualidade**: (Normas técnicas aplicáveis como ASTM, ISO, tolerâncias dimensionais, acabamento superficial)
 
-3. Sempre que o texto enviado for **simples ou bagunçado**, você deve organizar, padronizar e entregar o **escopo técnico finalizado**.
+- **Considerações Técnicas**: (Material recomendado como aço SAE, aspectos críticos do projeto, observações importantes sobre aprovações e garantias)
 
-4. Nunca inventar serviços além do informado. Apenas **organizar, corrigir e padronizar**.
+**REGRAS IMPORTANTES**:
+1. Retorne APENAS o conteúdo formatado acima, sem títulos extras como "Descritivo Técnico Melhorado" ou "Texto Original"
+2. Seja técnico, objetivo e profissional usando terminologia da engenharia mecânica
+3. Não invente serviços além do informado - apenas organize e padronize
+4. Use materiais específicos (SAE 1045, ASTM A36, etc.) quando aplicável
+5. Inclua tolerâncias típicas (±0,05 mm) e acabamento (Ra 1,6 µm) quando relevante
 
-Responda APENAS com o texto melhorado no formato estruturado, sem explicações adicionais.`
+Responda DIRETAMENTE com o conteúdo formatado, sem preamble ou texto adicional.
+
+**ATENÇÃO**: Se houver fotos fornecidas, analise-as para identificar características visíveis da peça (forma, estado, material aparente, dimensões estimadas, desgaste, etc.) e incorpore essas informações na análise.`
           },
           {
             role: 'user',
-            content: `Melhore este descritivo técnico de serviço industrial:
-
-"${currentText}"`
+            content: userMessageContent
           }
         ],
         max_tokens: 800,
@@ -124,10 +139,31 @@ Responda APENAS com o texto melhorado no formato estruturado, sem explicações 
       throw new Error('Resposta inválida da API OpenAI');
     }
 
-    const improvedText = data.choices[0].message.content.trim();
+    let improvedText = data.choices[0].message.content.trim();
 
     if (!improvedText) {
       throw new Error('API OpenAI retornou resposta vazia');
+    }
+
+    // 🧹 Remover headers extras que o GPT possa ter incluído
+    // Remove "Descritivo Técnico Melhorado pela IA" e variações
+    improvedText = improvedText.replace(/^.*?Descritivo Técnico.*?\n*/gmi, '');
+    improvedText = improvedText.replace(/^.*?Texto Original:.*?\n*/gmi, '');
+    improvedText = improvedText.replace(/^.*?Texto Melhorado.*?\n*/gmi, '');
+
+    // Remove blocos de código markdown se houver
+    improvedText = improvedText.replace(/^```[\s\S]*?```$/gm, '');
+
+    // Remove linhas vazias no início
+    improvedText = improvedText.replace(/^\s*\n+/, '');
+
+    // Garante que começa com "## Análise" ou o primeiro parágrafo
+    if (!improvedText.startsWith('## Análise') && !improvedText.match(/^[A-Z]/)) {
+      // Se ainda tiver lixo no início, procura onde começa o conteúdo real
+      const match = improvedText.match(/(## Análise|[A-Z][a-z]+.*)/);
+      if (match) {
+        improvedText = improvedText.substring(match.index || 0);
+      }
     }
 
     console.log('Descrição melhorada com sucesso');

@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Download, Paperclip, Link, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FichaSalva } from "@/types/ficha-tecnica";
-import { downloadHTML, openHTMLInNewWindow, generateHTMLContent } from "@/utils/htmlGenerator";
+import { downloadHTML, openHTMLInNewWindow, generateHTMLContent, generateHTMLWithApproval } from "@/utils/htmlGenerator";
 import { getAppBaseUrl } from "@/utils/helpers";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateTotals } from "@/utils/calculations";
 import { getCurrentDate } from "@/utils/helpers";
+import { carregarFotosFicha } from "@/utils/supabaseStorage";
 
 interface ShareActionsProps {
   ficha: FichaSalva;
@@ -19,7 +20,25 @@ export function ShareActions({ ficha, variant = 'compact', showLabels = false }:
 
   const uploadHTMLAndGetLink = async (): Promise<string | null> => {
     try {
-      const htmlContent = generateHTMLContent(ficha);
+      // 🔧 FIX: Carregar fotos da ficha antes de gerar HTML
+      console.log('📸 Carregando fotos para fichaId:', ficha.id);
+      const fotos = await carregarFotosFicha(ficha.id);
+      console.log('✅ Fotos carregadas:', fotos.length);
+
+      // Criar nova ficha com fotos carregadas
+      const fichaComFotos: FichaSalva = { ...ficha, fotos };
+
+      // 🔑 DECISÃO: Tem orçamento? Usa HTML com aprovação
+      const temOrcamento = fichaComFotos.formData.dados_orcamento;
+
+      const htmlContent = temOrcamento
+        ? await generateHTMLWithApproval({
+            ficha: fichaComFotos,
+            versaoFTC: fichaComFotos.versao_ftc_atual || 1,
+            supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+            supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY
+          })
+        : await generateHTMLContent(fichaComFotos);
       const fileName = `ficha-${ficha.numeroFTC}-${Date.now()}.html`;
       const filePath = `temp/${fileName}`;
 
@@ -37,13 +56,18 @@ export function ShareActions({ ficha, variant = 'compact', showLabels = false }:
       const viewerUrl = `${getAppBaseUrl()}/view-html/${encodeURIComponent(filePath)}`;
       return viewerUrl;
     } catch (error) {
+      console.error('❌ Erro ao gerar link:', error);
       return null;
     }
   };
 
-  const exportToHTML = () => {
+  const exportToHTML = async () => {
     try {
-      downloadHTML(ficha);
+      // 🔧 FIX: Carregar fotos antes de exportar
+      const fotos = await carregarFotosFicha(ficha.id);
+      const fichaComFotos: FichaSalva = { ...ficha, fotos };
+
+      downloadHTML(fichaComFotos);
       toast({
         title: "HTML Exportado!",
         description: `Arquivo HTML da FTC ${ficha.numeroFTC} baixado com sucesso.`,
@@ -57,9 +81,13 @@ export function ShareActions({ ficha, variant = 'compact', showLabels = false }:
     }
   };
 
-  const viewHTML = () => {
+  const viewHTML = async () => {
     try {
-      openHTMLInNewWindow(ficha);
+      // 🔧 FIX: Carregar fotos antes de visualizar
+      const fotos = await carregarFotosFicha(ficha.id);
+      const fichaComFotos: FichaSalva = { ...ficha, fotos };
+
+      openHTMLInNewWindow(fichaComFotos);
       toast({
         title: "Visualização HTML",
         description: "Ficha aberta em nova aba.",

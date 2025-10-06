@@ -1,13 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
-import { FormData, Material, Foto, Calculos, FichaSalva } from '@/types/ficha-tecnica';
-import { mapInterfaceStatusToDatabase, mapDatabaseStatusToInterface, getPreviousStatus } from './statusMapping';
+import { FormData, Material, Foto, Calculos, FichaSalva, StatusFicha } from '@/types/ficha-tecnica';
+import { getPreviousStatus } from './statusMapping';
 import { logger } from './logger';
-
-// Função wrapper para manter compatibilidade e logs
-function mapStatusToDatabase(status: string): string {
-  const mappedStatus = mapInterfaceStatusToDatabase(status as any);
-  return mappedStatus;
-}
 
 // Generate UUID
 function generateId(): string {
@@ -77,6 +71,7 @@ async function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]
     // 🆕 NOVOS CAMPOS EXTRAS
     observacoes_adicionais: row.observacoes_adicionais || '',
     prioridade: row.prioridade || 'Normal',
+    dados_orcamento: row.dados_orcamento || '',
     
     // Horas de Serviço - CAMPOS ANTIGOS (manter por compatibilidade)
     horas_por_peca: '',
@@ -155,7 +150,7 @@ async function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[]
     numeroFTC: row.numero_ftc,
     dataCriacao: row.data_criacao,
     dataUltimaEdicao: row.data_ultima_edicao,
-    status: mapDatabaseStatusToInterface(row.status),
+    status: row.status as StatusFicha, // Status já está correto no banco após migration
     formData,
     materiais: materiaisConvertidos,
     fotos: fotosMetadata,
@@ -292,14 +287,14 @@ export async function salvarFicha(
     }
 
     // Convert form data to database format - include ALL new fields
-    const rawStatus = status || (formData.desenho_finalizado === 'SIM' ? 'finalizada' : 'rascunho');
-    const mappedStatus = mapStatusToDatabase(rawStatus);
+    // Se não passar status, assume rascunho (status padrão para novas fichas)
+    const finalStatus = status || 'rascunho';
 
     // Log das horas de produção
 
     const dbData = {
       numero_ftc: finalNumeroFTC,
-      status: mappedStatus,
+      status: finalStatus as StatusFicha,
       cliente: formData.cliente,
       solicitante: formData.solicitante,
       contato: formData.fone_email,
@@ -337,6 +332,8 @@ export async function salvarFicha(
       balanceamento_campo: formData.balanceamento_campo || 'NAO',
       rotacao: formData.rotacao || null,
       observacoes_adicionais: formData.observacoes_adicionais || null,
+      dados_orcamento: formData.dados_orcamento || null,
+      numero_orcamento: formData.num_orcamento || null,
       prioridade: formData.prioridade || 'Normal',
 
       // ⚡ SERVIÇOS ESPECIAIS
@@ -345,8 +342,10 @@ export async function salvarFicha(
       relatorio_tecnico: formData.relatorio_tecnico || 'NAO',
       emissao_art: formData.emissao_art || 'NAO',
 
-      solda: '',
-      usinagem: '',
+      // Campos de controle SIM/NAO (TEXT)
+      solda: formData.solda_controle || 'NAO',  // Campo TEXT de controle
+      usinagem: formData.usinagem_controle || 'NAO',  // Campo TEXT de controle
+
       // Horas de serviço - CAMPOS ANTIGOS (manter por compatibilidade)
       torno_grande: parseFloat(formData.torno_grande) || 0,
       torno_pequeno: parseFloat(formData.torno_pequeno) || 0,
@@ -365,13 +364,13 @@ export async function salvarFicha(
       programacao_cam: parseFloat(formData.programacao_cam) || 0,
       eng_tec: parseFloat(formData.eng_tec) || 0,
 
-      // 🆕 NOVOS CAMPOS - Horas de Produção
+      // 🆕 NOVOS CAMPOS - Horas de Produção (NUMERIC)
       torno_cnc: parseFloat(formData.torno_cnc) || 0,
       centro_usinagem: parseFloat(formData.centro_usinagem) || 0,
       fresa: parseFloat(formData.fresa) || 0,
       furadeira: parseFloat(formData.furadeira) || 0,
       macarico: parseFloat(formData.macarico) || 0,
-      solda: parseFloat(formData.solda) || 0,
+      // REMOVIDO: solda já foi definido acima como TEXT
       serra: parseFloat(formData.serra) || 0,
       caldeiraria: parseFloat(formData.caldeiraria) || 0,
       montagem: parseFloat(formData.montagem) || 0,
@@ -719,25 +718,32 @@ export async function estornarFicha(
       };
     }
 
-    // Map to database status
-    const dbPreviousStatus = mapInterfaceStatusToDatabase(previousStatus);
-
     logger.info('Estornando ficha', {
       fichaId,
       numeroFTC: ficha.numeroFTC,
       currentStatus: ficha.status,
       previousStatus,
-      dbPreviousStatus,
       motivo
     });
 
     // Update status in database
+    // Se estornar de "orcamento_enviado_cliente", limpar dados_orcamento
+    // Nota: num_orcamento NÃO é limpo (sempre = numero_ftc)
+    const shouldClearOrcamento = ficha.status === 'orcamento_enviado_cliente';
+
+    const updatePayload: any = {
+      status: previousStatus, // Status já está no formato correto (não precisa mapear)
+      data_ultima_edicao: new Date().toISOString()
+    };
+
+    if (shouldClearOrcamento) {
+      updatePayload.dados_orcamento = null;
+      logger.info('Limpando dados_orcamento no estorno (num_orcamento permanece = numero_ftc)', { fichaId });
+    }
+
     const { data: updateData, error: updateError } = await supabase
       .from('fichas_tecnicas')
-      .update({
-        status: dbPreviousStatus,
-        data_ultima_edicao: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', fichaId)
       .select();
 

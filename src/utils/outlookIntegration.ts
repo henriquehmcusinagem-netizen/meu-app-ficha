@@ -11,7 +11,7 @@ const COMERCIAL_EMAIL = 'contato@hmcusinagem.com.br';
  */
 async function uploadHTMLAndGetLink(ficha: FichaSalva): Promise<string | null> {
   try {
-    const htmlContent = generateHTMLContent(ficha);
+    const htmlContent = await generateHTMLContent(ficha);
     const fileName = `ficha-${ficha.numeroFTC}-${Date.now()}.html`;
     const filePath = `temp/${fileName}`;
 

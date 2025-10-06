@@ -56,9 +56,9 @@ export function getAppBaseUrl(): string {
     return import.meta.env.VITE_APP_URL;
   }
 
-  // Em desenvolvimento local, use localhost na porta padrão
+  // Em desenvolvimento local, use o origin atual (funciona em qualquer porta)
   if (import.meta.env.DEV) {
-    return 'http://localhost:5173';
+    return window.location.origin;
   }
 
   // Fallback para o origin atual

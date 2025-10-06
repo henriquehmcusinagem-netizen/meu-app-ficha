@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Eye, Edit, Camera, Copy, RotateCcw } from 'lucide-react';
+import { Trash2, Eye, Edit, Camera, Copy, RotateCcw, FileText } from 'lucide-react';
 import { FichaSalva, STATUS_CONFIG } from '@/types/ficha-tecnica';
 import { formatCurrency } from '@/utils/helpers';
 import { ShareActions } from './ShareActions';
@@ -17,6 +17,7 @@ interface UniversalFichaTableProps {
   onView?: (ficha: FichaSalva) => void;
   onClone?: (ficha: FichaSalva) => void;
   onRevert?: (ficha: FichaSalva) => void;
+  onOrcamento?: (ficha: FichaSalva) => void;
   showActions?: {
     edit?: boolean;
     delete?: boolean;
@@ -24,6 +25,7 @@ interface UniversalFichaTableProps {
     clone?: boolean;
     share?: boolean;
     revert?: boolean;
+    orcamento?: boolean;
   };
   columns?: {
     numeroFTC?: boolean;
@@ -47,7 +49,8 @@ export function UniversalFichaTable({
   onView,
   onClone,
   onRevert,
-  showActions = { edit: true, delete: true, view: true, clone: true, share: true, revert: true },
+  onOrcamento,
+  showActions = { edit: true, delete: true, view: true, clone: true, share: true, revert: true, orcamento: true },
   columns = { numeroFTC: true, cliente: true, servico: true, status: true, valorTotal: true, fotos: true, dataCriacao: true },
   variant = 'full'
 }: UniversalFichaTableProps) {
@@ -93,6 +96,11 @@ export function UniversalFichaTable({
     onRevert?.(ficha);
   };
 
+  const handleOrcamento = (ficha: FichaSalva, event: React.MouseEvent) => {
+    event.stopPropagation();
+    onOrcamento?.(ficha);
+  };
+
   const handleDoubleClick = (ficha: FichaSalva) => {
     onEdit?.(ficha);
   };
@@ -128,7 +136,7 @@ export function UniversalFichaTable({
               {columns.fotos && <TableHead className="text-center min-w-[70px]">Fotos</TableHead>}
               {columns.dataCriacao && <TableHead className="min-w-[90px]">Criação</TableHead>}
               {columns.dataEdicao && <TableHead className="min-w-[90px]">Edição</TableHead>}
-              {(showActions.edit || showActions.delete || showActions.view || showActions.clone || showActions.share) && (
+              {(showActions.edit || showActions.delete || showActions.view || showActions.clone || showActions.share || showActions.orcamento) && (
                 <TableHead className="text-right min-w-[180px]">Ações</TableHead>
               )}
             </TableRow>
@@ -194,7 +202,7 @@ export function UniversalFichaTable({
                     {new Date(ficha.dataUltimaEdicao).toLocaleDateString('pt-BR')}
                   </TableCell>
                 )}
-                {(showActions.edit || showActions.delete || showActions.view || showActions.clone || showActions.share || showActions.revert) && (
+                {(showActions.edit || showActions.delete || showActions.view || showActions.clone || showActions.share || showActions.revert || showActions.orcamento) && (
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       {showActions.view && onView && (
@@ -206,6 +214,17 @@ export function UniversalFichaTable({
                           title="Visualizar (somente leitura)"
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {showActions.orcamento && onOrcamento && ficha.status === 'aguardando_orcamento_comercial' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleOrcamento(ficha, e)}
+                          className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          title="Gerar Orçamento"
+                        >
+                          <FileText className="h-4 w-4" />
                         </Button>
                       )}
                       {showActions.revert && onRevert && canRevertStatus(ficha.status) && (

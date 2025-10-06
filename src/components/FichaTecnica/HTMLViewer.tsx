@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export function HTMLViewer() {
-  const { filePath } = useParams<{ filePath: string }>();
+  const params = useParams();
+  const location = useLocation();
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
+    // Com splat route (*), o path vem como params["*"] ou pegamos do pathname
+    const filePath = params["*"] || location.pathname.replace('/view-html/', '');
+
     if (!filePath) {
       setError('Arquivo não encontrado');
       setLoading(false);
@@ -38,7 +42,7 @@ export function HTMLViewer() {
     };
 
     loadHTMLContent();
-  }, [filePath]);
+  }, [params, location]);
 
   if (loading) {
     return (

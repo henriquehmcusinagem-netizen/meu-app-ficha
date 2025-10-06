@@ -2,16 +2,51 @@ import { supabase } from '@/integrations/supabase/client';
 import { Foto } from '@/types/ficha-tecnica';
 
 /**
+ * Escape HTML special characters to prevent XSS
+ * @param str - String to escape
+ * @returns Escaped string safe for HTML attributes
+ */
+function escapeHtml(str: string): string {
+  const htmlEscapeMap: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '\n': '&#10;',
+    '\r': '&#13;'
+  };
+  return str.replace(/[&<>"'\n\r]/g, (char) => htmlEscapeMap[char] || char);
+}
+
+/**
+ * Escape JavaScript string literals (for use inside JS strings)
+ * @param str - String to escape
+ * @returns Escaped string safe for JavaScript strings
+ */
+function escapeJs(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
+/**
  * Generate signed URL for a photo stored in Supabase
  * @param storagePath - Path to the file in Supabase storage
- * @param expiresIn - URL expiration time in seconds (default: 1 hour)
+ * @param expiresIn - URL expiration time in seconds (default: 24 hours)
  * @returns Signed URL or null if error
  */
 export async function getPhotoSignedUrl(
   storagePath: string,
-  expiresIn: number = 3600
+  expiresIn: number = 86400 // 24 hours (increased from 1 hour for better UX)
 ): Promise<string | null> {
   try {
+    console.log('🔗 Gerando signed URL para:', storagePath);
+
     const { data, error } = await supabase.storage
       .from('ficha-fotos')
       .createSignedUrl(storagePath, expiresIn);
@@ -21,7 +56,18 @@ export async function getPhotoSignedUrl(
       return null;
     }
 
-    return data?.signedUrl || null;
+    if (!data?.signedUrl) {
+      console.warn('⚠️ Signed URL vazia retornada para:', storagePath);
+      return null;
+    }
+
+    console.log('✅ Signed URL gerada com sucesso:', {
+      path: storagePath,
+      urlLength: data.signedUrl.length,
+      expiresIn: `${expiresIn}s (${expiresIn / 3600}h)`
+    });
+
+    return data.signedUrl;
   } catch (error) {
     console.error('💥 Exceção ao gerar signed URL:', error);
     return null;
@@ -34,6 +80,11 @@ export async function getPhotoSignedUrl(
  * @returns Array of photos with resolved URLs
  */
 export async function getPhotosWithUrls(fotos: Foto[]): Promise<Array<Foto & { url: string }>> {
+  console.log('📸 Processando fotos:', {
+    total: fotos.length,
+    fotos: fotos.map(f => ({ name: f.name, hasPreview: !!f.preview, hasStoragePath: !!f.storagePath }))
+  });
+
   const photosWithUrls: Array<Foto & { url: string }> = [];
 
   for (const foto of fotos) {
@@ -41,17 +92,30 @@ export async function getPhotosWithUrls(fotos: Foto[]): Promise<Array<Foto & { u
 
     // Priority: preview (new photos) > storagePath (saved photos)
     if (foto.preview) {
+      console.log(`📷 Usando preview para: ${foto.name}`);
       url = foto.preview;
     } else if (foto.storagePath) {
+      console.log(`🗄️ Gerando signed URL para: ${foto.name} (path: ${foto.storagePath})`);
       url = await getPhotoSignedUrl(foto.storagePath);
     }
 
     if (url) {
+      console.log(`✅ URL obtida para: ${foto.name} (${url.substring(0, 50)}...)`);
       photosWithUrls.push({ ...foto, url });
     } else {
-      console.warn('⚠️ Foto sem URL disponível:', foto.name);
+      console.warn(`⚠️ Foto sem URL disponível: ${foto.name}`, {
+        hasPreview: !!foto.preview,
+        hasStoragePath: !!foto.storagePath,
+        storagePath: foto.storagePath
+      });
     }
   }
+
+  console.log('📊 Resultado final:', {
+    totalProcessadas: fotos.length,
+    comURL: photosWithUrls.length,
+    semURL: fotos.length - photosWithUrls.length
+  });
 
   return photosWithUrls;
 }
@@ -95,13 +159,17 @@ export function printPhoto(url: string, photoName: string): void {
     return;
   }
 
+  // Escape special characters to prevent JavaScript injection
+  const escapedName = escapeHtml(photoName);
+  const escapedUrl = escapeHtml(url);
+
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Imprimir Foto - ${photoName}</title>
+      <title>Imprimir Foto - ${escapedName}</title>
       <style>
         * {
           margin: 0;
@@ -161,9 +229,9 @@ export function printPhoto(url: string, photoName: string): void {
     </head>
     <body>
       <div class="photo-container">
-        <img src="${url}" alt="${photoName}" onload="window.print();">
+        <img src="${escapedUrl}" alt="${escapedName}" onload="window.print();">
         <div class="photo-info">
-          <div class="photo-name">${photoName}</div>
+          <div class="photo-name">${escapedName}</div>
         </div>
       </div>
     </body>
@@ -186,21 +254,21 @@ export function generatePhotoGalleryHTML(fotos: Array<Foto & { url: string }>): 
 
   const photoItems = fotos.map((foto, index) => `
     <div class="photo-item" onclick="openPhotoModal(${index})">
-      <img src="${foto.url}" alt="${foto.name}" loading="lazy">
-      <div class="photo-caption">${foto.name}</div>
+      <img src="${foto.url}" alt="${escapeHtml(foto.name)}" loading="lazy">
+      <div class="photo-caption">${escapeHtml(foto.name)}</div>
     </div>
   `).join('');
 
   const modalPhotos = fotos.map((foto, index) => `
     <div class="modal-photo" id="modal-photo-${index}" style="display: ${index === 0 ? 'flex' : 'none'};">
-      <img src="${foto.url}" alt="${foto.name}">
+      <img src="${foto.url}" alt="${escapeHtml(foto.name)}">
       <div class="modal-photo-info">
-        <div class="modal-photo-name">${foto.name}</div>
+        <div class="modal-photo-name">${escapeHtml(foto.name)}</div>
         <div class="modal-photo-actions">
-          <button onclick="downloadModalPhoto('${foto.url}', '${foto.name}')" class="modal-btn">
+          <button onclick="downloadModalPhoto('${escapeJs(foto.url)}', '${escapeJs(foto.name)}')" class="modal-btn">
             📥 Baixar Foto
           </button>
-          <button onclick="printModalPhoto('${foto.url}', '${foto.name}')" class="modal-btn">
+          <button onclick="printModalPhoto('${escapeJs(foto.url)}', '${escapeJs(foto.name)}')" class="modal-btn">
             🖨️ Imprimir Foto
           </button>
         </div>
@@ -295,11 +363,16 @@ export function generatePhotoGalleryHTML(fotos: Array<Foto & { url: string }>): 
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
+        // Escape to prevent injection
+        const escapedName = photoName.replace(/'/g, "\\\\'").replace(/"/g, '\\\\"').replace(/\n/g, '\\\\n');
+        const escapedUrl = url.replace(/'/g, "\\\\'").replace(/"/g, '\\\\"');
+
         const htmlContent = \`
           <!DOCTYPE html>
-          <html>
+          <html lang="pt-BR">
           <head>
-            <title>Imprimir - \${photoName}</title>
+            <meta charset="UTF-8">
+            <title>Imprimir - \${escapedName}</title>
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
               body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
@@ -308,7 +381,7 @@ export function generatePhotoGalleryHTML(fotos: Array<Foto & { url: string }>): 
             </style>
           </head>
           <body>
-            <img src="\${url}" alt="\${photoName}" onload="window.print();">
+            <img src="\${escapedUrl}" alt="\${escapedName}" onload="window.print();">
           </body>
           </html>
         \`;

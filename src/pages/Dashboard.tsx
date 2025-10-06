@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus, Users } from "lucide-react";
+import { Search, Plus, Users, ShoppingCart, DollarSign, ClipboardCheck, Factory } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { FEATURES } from "@/config/features";
+
 export default function Dashboard() {
   const navigate = useNavigate();
   return <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
@@ -69,6 +71,88 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* NOVOS MÓDULOS - Com Feature Flags */}
+
+          {/* Módulo Compras (Beta) */}
+          {FEATURES.ENABLE_COMPRAS_MODULE && (
+            <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-orange-500/30" onClick={() => navigate('/compras')}>
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <ShoppingCart className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-orange-600">🛒 Compras (Beta)</CardTitle>
+                <p className="text-muted-foreground">
+                  Cotações e requisições de compra
+                </p>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="text-sm text-muted-foreground">
+                  Gerencie cotações, requisições e materiais
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Módulo Comercial (Beta) */}
+          {FEATURES.ENABLE_COMERCIAL_MODULE && (
+            <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-green-500/30" onClick={() => navigate('/comercial')}>
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-green-500 to-green-600 rounded-full w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <DollarSign className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-green-600">💰 Comercial (Beta)</CardTitle>
+                <p className="text-muted-foreground">
+                  Orçamentos e aprovações
+                </p>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="text-sm text-muted-foreground">
+                  Gerencie orçamentos e respostas de clientes
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Módulo PCP (Beta) */}
+          {FEATURES.ENABLE_PCP_MODULE && (
+            <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-blue-500/30" onClick={() => navigate('/pcp')}>
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <ClipboardCheck className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-blue-600">🏭 PCP (Beta)</CardTitle>
+                <p className="text-muted-foreground">
+                  Validação de requisições
+                </p>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="text-sm text-muted-foreground">
+                  Valide medidas, desenhos e processos
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Módulo Produção (Beta) */}
+          {FEATURES.ENABLE_PRODUCAO_MODULE && (
+            <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-purple-500/30" onClick={() => navigate('/producao')}>
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Factory className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-purple-600">⚙️ Produção (Beta)</CardTitle>
+                <p className="text-muted-foreground">
+                  Ordens de Serviço (OS)
+                </p>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="text-sm text-muted-foreground">
+                  Gerencie OS e processos de produção
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>;
