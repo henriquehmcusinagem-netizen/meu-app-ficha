@@ -154,9 +154,10 @@ export function CotacaoMateriaisModal({
       const { error: materiaisError } = await supabase
         .from('materiais')
         .upsert(
-          materiais.map(mat => ({
+          materiais.map((mat, index) => ({
             id: mat.id,
             ficha_id: ficha.id,
+            ordem: index + 1,
             descricao: mat.descricao,
             quantidade: mat.quantidade,
             unidade: mat.unidade,
