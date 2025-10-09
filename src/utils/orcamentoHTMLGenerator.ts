@@ -1181,7 +1181,7 @@ export async function generateOrcamentoHTML(
     // Função para enviar aprovação
     async function enviarAprovacao(tipo, responsavel, email, telefone, observacoes) {
       try {
-        const response = await fetch(supabaseUrl + '/rest/v1/aprovacoes_ftc_cliente', {
+        const response = await fetch(supabaseUrl + '/rest/v1/aprovacoes_orcamento_cliente', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1197,7 +1197,7 @@ export async function generateOrcamentoHTML(
             email: email,
             telefone: telefone,
             observacoes: observacoes || null,
-            versao_ftc: versaoFTC
+            versao_orcamento: versaoFTC
           })
         });
 
@@ -1221,7 +1221,7 @@ export async function generateOrcamentoHTML(
         console.log('🔍 Verificando aprovações existentes para orçamento:', numeroFTC);
 
         const response = await fetch(
-          supabaseUrl + '/rest/v1/aprovacoes_ftc_cliente?ficha_id=eq.' + fichaId,
+          supabaseUrl + '/rest/v1/aprovacoes_orcamento_cliente?ficha_id=eq.' + fichaId,
           {
             method: 'GET',
             headers: {
@@ -1275,6 +1275,55 @@ export async function generateOrcamentoHTML(
           abrirModalAprovacao(tipo);
         });
       });
+
+      // 📝 Ler parâmetros URL diretos (nome, email, telefone) e pré-preencher campos
+      function preencherCamposComURL() {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const nome = urlParams.get('nome');
+          const email = urlParams.get('email');
+          const telefone = urlParams.get('telefone');
+
+          // Se não há parâmetros URL, retorna
+          if (!nome && !email && !telefone) {
+            console.log('ℹ️ Nenhum parâmetro de contato na URL');
+            return false; // Indica que não preencheu via URL
+          }
+
+          console.log('📧 Parâmetros de contato detectados na URL:', { nome, email, telefone });
+
+          // Preencher campos de TODOS os 3 modais
+          const tipos = [
+            { ids: { nome: 'inputNome', email: 'inputEmail', telefone: 'inputTelefone' } },
+            { ids: { nome: 'inputNomeAlterar', email: 'inputEmailAlterar', telefone: 'inputTelefoneAlterar' } },
+            { ids: { nome: 'inputNomeRejeitar', email: 'inputEmailRejeitar', telefone: 'inputTelefoneRejeitar' } }
+          ];
+
+          tipos.forEach(({ ids }) => {
+            const inputNome = document.getElementById(ids.nome);
+            const inputEmail = document.getElementById(ids.email);
+            const inputTelefone = document.getElementById(ids.telefone);
+
+            if (inputNome && nome) {
+              inputNome.value = decodeURIComponent(nome);
+            }
+
+            if (inputEmail && email) {
+              inputEmail.value = decodeURIComponent(email);
+            }
+
+            if (inputTelefone && telefone) {
+              inputTelefone.value = decodeURIComponent(telefone);
+            }
+          });
+
+          console.log('✅ Campos pré-preenchidos com parâmetros URL!');
+          return true; // Indica que preencheu via URL
+        } catch (error) {
+          console.error('❌ Erro ao processar parâmetros URL:', error);
+          return false;
+        }
+      }
 
       // 🔑 Ler token da URL e pré-preencher campos
       async function preencherCamposComToken() {
@@ -1369,10 +1418,12 @@ export async function generateOrcamentoHTML(
         }
       }
 
-      // Executar função de pré-preenchimento
-      // Se a página já está carregada, executa imediatamente
-      // Senão, espera o DOMContentLoaded
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      // Executar funções de pré-preenchimento
+      // Prioridade: URL parameters > Token
+      const preenchidoComURL = preencherCamposComURL();
+
+      // Se não preencheu com URL, tentar com token
+      if (!preenchidoComURL) {
         preencherCamposComToken();
       }
     });
