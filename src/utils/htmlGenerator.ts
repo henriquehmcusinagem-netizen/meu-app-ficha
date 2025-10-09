@@ -1352,8 +1352,64 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
       }
     };
 
+    // Verificar se já existe aprovação e ocultar botões
+    async function verificarAprovacaoExistente() {
+      try {
+        console.log('🔍 Verificando aprovações existentes para FTC:', numeroFTC);
+
+        const response = await fetch(
+          '${supabaseUrl}' + '/rest/v1/aprovacoes_ftc_cliente?ficha_id=eq.' + '${fichaId}',
+          {
+            method: 'GET',
+            headers: {
+              'apikey': '${supabaseAnonKey}',
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!response.ok) {
+          console.error('❌ Erro ao verificar aprovações');
+          return;
+        }
+
+        const aprovacoes = await response.json();
+
+        if (aprovacoes && aprovacoes.length > 0) {
+          console.log('✅ Já existe(m) aprovação(ões):', aprovacoes.length);
+
+          // Ocultar seção de aprovação
+          const approvalSection = document.querySelector('.approval-section');
+          if (approvalSection) {
+            approvalSection.style.display = 'none';
+          }
+
+          // Mostrar mensagem de que já foi respondido
+          const header = document.querySelector('h1');
+          if (header) {
+            const badge = document.createElement('div');
+            badge.style.cssText = 'background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; margin: 20px 0; text-align: center;';
+            badge.innerHTML = '✅ <strong>Esta ficha técnica já recebeu resposta.</strong> Não é possível enviar nova aprovação.';
+
+            // Inserir após o cabeçalho
+            const container = document.querySelector('.container');
+            if (container && container.firstChild) {
+              container.insertBefore(badge, container.firstChild.nextSibling);
+            }
+          }
+        } else {
+          console.log('ℹ️ Nenhuma aprovação encontrada. Botões disponíveis.');
+        }
+      } catch (error) {
+        console.error('❌ Erro ao verificar aprovações:', error);
+      }
+    }
+
     // Event listeners nos botões
     document.addEventListener('DOMContentLoaded', function() {
+      // Verificar se já existe aprovação antes de habilitar botões
+      verificarAprovacaoExistente();
+
       const botoesAprovacao = document.querySelectorAll('.btn[data-tipo]');
       console.log('🔘 Botões de aprovação encontrados:', botoesAprovacao.length);
 
@@ -1488,15 +1544,6 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
               inputTelefone.style.backgroundColor = '#f0fdf4';
             }
           });
-
-          // Mostrar mensagem de sucesso
-          const header = document.querySelector('h1');
-          if (header) {
-            const badge = document.createElement('div');
-            badge.style.cssText = 'background: #10b981; color: white; padding: 8px 16px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: inline-block;';
-            badge.textContent = \`✅ Bem-vindo(a), \${tokenData.contato_nome}! Seus dados foram pré-preenchidos.\`;
-            header.insertAdjacentElement('afterend', badge);
-          }
 
           console.log('✅ Campos pré-preenchidos com sucesso!');
 

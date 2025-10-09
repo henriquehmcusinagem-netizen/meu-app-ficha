@@ -591,6 +591,134 @@ export async function generateOrcamentoHTML(
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
     }
 
+    /* RESPONSIVO PARA CELULAR */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+        font-size: 9pt;
+      }
+
+      .container {
+        border: 2px solid #000;
+      }
+
+      /* Cabeçalho responsivo */
+      .header {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      .header-logo {
+        border-right: none;
+        border-bottom: 2px solid #000;
+        padding: 15px;
+      }
+
+      .logo-text {
+        font-size: 36px;
+      }
+
+      .logo-subtitle {
+        font-size: 12px;
+      }
+
+      .header-center {
+        padding: 15px;
+        border-bottom: 2px solid #000;
+      }
+
+      .company-name {
+        font-size: 11pt;
+      }
+
+      .company-address,
+      .company-contacts {
+        font-size: 8pt;
+      }
+
+      .header-right {
+        border-left: none;
+        padding: 15px;
+      }
+
+      /* Cliente responsivo */
+      .client-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .client-item {
+        border-right: none !important;
+        grid-column: span 1 !important;
+      }
+
+      /* Tabela responsiva */
+      .items-table {
+        font-size: 8pt;
+      }
+
+      .items-table thead th {
+        padding: 8px 4px;
+        font-size: 8pt;
+      }
+
+      .items-table tbody td {
+        padding: 6px 4px;
+      }
+
+      /* Condições comerciais */
+      .commercial-conditions {
+        grid-template-columns: 1fr;
+        padding: 15px;
+        gap: 8px;
+      }
+
+      .condition-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      /* Botões responsivos */
+      .btn-container {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 12px 20px;
+        font-size: 11pt;
+      }
+
+      /* Modal responsivo */
+      .modal-content {
+        width: 95%;
+        margin: 5% auto;
+      }
+
+      .modal-header h2 {
+        font-size: 16pt;
+      }
+
+      .modal-body {
+        padding: 20px;
+      }
+
+      .form-group input,
+      .form-group textarea {
+        font-size: 10pt;
+      }
+
+      .modal-footer {
+        flex-direction: column;
+        padding: 15px 20px;
+      }
+
+      .modal-footer button {
+        width: 100%;
+        font-size: 11pt;
+      }
+    }
+
     /* IMPRESSÃO */
     @media print {
       body {
@@ -1087,8 +1215,59 @@ export async function generateOrcamentoHTML(
       }
     }
 
+    // Verificar se já existe aprovação e ocultar botões
+    async function verificarAprovacaoExistente() {
+      try {
+        console.log('🔍 Verificando aprovações existentes para orçamento:', numeroFTC);
+
+        const response = await fetch(
+          supabaseUrl + '/rest/v1/aprovacoes_ftc_cliente?ficha_id=eq.' + fichaId,
+          {
+            method: 'GET',
+            headers: {
+              'apikey': supabaseAnonKey,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!response.ok) {
+          console.error('❌ Erro ao verificar aprovações');
+          return;
+        }
+
+        const aprovacoes = await response.json();
+
+        if (aprovacoes && aprovacoes.length > 0) {
+          console.log('✅ Já existe(m) aprovação(ões):', aprovacoes.length);
+
+          // Ocultar seção de aprovação
+          const approvalSection = document.querySelector('.approval-section');
+          if (approvalSection) {
+            approvalSection.style.display = 'none';
+          }
+
+          // Mostrar mensagem de que já foi respondido
+          const container = document.querySelector('.container');
+          if (container) {
+            const badge = document.createElement('div');
+            badge.style.cssText = 'background: #10b981; color: white; padding: 16px 24px; border-radius: 8px; font-size: 14px; margin: 20px; text-align: center; border: 2px solid #059669;';
+            badge.innerHTML = '✅ <strong>Este orçamento já recebeu resposta.</strong> Não é possível enviar nova aprovação.';
+            container.appendChild(badge);
+          }
+        } else {
+          console.log('ℹ️ Nenhuma aprovação encontrada. Botões disponíveis.');
+        }
+      } catch (error) {
+        console.error('❌ Erro ao verificar aprovações:', error);
+      }
+    }
+
     // Event listeners nos botões
     document.addEventListener('DOMContentLoaded', function() {
+      // Verificar se já existe aprovação antes de habilitar botões
+      verificarAprovacaoExistente();
+
       const botoes = document.querySelectorAll('.btn[data-tipo]');
       botoes.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -1182,15 +1361,6 @@ export async function generateOrcamentoHTML(
               inputTelefone.style.backgroundColor = '#f0fdf4';
             }
           });
-
-          // Mostrar mensagem de sucesso
-          const header = document.querySelector('h1');
-          if (header) {
-            const badge = document.createElement('div');
-            badge.style.cssText = 'background: #10b981; color: white; padding: 8px 16px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: inline-block;';
-            badge.textContent = \`✅ Bem-vindo(a), \${tokenData.contato_nome}! Seus dados foram pré-preenchidos.\`;
-            header.insertAdjacentElement('afterend', badge);
-          }
 
           console.log('✅ Campos pré-preenchidos com sucesso!');
 
