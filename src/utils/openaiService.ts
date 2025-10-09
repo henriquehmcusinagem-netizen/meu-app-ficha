@@ -142,7 +142,7 @@ export async function gerarAnalisePericia(
           try {
             // Gerar signed URL para a foto
             const { data: urlData } = await supabase.storage
-              .from('fichas_fotos')
+              .from('ficha-fotos')
               .createSignedUrl(foto.storagePath, 3600); // 1 hora
 
             if (urlData?.signedUrl) {
