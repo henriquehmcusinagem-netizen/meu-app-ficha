@@ -13,8 +13,8 @@ import { MaterialItem } from "@/components/FichaTecnica/MaterialItem";
 import { CalculosSummary } from "@/components/FichaTecnica/CalculosSummary";
 import { SaveButton } from "@/components/FichaTecnica/SaveButton";
 import { FotoUpload } from "@/components/FichaTecnica/FotoUpload";
+import DadosClienteForm from "@/components/FichaTecnica/DadosClienteForm";
 import { useFichaTecnica } from "@/hooks/useFichaTecnica";
-import { clientesPredefinidos } from "@/types/ficha-tecnica";
 import { formatCurrency } from "@/utils/helpers";
 import { useServiceDescriptionImprovement } from "@/utils/openaiService";
 import { generateHTMLContent } from "@/utils/htmlGenerator";
@@ -142,94 +142,16 @@ export default function Index() {
       </div>
 
       <form className="space-y-2">
-        {/* CLIENTE - Layout Vertical */}
-        <div className={sectionStyle}>
-          <div className="text-base font-semibold mb-3 text-foreground border-b border-border pb-1">
-            👤 DADOS DO CLIENTE
-          </div>
-          <div className={`${gridStyle} grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3`}>
-            <div className={`${fieldStyle} lg:col-span-2`}>
-              <label className={labelStyle}>Cliente</label>
-              <div className="flex gap-1">
-                <Select value={formData.cliente_predefinido || ""} onValueChange={(value) => {
-                  updateFormData("cliente_predefinido", value);
-                  if (value === "manual") {
-                    updateFormData("cliente", "");
-                  } else if (value) {
-                    updateFormData("cliente", value);
-                  }
-                }}>
-                  <SelectTrigger className="w-[80px] h-11">
-                    <SelectValue placeholder="🖊️" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="manual">🖊️ Manual</SelectItem>
-                    {clientesPredefinidos.filter(cliente => cliente && cliente.trim()).map((cliente) => (
-                      <SelectItem key={cliente} value={cliente}>{cliente}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  className={`${inputStyle} flex-1`}
-                  placeholder="Nome do cliente..."
-                  value={formData.cliente || ""}
-                  onChange={(e) => updateFormData("cliente", e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className={fieldStyle}>
-              <label className={labelStyle}>Solicitante</label>
-              <Input
-                className={inputStyle}
-                placeholder="Nome do solicitante"
-                value={formData.solicitante || ""}
-                onChange={(e) => updateFormData("solicitante", e.target.value)}
-              />
-            </div>
-            <div className={fieldStyle}>
-              <label className={labelStyle}>Fone/Email</label>
-              <Input
-                className={inputStyle}
-                placeholder="Contato"
-                value={formData.fone_email || ""}
-                onChange={(e) => updateFormData("fone_email", e.target.value)}
-              />
-            </div>
-            <div className={fieldStyle}>
-              <label className={labelStyle}>Data Visita</label>
-              <Input
-                type="date"
-                className={inputStyle}
-                value={formData.data_visita || ""}
-                onChange={(e) => updateFormData("data_visita", e.target.value)}
-              />
-            </div>
-            <div className={fieldStyle}>
-              <label className={labelStyle}>Data Entrega</label>
-              <Input
-                type="date"
-                className={inputStyle}
-                value={formData.data_entrega || ""}
-                onChange={(e) => updateFormData("data_entrega", e.target.value)}
-                required
-              />
-            </div>
-            <div className={fieldStyle}>
-              <label className={labelStyle}>Prioridade</label>
-              <select
-                className={inputStyle}
-                value={formData.prioridade || "Normal"}
-                onChange={(e) => updateFormData("prioridade", e.target.value)}
-              >
-                <option value="Baixa">Baixa</option>
-                <option value="Normal">Normal</option>
-                <option value="Alta">Alta</option>
-                <option value="Emergência">Emergência</option>
-              </select>
-            </div>
-          </div>
-        </div>
+        {/* DADOS DO CLIENTE - Integrado com Cadastros */}
+        <DadosClienteForm
+          formData={formData}
+          updateFormData={updateFormData}
+          sectionStyle={sectionStyle}
+          gridStyle={gridStyle}
+          fieldStyle={fieldStyle}
+          labelStyle={labelStyle}
+          inputStyle={inputStyle}
+        />
 
         {/* PEÇA - Layout Vertical */}
         <div className={sectionStyle}>

@@ -3,15 +3,51 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ClipboardCheck, CheckCircle2, XCircle, AlertCircle, FileText, Eye, Clock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, ClipboardCheck, CheckCircle2, XCircle, AlertCircle, FileText, Eye, Clock, Edit, Info } from "lucide-react";
 import { toast } from "sonner";
+import { AprovacoesTable } from "@/components/FichaTecnica/AprovacoesTable";
+import { ModuleFilter, FilterValues } from "@/components/ui/module-filter";
+import { useModuleFilter } from "@/hooks/useModuleFilter";
+import { validarProcessos, formatarValidacao } from "@/utils/pcpValidation";
+import WorkflowBreadcrumb from "@/components/WorkflowBreadcrumb";
 
 export default function PCP() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("aguardando");
+
+  // Estados de filtro para cada tab
+  const [filtersAguardando, setFiltersAguardando] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_criacao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
+  const [filtersAprovados, setFiltersAprovados] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_validacao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
+  const [filtersRejeitados, setFiltersRejeitados] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_validacao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
+  const [filtersAlteracoes, setFiltersAlteracoes] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_criacao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
 
   // Query: Aprovações PCP com dados relacionados
   const { data: aprovacoesData, isLoading, refetch } = useQuery({
@@ -30,10 +66,39 @@ export default function PCP() {
             cliente,
             nome_peca,
             quantidade,
-            servico
+            servico,
+            desenho_finalizado,
+            torno_grande,
+            torno_pequeno,
+            cnc_tf,
+            fresa_furad,
+            plasma_oxicorte,
+            dobra,
+            calandra,
+            macarico_solda,
+            des_montg,
+            balanceamento,
+            mandrilhamento,
+            tratamento,
+            pintura_horas,
+            lavagem_acab,
+            programacao_cam,
+            eng_tec,
+            torno_cnc,
+            centro_usinagem,
+            fresa,
+            furadeira,
+            macarico,
+            solda,
+            serra,
+            caldeiraria,
+            montagem,
+            lavagem,
+            acabamento,
+            tecnico_horas
           )
         `)
-        .order('data_criacao', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Erro ao buscar aprovações PCP:', error);
@@ -44,11 +109,44 @@ export default function PCP() {
     }
   });
 
-  // Filtrar por status
-  const aguardando = aprovacoesData?.filter(a => a.status === 'aguardando') || [];
-  const aprovados = aprovacoesData?.filter(a => a.status === 'aprovado') || [];
-  const rejeitados = aprovacoesData?.filter(a => a.status === 'rejeitado') || [];
-  const alteracoes = aprovacoesData?.filter(a => a.status === 'alteracao_necessaria') || [];
+  // Query: Contar aprovações de FTC cliente
+  const { data: totalAprovacoesCliente } = useQuery({
+    queryKey: ['aprovacoes-ftc-cliente-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('aprovacoes_ftc_cliente')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    }
+  });
+
+  // Hooks de filtro
+  const { filterData: filterAguardando } = useModuleFilter({
+    data: aprovacoesData?.filter(a => a.status === 'aguardando') || [],
+    searchFields: ['numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_criacao'
+  });
+  const { filterData: filterAprovados } = useModuleFilter({
+    data: aprovacoesData?.filter(a => a.status === 'aprovado') || [],
+    searchFields: ['numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_validacao'
+  });
+  const { filterData: filterRejeitados } = useModuleFilter({
+    data: aprovacoesData?.filter(a => a.status === 'rejeitado') || [],
+    searchFields: ['numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_validacao'
+  });
+  const { filterData: filterAlteracoes } = useModuleFilter({
+    data: aprovacoesData?.filter(a => a.status === 'alteracao_necessaria') || [],
+    searchFields: ['numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_criacao'
+  });
+
+  // Filtrar por status e aplicar filtros
+  const aguardando = filterAguardando(filtersAguardando);
+  const aprovados = filterAprovados(filtersAprovados);
+  const rejeitados = filterRejeitados(filtersRejeitados);
+  const alteracoes = filterAlteracoes(filtersAlteracoes);
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -68,6 +166,27 @@ export default function PCP() {
       'ambos': 'Materiais + Corte',
     };
     return <Badge variant="outline">{tipoMap[tipo] || tipo}</Badge>;
+  };
+
+  // Atualizar checkbox individual
+  const handleCheckboxChange = async (
+    aprovacaoId: string,
+    campo: 'medidas_validadas' | 'desenho_validado' | 'processos_validados' | 'material_disponivel',
+    valor: boolean
+  ) => {
+    const { error } = await supabase
+      .from('aprovacoes_pcp')
+      .update({ [campo]: valor })
+      .eq('id', aprovacaoId);
+
+    if (error) {
+      console.error('Erro ao atualizar checkbox:', error);
+      toast.error('Erro ao atualizar validação');
+      return;
+    }
+
+    // Aguardar refetch para garantir que UI atualize imediatamente
+    await refetch();
   };
 
   // Aprovar requisição
@@ -133,25 +252,6 @@ export default function PCP() {
     refetch();
   };
 
-  // Solicitar alteração
-  const handleSolicitarAlteracao = async (id: string, observacoes: string) => {
-    const { error } = await supabase
-      .from('aprovacoes_pcp')
-      .update({
-        status: 'alteracao_necessaria',
-        observacoes_pcp: observacoes,
-      })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Erro ao solicitar alteração:', error);
-      toast.error('Erro ao solicitar alteração');
-      return;
-    }
-
-    toast.success('Alteração solicitada');
-    refetch();
-  };
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -175,11 +275,19 @@ export default function PCP() {
         </div>
       </div>
 
+      {/* Workflow Breadcrumb */}
+      <div className="mb-6">
+        <WorkflowBreadcrumb currentStage="em_compras" variant="compact" />
+      </div>
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="aguardando">
             ⏳ Ag. Validação ({aguardando.length})
+          </TabsTrigger>
+          <TabsTrigger value="aprovacoes-clientes">
+            📋 Aprovações ({totalAprovacoesCliente})
           </TabsTrigger>
           <TabsTrigger value="aprovados">
             ✅ Aprovados ({aprovados.length})
@@ -194,6 +302,22 @@ export default function PCP() {
 
         {/* Tab 1: Aguardando Validação */}
         <TabsContent value="aguardando" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por FTC, cliente ou peça...",
+              searchFields: ['numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_criacao', label: 'Data de Criação' },
+                { value: 'numero_ftc', label: 'Número FTC' },
+                { value: 'fichas_tecnicas.cliente', label: 'Cliente' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_criacao'
+            }}
+            onFilterChange={setFiltersAguardando}
+            totalItems={aprovacoesData?.filter(a => a.status === 'aguardando').length || 0}
+            filteredItems={aguardando.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Requisições Aguardando Validação do PCP</CardTitle>
@@ -227,41 +351,66 @@ export default function PCP() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {/* Checklist de Validação */}
+                          {/* Checklist de Validação - Checkboxes Interativos */}
                           <div className="border rounded-lg p-3 bg-muted/30">
                             <p className="text-sm font-medium mb-2">Checklist de Validação:</p>
-                            <div className="space-y-1 text-sm">
+                            <div className="space-y-2 text-sm">
                               <div className="flex items-center gap-2">
-                                {aprov.medidas_validadas ? (
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <XCircle className="h-4 w-4 text-gray-400" />
-                                )}
-                                <span>Medidas validadas</span>
+                                <Checkbox
+                                  id={`medidas-${aprov.id}`}
+                                  checked={aprov.medidas_validadas}
+                                  onCheckedChange={(checked) =>
+                                    handleCheckboxChange(aprov.id, 'medidas_validadas', checked as boolean)
+                                  }
+                                />
+                                <label htmlFor={`medidas-${aprov.id}`} className="cursor-pointer">
+                                  Medidas validadas
+                                </label>
                               </div>
                               <div className="flex items-center gap-2">
-                                {aprov.desenho_validado ? (
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <XCircle className="h-4 w-4 text-gray-400" />
-                                )}
-                                <span>Desenho validado</span>
+                                <Checkbox
+                                  id={`desenho-${aprov.id}`}
+                                  checked={aprov.desenho_validado}
+                                  onCheckedChange={(checked) =>
+                                    handleCheckboxChange(aprov.id, 'desenho_validado', checked as boolean)
+                                  }
+                                />
+                                <label htmlFor={`desenho-${aprov.id}`} className="cursor-pointer">
+                                  Desenho validado
+                                </label>
                               </div>
                               <div className="flex items-center gap-2">
-                                {aprov.processos_validados ? (
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <XCircle className="h-4 w-4 text-gray-400" />
-                                )}
-                                <span>Processos validados</span>
+                                <Checkbox
+                                  id={`processos-${aprov.id}`}
+                                  checked={aprov.processos_validados}
+                                  onCheckedChange={(checked) =>
+                                    handleCheckboxChange(aprov.id, 'processos_validados', checked as boolean)
+                                  }
+                                />
+                                <label htmlFor={`processos-${aprov.id}`} className="cursor-pointer">
+                                  Processos validados
+                                </label>
+                                {aprov.fichas_tecnicas && (() => {
+                                  const validacao = validarProcessos(aprov.fichas_tecnicas);
+                                  return validacao.alertas.length > 0 ? (
+                                    <Info
+                                      className="h-4 w-4 text-yellow-600 cursor-help"
+                                      title={formatarValidacao(validacao)}
+                                    />
+                                  ) : null;
+                                })()}
                               </div>
                               <div className="flex items-center gap-2">
-                                {aprov.material_disponivel ? (
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <XCircle className="h-4 w-4 text-gray-400" />
-                                )}
-                                <span>Material disponível</span>
+                                <Checkbox
+                                  id={`material-${aprov.id}`}
+                                  checked={aprov.material_disponivel}
+                                  onCheckedChange={(checked) =>
+                                    handleCheckboxChange(aprov.id, 'material_disponivel', checked as boolean)
+                                  }
+                                />
+                                <label htmlFor={`material-${aprov.id}`} className="cursor-pointer">
+                                  Material disponível
+                                </label>
                               </div>
                             </div>
                           </div>
@@ -300,7 +449,7 @@ export default function PCP() {
                           )}
 
                           {/* Ações */}
-                          <div className="flex gap-2 mt-4">
+                          <div className="flex gap-2 mt-4 flex-wrap">
                             <Button
                               size="sm"
                               variant="outline"
@@ -311,22 +460,25 @@ export default function PCP() {
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => handleAprovar(aprov.id)}
-                              className="bg-green-600 hover:bg-green-700"
+                              variant="outline"
+                              onClick={() => window.open(`/nova-ficha/${aprov.ficha_id}`, '_blank')}
                             >
-                              <CheckCircle2 className="h-4 w-4 mr-2" />
-                              Aprovar
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar Ficha
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                const obs = prompt('Observações para alteração:');
-                                if (obs) handleSolicitarAlteracao(aprov.id, obs);
-                              }}
+                              onClick={() => handleAprovar(aprov.id)}
+                              disabled={
+                                !aprov.medidas_validadas ||
+                                !aprov.desenho_validado ||
+                                !aprov.processos_validados ||
+                                !aprov.material_disponivel
+                              }
+                              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
                             >
-                              <AlertCircle className="h-4 w-4 mr-2" />
-                              Solicitar Alteração
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Aprovar
                             </Button>
                             <Button
                               size="sm"
@@ -356,6 +508,22 @@ export default function PCP() {
 
         {/* Tab 2: Aprovados */}
         <TabsContent value="aprovados" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por FTC, cliente ou peça...",
+              searchFields: ['numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_validacao', label: 'Data de Aprovação' },
+                { value: 'numero_ftc', label: 'Número FTC' },
+                { value: 'fichas_tecnicas.cliente', label: 'Cliente' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_validacao'
+            }}
+            onFilterChange={setFiltersAprovados}
+            totalItems={aprovacoesData?.filter(a => a.status === 'aprovado').length || 0}
+            filteredItems={aprovados.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Requisições Aprovadas pelo PCP</CardTitle>
@@ -417,6 +585,22 @@ export default function PCP() {
 
         {/* Tab 3: Rejeitados */}
         <TabsContent value="rejeitados" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por FTC, cliente ou peça...",
+              searchFields: ['numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_validacao', label: 'Data de Rejeição' },
+                { value: 'numero_ftc', label: 'Número FTC' },
+                { value: 'fichas_tecnicas.cliente', label: 'Cliente' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_validacao'
+            }}
+            onFilterChange={setFiltersRejeitados}
+            totalItems={aprovacoesData?.filter(a => a.status === 'rejeitado').length || 0}
+            filteredItems={rejeitados.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Requisições Rejeitadas pelo PCP</CardTitle>
@@ -479,6 +663,22 @@ export default function PCP() {
 
         {/* Tab 4: Alterações Solicitadas */}
         <TabsContent value="alteracoes" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por FTC, cliente ou peça...",
+              searchFields: ['numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_criacao', label: 'Data de Criação' },
+                { value: 'numero_ftc', label: 'Número FTC' },
+                { value: 'fichas_tecnicas.cliente', label: 'Cliente' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_criacao'
+            }}
+            onFilterChange={setFiltersAlteracoes}
+            totalItems={aprovacoesData?.filter(a => a.status === 'alteracao_necessaria').length || 0}
+            filteredItems={alteracoes.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Requisições com Alterações Solicitadas</CardTitle>
@@ -542,6 +742,21 @@ export default function PCP() {
                   Nenhuma alteração solicitada
                 </p>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 5: Aprovações de Clientes */}
+        <TabsContent value="aprovacoes-clientes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Aprovações de Clientes - Fichas Técnicas</CardTitle>
+              <CardDescription>
+                Feedback dos clientes sobre fichas técnicas enviadas via email
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AprovacoesTable tipo="ftc" />
             </CardContent>
           </Card>
         </TabsContent>

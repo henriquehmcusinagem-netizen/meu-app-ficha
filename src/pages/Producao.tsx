@@ -8,10 +8,50 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Factory, Play, Pause, CheckCircle2, XCircle, Clock, FileText, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { ModuleFilter, FilterValues } from "@/components/ui/module-filter";
+import { useModuleFilter } from "@/hooks/useModuleFilter";
+import WorkflowBreadcrumb from "@/components/WorkflowBreadcrumb";
 
 export default function Producao() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("aguardando");
+
+  // Estados de filtro para cada tab
+  const [filtersAguardandoMat, setFiltersAguardandoMat] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_criacao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
+  const [filtersAguardandoInicio, setFiltersAguardandoInicio] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_criacao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
+  const [filtersEmProducao, setFiltersEmProducao] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_inicio",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
+  const [filtersPausadas, setFiltersPausadas] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_criacao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
+  const [filtersConcluidas, setFiltersConcluidas] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_conclusao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
 
   // Query: Ordens de Serviço com dados relacionados
   const { data: ordensData, isLoading, refetch } = useQuery({
@@ -46,12 +86,39 @@ export default function Producao() {
     }
   });
 
-  // Filtrar por status
-  const aguardandoMateriais = ordensData?.filter(os => os.status === 'aguardando_materiais') || [];
-  const aguardandoInicio = ordensData?.filter(os => os.status === 'aguardando_inicio') || [];
-  const emProducao = ordensData?.filter(os => os.status === 'em_producao') || [];
-  const pausadas = ordensData?.filter(os => os.status === 'pausada') || [];
-  const concluidas = ordensData?.filter(os => os.status === 'concluida') || [];
+  // Hooks de filtro
+  const { filterData: filterAguardandoMat } = useModuleFilter({
+    data: ordensData?.filter(os => os.status === 'aguardando_materiais') || [],
+    searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_criacao'
+  });
+  const { filterData: filterAguardandoInicio } = useModuleFilter({
+    data: ordensData?.filter(os => os.status === 'aguardando_inicio') || [],
+    searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_criacao'
+  });
+  const { filterData: filterEmProducao } = useModuleFilter({
+    data: ordensData?.filter(os => os.status === 'em_producao') || [],
+    searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_inicio'
+  });
+  const { filterData: filterPausadas } = useModuleFilter({
+    data: ordensData?.filter(os => os.status === 'pausada') || [],
+    searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_criacao'
+  });
+  const { filterData: filterConcluidas } = useModuleFilter({
+    data: ordensData?.filter(os => os.status === 'concluida') || [],
+    searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+    dateField: 'data_conclusao'
+  });
+
+  // Filtrar por status e aplicar filtros
+  const aguardandoMateriais = filterAguardandoMat(filtersAguardandoMat);
+  const aguardandoInicio = filterAguardandoInicio(filtersAguardandoInicio);
+  const emProducao = filterEmProducao(filtersEmProducao);
+  const pausadas = filterPausadas(filtersPausadas);
+  const concluidas = filterConcluidas(filtersConcluidas);
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon?: any }> = {
@@ -191,6 +258,11 @@ export default function Producao() {
         </div>
       </div>
 
+      {/* Workflow Breadcrumb */}
+      <div className="mb-6">
+        <WorkflowBreadcrumb currentStage="em_producao" variant="compact" />
+      </div>
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
@@ -213,6 +285,22 @@ export default function Producao() {
 
         {/* Tab 1: Aguardando Materiais */}
         <TabsContent value="aguardando" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por OS, FTC, cliente ou peça...",
+              searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_criacao', label: 'Data de Criação' },
+                { value: 'numero_os', label: 'Número OS' },
+                { value: 'numero_ftc', label: 'Número FTC' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_criacao'
+            }}
+            onFilterChange={setFiltersAguardandoMat}
+            totalItems={ordensData?.filter(os => os.status === 'aguardando_materiais').length || 0}
+            filteredItems={aguardandoMateriais.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Ordens Aguardando Recebimento de Materiais</CardTitle>
@@ -285,6 +373,22 @@ export default function Producao() {
 
         {/* Tab 2: Aguardando Início */}
         <TabsContent value="inicio" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por OS, FTC, cliente ou peça...",
+              searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_criacao', label: 'Data de Criação' },
+                { value: 'numero_os', label: 'Número OS' },
+                { value: 'numero_ftc', label: 'Número FTC' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_criacao'
+            }}
+            onFilterChange={setFiltersAguardandoInicio}
+            totalItems={ordensData?.filter(os => os.status === 'aguardando_inicio').length || 0}
+            filteredItems={aguardandoInicio.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Ordens Prontas para Iniciar Produção</CardTitle>
@@ -352,6 +456,22 @@ export default function Producao() {
 
         {/* Tab 3: Em Produção */}
         <TabsContent value="producao" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por OS, FTC, cliente ou peça...",
+              searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_inicio', label: 'Data de Início' },
+                { value: 'numero_os', label: 'Número OS' },
+                { value: 'numero_ftc', label: 'Número FTC' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_inicio'
+            }}
+            onFilterChange={setFiltersEmProducao}
+            totalItems={ordensData?.filter(os => os.status === 'em_producao').length || 0}
+            filteredItems={emProducao.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Ordens em Produção</CardTitle>
@@ -477,6 +597,22 @@ export default function Producao() {
 
         {/* Tab 4: Pausadas */}
         <TabsContent value="pausadas" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por OS, FTC, cliente ou peça...",
+              searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_criacao', label: 'Data de Criação' },
+                { value: 'numero_os', label: 'Número OS' },
+                { value: 'numero_ftc', label: 'Número FTC' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_criacao'
+            }}
+            onFilterChange={setFiltersPausadas}
+            totalItems={ordensData?.filter(os => os.status === 'pausada').length || 0}
+            filteredItems={pausadas.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Ordens de Produção Pausadas</CardTitle>
@@ -543,6 +679,22 @@ export default function Producao() {
 
         {/* Tab 5: Concluídas */}
         <TabsContent value="concluidas" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por OS, FTC, cliente ou peça...",
+              searchFields: ['numero_os', 'numero_ftc', 'fichas_tecnicas.cliente', 'fichas_tecnicas.nome_peca'],
+              sortOptions: [
+                { value: 'data_conclusao', label: 'Data de Conclusão' },
+                { value: 'numero_os', label: 'Número OS' },
+                { value: 'numero_ftc', label: 'Número FTC' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_conclusao'
+            }}
+            onFilterChange={setFiltersConcluidas}
+            totalItems={ordensData?.filter(os => os.status === 'concluida').length || 0}
+            filteredItems={concluidas.length}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Ordens de Produção Concluídas</CardTitle>

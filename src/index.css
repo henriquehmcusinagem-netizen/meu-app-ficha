@@ -384,3 +384,23 @@ All colors MUST be HSL.
     padding: 1px 2px !important;
   }
 }
+
+/* ==========================================
+   FORÇA MAIÚSCULAS EM TODOS OS INPUTS
+   ==========================================
+   Aplica text-transform: uppercase em todos os inputs,
+   textareas e selects para padronização de dados
+*/
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="search"],
+textarea,
+select {
+  text-transform: uppercase !important;
+}
+
+/* Exceções: não forçar maiúsculas em campos de senha */
+input[type="password"] {
+  text-transform: none !important;
+}

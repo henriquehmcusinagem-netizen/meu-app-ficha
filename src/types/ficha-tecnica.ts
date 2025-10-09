@@ -1,9 +1,16 @@
 export interface FormData {
-  // Dados do Cliente
+  // 🔗 Integração com Módulo Cadastros
+  cliente_id?: string;        // FK opcional para tabela clientes (rastreabilidade)
+  contato_id?: string;        // FK opcional para tabela contatos_cliente (rastreabilidade)
+
+  // Dados do Cliente (snapshot histórico - "congelado" no momento da criação)
   cliente: string;
-  cliente_predefinido?: string;
+  cnpj: string;               // 🆕 CNPJ do cliente
+  cliente_predefinido?: string; // DEPRECATED - será substituído pela integração com Cadastros
   solicitante: string;
-  fone_email: string;
+  telefone: string;           // 🆕 Telefone do contato (substitui fone_email)
+  email: string;              // 🆕 Email do contato (substitui fone_email)
+  fone_email: string;         // DEPRECATED - manter por compatibilidade com fichas antigas
   data_visita: string;
   data_entrega: string;
   
@@ -186,24 +193,29 @@ export interface OrcamentoData {
   precoVendaFinal: number;
 }
 
+// ❌ DEPRECATED: Lista hardcoded de clientes
+// Agora os clientes vêm dinamicamente da tabela 'clientes' do banco de dados
+// Mantido temporariamente apenas para compatibilidade com código antigo
+// TODO: Remover após migração completa para o módulo Cadastros
 export const clientesPredefinidos = [
-  "BTP", "TEG", "TEAG", "TES", "DPWORLD", "ECOPORTO", "T39", 
-  "SANTOS BRASIL", "MILLS", "ADM", "CLI - RUMO", "TGG", "CMOC", 
-  "T12A", "ULTRAFERTIL", "RIO BRASIL SEPETIBA", "TERLOC", "INOVE", 
-  "XCMG", "COPERSUCAR", "TERRACOM", "TGRAO", "PORÃ", "CUTRALE", 
-  "CONSUMIDOR", "STERN", "COIMBRA - USIT", "MARIMEX", "KEPLER", 
+  "BTP", "TEG", "TEAG", "TES", "DPWORLD", "ECOPORTO", "T39",
+  "SANTOS BRASIL", "MILLS", "ADM", "CLI - RUMO", "TGG", "CMOC",
+  "T12A", "ULTRAFERTIL", "RIO BRASIL SEPETIBA", "TERLOC", "INOVE",
+  "XCMG", "COPERSUCAR", "TERRACOM", "TGRAO", "PORÃ", "CUTRALE",
+  "CONSUMIDOR", "STERN", "COIMBRA - USIT", "MARIMEX", "KEPLER",
   "ELDORADO"
 ];
 
 // Status da Ficha Técnica - Fluxo Completo
 // Atenção: Estes valores devem estar SINCRONIZADOS com a constraint do banco
-// Ver migration: 20250926104505_update_status_constraint.sql
+// Ver migration: 20251007162000_add_orcamento_aprovado_status.sql
 export type StatusFicha =
   | 'rascunho'                        // Técnico ainda preenchendo
   | 'preenchida'                      // Técnico finalizou preenchimento (status intermediário)
   | 'aguardando_cotacao_compras'      // Aguardando compras cotar materiais
   | 'aguardando_orcamento_comercial'  // Compras cotou, aguardando comercial gerar orçamento
-  | 'orcamento_enviado_cliente';      // Comercial gerou e enviou orçamento ao cliente
+  | 'orcamento_enviado_cliente'       // Comercial gerou e enviou orçamento ao cliente
+  | 'orcamento_aprovado_cliente';     // Cliente aprovou o orçamento via HTML
 
 // Interface for saved fichas
 export interface FichaSalva {
@@ -255,6 +267,13 @@ export const STATUS_CONFIG = {
     color: 'bg-green-100 text-green-800',
     icon: '📤',
     description: 'Orçamento enviado ao cliente',
+    department: 'comercial'
+  },
+  orcamento_aprovado_cliente: {
+    label: 'Orçamento Aprovado',
+    color: 'bg-blue-100 text-blue-800',
+    icon: '✅',
+    description: 'Cliente aprovou o orçamento',
     department: 'comercial'
   }
 } as const;

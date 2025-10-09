@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, AlertCircle, Package, FileText, MessageCircle, Mail } from "lucide-react";
+import { CheckCircle, AlertCircle, Package, FileText, MessageCircle, Mail, AlertTriangle } from "lucide-react";
 import { StatusFicha, STATUS_CONFIG, FichaSalva } from "@/types/ficha-tecnica";
 import { Material, FormData } from "@/types/ficha-tecnica";
 import { sendFichaViaOutlook, canSendToComercial } from "@/utils/outlookIntegration";
 import { logger } from "@/utils/logger";
+import { validateFichaFields, groupErrorsBySection, getCriticalErrors, ValidationError } from "@/utils/fichaValidation";
 
 interface SaveConfirmModalProps {
   open: boolean;
@@ -37,6 +38,28 @@ export function SaveConfirmModal({
   const [selectedOption, setSelectedOption] = useState<'continue' | 'finished'>('continue');
   const [notifyBuyer, setNotifyBuyer] = useState(false);
   const [sendViaOutlook, setSendViaOutlook] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+
+  // Executar validação quando modal abre ou quando opção muda
+  useEffect(() => {
+    if (open) {
+      // Determinar qual status será usado para validação
+      const targetStatus = selectedOption === 'finished' ? getTargetStatus() : currentStatus;
+
+      // Executar validação
+      const errors = validateFichaFields(formData, materiais, targetStatus);
+      setValidationErrors(errors);
+
+      logger.info('Validação executada', {
+        targetStatus,
+        errorCount: errors.length,
+        criticalErrorCount: getCriticalErrors(errors).length
+      });
+    } else {
+      // Limpar erros quando modal fecha
+      setValidationErrors([]);
+    }
+  }, [open, selectedOption, formData, materiais, currentStatus]);
 
   // Debug: Log do status atual
 
@@ -286,6 +309,34 @@ _Mensagem gerada automaticamente pelo sistema HMC_`;
             </div>
           </RadioGroup>
 
+          {/* Erros de Validação */}
+          {validationErrors.length > 0 && (
+            <Alert variant="destructive" className="border-red-500 bg-red-50 dark:bg-red-950/20">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle className="font-semibold mb-2">
+                ⚠️ Campos obrigatórios não preenchidos ({getCriticalErrors(validationErrors).length})
+              </AlertTitle>
+              <AlertDescription>
+                <div className="space-y-3 mt-2">
+                  {Array.from(groupErrorsBySection(validationErrors)).map(([section, errors]) => (
+                    <div key={section} className="space-y-1">
+                      <p className="font-semibold text-sm text-red-700 dark:text-red-400">
+                        {section}:
+                      </p>
+                      <ul className="list-disc list-inside space-y-0.5 text-xs">
+                        {errors.map((error, idx) => (
+                          <li key={idx} className="text-red-600 dark:text-red-300">
+                            <strong>{error.label}:</strong> {error.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Status que será aplicado */}
           <div className="bg-muted/50 p-3 rounded-lg">
             <p className="text-sm font-medium mb-2">Status após salvamento:</p>
@@ -406,8 +457,9 @@ _Mensagem gerada automaticamente pelo sistema HMC_`;
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={isSaving}
+            disabled={isSaving || getCriticalErrors(validationErrors).length > 0}
             className="min-w-[100px]"
+            title={getCriticalErrors(validationErrors).length > 0 ? "Corrija os erros antes de salvar" : ""}
           >
             {isSaving ? "Salvando..." : "Salvar"}
           </Button>

@@ -12,10 +12,17 @@ import { useFichaQuery, useFichasQuery } from './useFichasQuery';
 import { logger } from '@/utils/logger';
 
 const initialFormData: FormData = {
+  // Integração com Módulo Cadastros
+  cliente_id: "",
+  contato_id: "",
+
   // Dados do Cliente
   cliente: "",
+  cnpj: "",
   cliente_predefinido: "",
   solicitante: "",
+  telefone: "",
+  email: "",
   fone_email: "",
   data_visita: "",
   data_entrega: "",

@@ -188,8 +188,8 @@ Segue ficha técnica com cotação de materiais FINALIZADA para geração de or�
 DADOS DA FICHA TÉCNICA
 ═══════════════════════════════════════════════
 • FTC Nº: ${ficha.numeroFTC}
-• Cliente: ${ficha.formData.cliente}
-• Solicitante: ${ficha.formData.solicitante}${ficha.formData.fone_email ? `\n• Contato: ${ficha.formData.fone_email}` : ''}
+• Cliente: ${ficha.formData.cliente}${ficha.formData.cnpj ? `\n• CNPJ: ${ficha.formData.cnpj}` : ''}
+• Solicitante: ${ficha.formData.solicitante}${ficha.formData.telefone ? `\n• Telefone: ${ficha.formData.telefone}` : ''}${ficha.formData.email ? `\n• Email: ${ficha.formData.email}` : ''}
 
 • Peça/Equipamento: ${ficha.formData.nome_peca}
 • Quantidade: ${ficha.formData.quantidade}

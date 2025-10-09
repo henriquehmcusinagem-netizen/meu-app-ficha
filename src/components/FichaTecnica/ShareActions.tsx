@@ -3,6 +3,7 @@ import { Download, Paperclip, Link, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FichaSalva } from "@/types/ficha-tecnica";
 import { downloadHTML, openHTMLInNewWindow, generateHTMLContent, generateHTMLWithApproval } from "@/utils/htmlGenerator";
+import { generateOrcamentoHTML } from "@/utils/orcamentoHTMLGenerator";
 import { getAppBaseUrl } from "@/utils/helpers";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateTotals } from "@/utils/calculations";
@@ -28,19 +29,41 @@ export function ShareActions({ ficha, variant = 'compact', showLabels = false }:
       // Criar nova ficha com fotos carregadas
       const fichaComFotos: FichaSalva = { ...ficha, fotos };
 
-      // 🔑 DECISÃO: Tem orçamento? Usa HTML com aprovação
-      const temOrcamento = fichaComFotos.formData.dados_orcamento;
+      // ✅ CORREÇÃO: SEMPRE gerar HTML COM sistema de aprovação
+      // Verificar se já existe aprovação para mostrar aviso no HTML
+      const { data: aprovacoesExistentes } = await supabase
+        .from('aprovacoes_ftc_cliente')
+        .select('tipo, responsavel, email, created_at')
+        .eq('ficha_id', ficha.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      const htmlContent = temOrcamento
-        ? await generateHTMLWithApproval({
-            ficha: fichaComFotos,
-            versaoFTC: fichaComFotos.versao_ftc_atual || 1,
-            supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-            supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY
-          })
-        : await generateHTMLContent(fichaComFotos);
-      const fileName = `ficha-${ficha.numeroFTC}-${Date.now()}.html`;
+      const aprovacaoInfo = aprovacoesExistentes && aprovacoesExistentes.length > 0
+        ? aprovacoesExistentes[0]
+        : null;
+
+      console.log('🔍 Verificação de aprovação:', {
+        fichaId: ficha.id,
+        numeroFTC: ficha.numeroFTC,
+        jaAprovado: !!aprovacaoInfo,
+        aprovacao: aprovacaoInfo
+      });
+
+      console.log('🚀 Gerando HTML COM sistema de aprovação...');
+      const htmlContent = await generateHTMLWithApproval({
+        ficha: fichaComFotos,
+        versaoFTC: fichaComFotos.versao_ftc_atual || 1,
+        supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+        supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY
+      });
+
+      console.log('✅ HTML gerado com sucesso. Tamanho:', htmlContent.length, 'bytes');
+
+      // Nome do arquivo sempre com indicação de aprovação
+      const fileName = `ftc-${ficha.numeroFTC}-${Date.now()}.html`;
       const filePath = `temp/${fileName}`;
+
+      console.log('📂 Fazendo upload para:', filePath);
 
       const htmlBlob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
 
@@ -53,10 +76,28 @@ export function ShareActions({ ficha, variant = 'compact', showLabels = false }:
 
       if (error) throw error;
 
-      const viewerUrl = `${getAppBaseUrl()}/view-html/${encodeURIComponent(filePath)}`;
+      // ✅ ADICIONAR: Parâmetros de contato para pré-preenchimento do formulário
+      const params = new URLSearchParams();
+      if (ficha.formData.solicitante) params.append('nome', ficha.formData.solicitante);
+      if (ficha.formData.email) params.append('email', ficha.formData.email);
+      if (ficha.formData.telefone) params.append('telefone', ficha.formData.telefone);
+
+      const queryString = params.toString();
+      const viewerUrl = `${getAppBaseUrl()}/view-html/${encodeURIComponent(filePath)}${queryString ? '?' + queryString : ''}`;
+      console.log('✅ Link gerado:', viewerUrl);
+      console.log('📋 Parâmetros de contato:', {
+        nome: ficha.formData.solicitante,
+        email: ficha.formData.email,
+        telefone: ficha.formData.telefone
+      });
       return viewerUrl;
     } catch (error) {
       console.error('❌ Erro ao gerar link:', error);
+      console.error('❌ Detalhes do erro:', JSON.stringify(error, null, 2));
+      if (error instanceof Error) {
+        console.error('❌ Mensagem do erro:', error.message);
+        console.error('❌ Stack:', error.stack);
+      }
       return null;
     }
   };
@@ -67,7 +108,39 @@ export function ShareActions({ ficha, variant = 'compact', showLabels = false }:
       const fotos = await carregarFotosFicha(ficha.id);
       const fichaComFotos: FichaSalva = { ...ficha, fotos };
 
-      downloadHTML(fichaComFotos);
+      // 🔑 VERIFICAR: Tem orçamento? Usar gerador correto
+      let temOrcamento = false;
+      if (fichaComFotos.formData.dados_orcamento) {
+        if (typeof fichaComFotos.formData.dados_orcamento === 'string') {
+          temOrcamento = fichaComFotos.formData.dados_orcamento.trim() !== '' &&
+                        fichaComFotos.formData.dados_orcamento !== 'null';
+        } else if (typeof fichaComFotos.formData.dados_orcamento === 'object') {
+          temOrcamento = true;
+        }
+      }
+
+      if (temOrcamento) {
+        // Gerar e baixar HTML de orçamento
+        const htmlContent = await generateOrcamentoHTML(
+          fichaComFotos,
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY,
+          fichaComFotos.versao_ftc_atual || 1
+        );
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `orcamento-ftc-${ficha.numeroFTC}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        // Ficha técnica normal
+        downloadHTML(fichaComFotos);
+      }
+
       toast({
         title: "HTML Exportado!",
         description: `Arquivo HTML da FTC ${ficha.numeroFTC} baixado com sucesso.`,
@@ -87,7 +160,33 @@ export function ShareActions({ ficha, variant = 'compact', showLabels = false }:
       const fotos = await carregarFotosFicha(ficha.id);
       const fichaComFotos: FichaSalva = { ...ficha, fotos };
 
-      openHTMLInNewWindow(fichaComFotos);
+      // 🔑 VERIFICAR: Tem orçamento? Usar gerador correto
+      let temOrcamento = false;
+      if (fichaComFotos.formData.dados_orcamento) {
+        if (typeof fichaComFotos.formData.dados_orcamento === 'string') {
+          temOrcamento = fichaComFotos.formData.dados_orcamento.trim() !== '' &&
+                        fichaComFotos.formData.dados_orcamento !== 'null';
+        } else if (typeof fichaComFotos.formData.dados_orcamento === 'object') {
+          temOrcamento = true;
+        }
+      }
+
+      if (temOrcamento) {
+        // Gerar HTML de orçamento e abrir em nova aba
+        const htmlContent = await generateOrcamentoHTML(
+          fichaComFotos,
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY,
+          fichaComFotos.versao_ftc_atual || 1
+        );
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      } else {
+        // Ficha técnica normal
+        openHTMLInNewWindow(fichaComFotos);
+      }
+
       toast({
         title: "Visualização HTML",
         description: "Ficha aberta em nova aba.",

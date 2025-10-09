@@ -15,13 +15,14 @@ import NotFound from "./pages/NotFound";
 // Lazy load das rotas principais
 const NovaFicha = lazy(() => import("./pages/NovaFicha"));
 const ConsultarFichas = lazy(() => import("./pages/ConsultarFichas"));
-const AdminUsuarios = lazy(() => import("./pages/AdminUsuarios"));
 
 // Lazy load dos novos módulos (Feature Flags)
 const Compras = lazy(() => import("./pages/Compras"));
 const Comercial = lazy(() => import("./pages/Comercial"));
 const PCP = lazy(() => import("./pages/PCP"));
 const Producao = lazy(() => import("./pages/Producao"));
+const Cadastros = lazy(() => import("./pages/Cadastros"));
+const ControleProducao = lazy(() => import("./pages/ControleProducao"));
 
 const queryClient = new QueryClient();
 
@@ -62,14 +63,7 @@ const App = () => (
                   </Suspense>
                 </ProtectedRoute>
               } />
-              <Route path="/admin/usuarios" element={
-                <ProtectedRoute>
-                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
-                    <AdminUsuarios />
-                  </Suspense>
-                </ProtectedRoute>
-              } />
-              <Route path="/view-html/:filePath" element={<HTMLViewer />} />
+              <Route path="/view-html/*" element={<HTMLViewer />} />
               {/* Novos módulos com Feature Flags */}
               <Route path="/compras" element={
                 <ProtectedRoute>
@@ -96,6 +90,20 @@ const App = () => (
                 <ProtectedRoute>
                   <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
                     <Producao />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/cadastros" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <Cadastros />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/controle-producao" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div className="flex items-center justify-center h-64">Carregando...</div>}>
+                    <ControleProducao />
                   </Suspense>
                 </ProtectedRoute>
               } />

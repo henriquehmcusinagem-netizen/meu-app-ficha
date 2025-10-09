@@ -20,6 +20,7 @@ const orcamentoSchema = z.object({
   validadeProposta: z.number().min(1, 'Validade deve ser maior que 0'),
   condicoesPagamento: z.string().min(1, 'Condições de pagamento obrigatórias'),
   garantiaDias: z.number().min(0, 'Garantia não pode ser negativa'),
+  tipoFrete: z.enum(['CIF', 'FOB'], { errorMap: () => ({ message: 'Selecione CIF ou FOB' }) }),
   despesasVariaveis: z.number().min(0, 'Despesas variáveis não podem ser negativas').max(100, 'Máximo 100%'),
   despesasFixas: z.number().min(0, 'Despesas fixas não podem ser negativas').max(100, 'Máximo 100%'),
   margemLucro: z.number().min(0, 'Margem de lucro não pode ser negativa').max(100, 'Máximo 100%'),
@@ -33,9 +34,10 @@ interface OrcamentoModalProps {
   onClose: () => void;
   onCreateOrcamento: (data: OrcamentoData) => void;
   fichaTecnica?: FichaSalva;
+  readOnly?: boolean;
 }
 
-export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica }: OrcamentoModalProps) {
+export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica, readOnly = false }: OrcamentoModalProps) {
   const [loading, setLoading] = useState(false);
   const [enviarModalOpen, setEnviarModalOpen] = useState(false);
   const [orcamentoCriado, setOrcamentoCriado] = useState<OrcamentoData | null>(null);
@@ -53,6 +55,7 @@ export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica 
       validadeProposta: 30,
       condicoesPagamento: '28 dias',
       garantiaDias: 90,
+      tipoFrete: 'CIF',
       despesasVariaveis: 25,
       despesasFixas: 10,
       margemLucro: 30,
@@ -133,7 +136,8 @@ export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica 
           validadeProposta: data.validadeProposta,
           prazoPagamento: parseInt(data.condicoesPagamento) || 28,
           condicoesPagamento: data.condicoesPagamento,
-          garantia: data.garantiaDias
+          garantia: data.garantiaDias,
+          tipoFrete: data.tipoFrete
         },
         precoVendaFinal: precoVenda
       };
@@ -169,10 +173,18 @@ export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica 
               <div className="p-2 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg">
                 <Package className="h-6 w-6 text-blue-600" />
               </div>
-              Criar Orçamento - {fichaTecnica.numeroFTC}
+              {readOnly ? 'Visualizar Orçamento' : 'Criar Orçamento'} - {fichaTecnica.numeroFTC}
+              {readOnly && (
+                <Badge variant="secondary" className="ml-2">
+                  Somente Visualização
+                </Badge>
+              )}
             </DialogTitle>
             <DialogDescription className="text-slate-600">
-              Configure os custos, margens e condições comerciais para gerar o orçamento da ficha técnica
+              {readOnly
+                ? 'Visualização dos custos, margens e condições comerciais do orçamento da ficha técnica'
+                : 'Configure os custos, margens e condições comerciais para gerar o orçamento da ficha técnica'
+              }
             </DialogDescription>
           </DialogHeader>
 
@@ -192,16 +204,40 @@ export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica 
                     <Building2 className="h-3 w-3 text-muted-foreground" />
                     <span className="font-medium min-w-0">Cliente:</span>
                     <span className="truncate">{fichaTecnica.formData.cliente}</span>
-                    <span className="text-muted-foreground">•</span>
+                    {fichaTecnica.formData.cnpj && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="font-medium">CNPJ:</span>
+                        <span className="truncate">{fichaTecnica.formData.cnpj}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
                     <User className="h-3 w-3 text-muted-foreground" />
                     <span className="font-medium">Solicitante:</span>
                     <span className="truncate">{fichaTecnica.formData.solicitante}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-3 w-3 text-muted-foreground" />
-                    <span className="font-medium">Email:</span>
-                    <span className="truncate">{fichaTecnica.formData.fone_email}</span>
-                  </div>
+                  {fichaTecnica.formData.telefone && (
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Telefone:</span>
+                      <span className="truncate">{fichaTecnica.formData.telefone}</span>
+                    </div>
+                  )}
+                  {fichaTecnica.formData.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-medium">Email:</span>
+                      <span className="truncate">{fichaTecnica.formData.email}</span>
+                    </div>
+                  )}
+                  {/* Fallback para compatibilidade com fichas antigas */}
+                  {!fichaTecnica.formData.telefone && !fichaTecnica.formData.email && fichaTecnica.formData.fone_email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-medium">Contato:</span>
+                      <span className="truncate">{fichaTecnica.formData.fone_email}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -274,89 +310,120 @@ export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica 
 
                   <div className="space-y-2 pt-2 border-t border-slate-200/60">
                     <div className="grid grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="valorHoraMaoObra"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Valor Hora (R$/h)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                className="h-8"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="despesasVariaveis"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Despesas Variáveis (%)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                className="h-8"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="despesasFixas"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Despesas Fixas (%)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                className="h-8"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="margemLucro"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Margem Lucro (%)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                className="h-8"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {readOnly ? (
+                        <>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Valor Hora (R$/h)</div>
+                            <div className="h-8 flex items-center font-medium">
+                              R$ {watchedValues.valorHoraMaoObra.toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Despesas Variáveis (%)</div>
+                            <div className="h-8 flex items-center font-medium">
+                              {watchedValues.despesasVariaveis.toFixed(1)}%
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Despesas Fixas (%)</div>
+                            <div className="h-8 flex items-center font-medium">
+                              {watchedValues.despesasFixas.toFixed(1)}%
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Margem Lucro (%)</div>
+                            <div className="h-8 flex items-center font-medium">
+                              {watchedValues.margemLucro.toFixed(1)}%
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="valorHoraMaoObra"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Valor Hora (R$/h)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="h-8"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="despesasVariaveis"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Despesas Variáveis (%)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="h-8"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="despesasFixas"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Despesas Fixas (%)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="h-8"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="margemLucro"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Margem Lucro (%)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    className="h-8"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
                     </div>
 
                     <div className="space-y-2 pt-3 border-t">
@@ -405,111 +472,182 @@ export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica 
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name="prazoEntrega"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-1">
+                  {readOnly ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
                             <Calendar className="h-3 w-3" />
                             Prazo de Entrega (dias)
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="1"
-                              {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="validadeProposta"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Validade da Proposta (dias)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="1"
-                              {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                          </div>
+                          <div className="font-medium">{watchedValues.prazoEntrega} dias</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-muted-foreground mb-1">Validade da Proposta (dias)</div>
+                          <div className="font-medium">{watchedValues.validadeProposta} dias</div>
+                        </div>
+                      </div>
 
-                  <FormField
-                    control={form.control}
-                    name="condicoesPagamento"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1">
+                      <div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
                           <CreditCard className="h-3 w-3" />
                           Condições de Pagamento
-                        </FormLabel>
-                        <div className="space-y-2">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="Digite as condições ou selecione abaixo"
-                              className="bg-background"
-                            />
-                          </FormControl>
-                          <div className="flex flex-wrap gap-1">
-                            {[
-                              "50% antecipado + 50% na entrega",
-                              "30% antecipado + 70% na entrega",
-                              "100% antecipado",
-                              "À vista na entrega",
-                              "28 dias",
-                              "30 dias após entrega"
-                            ].map((opcao) => (
-                              <button
-                                key={opcao}
-                                type="button"
-                                onClick={() => field.onChange(opcao)}
-                                className="px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors"
-                              >
-                                {opcao}
-                              </button>
-                            ))}
-                          </div>
                         </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <div className="font-medium">{watchedValues.condicoesPagamento}</div>
+                      </div>
 
-                  <FormField
-                    control={form.control}
-                    name="garantiaDias"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1">
+                      <div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
                           <Shield className="h-3 w-3" />
                           Garantia (dias)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        </div>
+                        <div className="font-medium">{watchedValues.garantiaDias} dias</div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
+                          <Package className="h-3 w-3" />
+                          Tipo de Frete
+                        </div>
+                        <div className="font-medium">
+                          {watchedValues.tipoFrete === 'CIF'
+                            ? 'CIF (Cost, Insurance and Freight)'
+                            : 'FOB (Free On Board)'}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormField
+                          control={form.control}
+                          name="prazoEntrega"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Prazo de Entrega (dias)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="validadeProposta"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Validade da Proposta (dias)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="condicoesPagamento"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              <CreditCard className="h-3 w-3" />
+                              Condições de Pagamento
+                            </FormLabel>
+                            <div className="space-y-2">
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="Digite as condições ou selecione abaixo"
+                                  className="bg-background"
+                                />
+                              </FormControl>
+                              <div className="flex flex-wrap gap-1">
+                                {[
+                                  "50% antecipado + 50% na entrega",
+                                  "30% antecipado + 70% na entrega",
+                                  "100% antecipado",
+                                  "À vista na entrega",
+                                  "28 dias",
+                                  "30 dias após entrega"
+                                ].map((opcao) => (
+                                  <button
+                                    key={opcao}
+                                    type="button"
+                                    onClick={() => field.onChange(opcao)}
+                                    className="px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors"
+                                  >
+                                    {opcao}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="garantiaDias"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              <Shield className="h-3 w-3" />
+                              Garantia (dias)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="tipoFrete"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              <Package className="h-3 w-3" />
+                              Tipo de Frete
+                            </FormLabel>
+                            <FormControl>
+                              <select
+                                {...field}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              >
+                                <option value="CIF">CIF (Cost, Insurance and Freight)</option>
+                                <option value="FOB">FOB (Free On Board)</option>
+                              </select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
 
                   {/* Valor Final */}
                   <Separator />
@@ -526,31 +664,43 @@ export function OrcamentoModal({ open, onClose, onCreateOrcamento, fichaTecnica 
             </div>
 
             <DialogFooter className="mt-6 pt-4 border-t border-blue-200/60 bg-white/60 backdrop-blur-sm rounded-lg">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-300/50 text-slate-700 hover:from-slate-100 hover:to-slate-200 backdrop-blur-sm"
-              >
-                Cancelar
-              </Button>
-              {orcamentoCriado ? (
+              {readOnly ? (
                 <Button
                   type="button"
-                  onClick={() => setEnviarModalOpen(true)}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-500/25 text-white border-0"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Enviar Orçamento
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  disabled={loading}
+                  onClick={onClose}
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/25 text-white border-0"
                 >
-                  {loading ? 'Criando...' : 'Criar e Enviar Orçamento'}
+                  Fechar
                 </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-300/50 text-slate-700 hover:from-slate-100 hover:to-slate-200 backdrop-blur-sm"
+                  >
+                    Cancelar
+                  </Button>
+                  {orcamentoCriado ? (
+                    <Button
+                      type="button"
+                      onClick={() => setEnviarModalOpen(true)}
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-500/25 text-white border-0"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Enviar Orçamento
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/25 text-white border-0"
+                    >
+                      {loading ? 'Criando...' : 'Criar e Enviar Orçamento'}
+                    </Button>
+                  )}
+                </>
               )}
             </DialogFooter>
           </form>

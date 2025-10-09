@@ -11,10 +11,18 @@ function generateId(): string {
 // Convert database row to FichaSalva format
 async function convertDbRowToFichaSalva(row: any, materiais: any[], fotos: any[], fotosCount?: number): Promise<FichaSalva> {
   const formData: FormData = {
+    // Integração com Módulo Cadastros
+    cliente_id: row.cliente_id || '',
+    contato_id: row.contato_id || '',
+
     // Dados do Cliente
     cliente: row.cliente || '',
+    cnpj: row.cnpj || '',
+    cliente_predefinido: '',  // Deprecated - não usado mais
     solicitante: row.solicitante || '',
-    fone_email: row.contato || '',
+    telefone: row.telefone || row.contato || '',  // Fallback para fichas antigas
+    email: row.email || '',
+    fone_email: row.contato || row.telefone || '',  // Compatibilidade - fallback
     data_visita: row.data_visita || '',
     data_entrega: row.data_entrega || '',
     
@@ -295,9 +303,16 @@ export async function salvarFicha(
     const dbData = {
       numero_ftc: finalNumeroFTC,
       status: finalStatus as StatusFicha,
+      // Integração com Módulo Cadastros
+      cliente_id: formData.cliente_id || null,
+      contato_id: formData.contato_id || null,
+      // Dados "congelados" (snapshot)
       cliente: formData.cliente,
+      cnpj: formData.cnpj || null,
       solicitante: formData.solicitante,
-      contato: formData.fone_email,
+      telefone: formData.telefone || null,
+      email: formData.email || null,
+      contato: formData.telefone || formData.fone_email || null,  // Compatibilidade - fallback
       data_visita: formData.data_visita,
       data_entrega: formData.data_entrega,
       nome_peca: formData.nome_peca,
@@ -617,8 +632,9 @@ export function validarCamposObrigatorios(formData: FormData, materiais: Materia
     erros.push('Solicitante é obrigatório');
   }
 
-  if (!formData.fone_email?.trim()) {
-    erros.push('Contato é obrigatório');
+  // Validar que pelo menos Telefone OU Email está preenchido
+  if (!formData.telefone?.trim() && !formData.email?.trim() && !formData.fone_email?.trim()) {
+    erros.push('Telefone ou Email é obrigatório');
   }
 
   // Validate piece/service information

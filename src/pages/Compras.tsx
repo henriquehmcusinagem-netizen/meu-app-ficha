@@ -9,11 +9,29 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ShoppingCart, PackageCheck, Truck, CheckCircle2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { CotacaoMateriaisModal } from "@/components/Compras/CotacaoMateriaisModal";
+import { ModuleFilter, FilterValues } from "@/components/ui/module-filter";
+import { useModuleFilter } from "@/hooks/useModuleFilter";
+import WorkflowBreadcrumb from "@/components/WorkflowBreadcrumb";
 
 export default function Compras() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cotacao");
   const [fichaParaCotar, setFichaParaCotar] = useState<any>(null);
+  const [processando, setProcessando] = useState(false);
+  const [filtersCotacao, setFiltersCotacao] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_ultima_edicao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
+  const [filtersRequisicoes, setFiltersRequisicoes] = useState<FilterValues>({
+    searchTerm: "",
+    sortBy: "data_criacao",
+    sortOrder: "desc",
+    dateFrom: undefined,
+    dateTo: undefined
+  });
 
   // Query 1: Fichas aguardando cotação
   const { data: fichasCotacao, isLoading: loadingCotacao, refetch: refetchCotacao } = useQuery({
@@ -55,11 +73,28 @@ export default function Compras() {
     }
   });
 
+  // Hooks de filtragem
+  const { filterData: filterCotacao } = useModuleFilter({
+    data: fichasCotacao || [],
+    searchFields: ['numero_ftc', 'cliente', 'nome_peca'],
+    dateField: 'data_ultima_edicao'
+  });
+
+  const { filterData: filterRequisicoes } = useModuleFilter({
+    data: requisicoes || [],
+    searchFields: ['numero_ftc', 'fichas_tecnicas.cliente'],
+    dateField: 'data_criacao'
+  });
+
+  // Aplicar filtros
+  const fichasCotacaoFiltradas = filterCotacao(filtersCotacao);
+  const requisicoesTodas = filterRequisicoes(filtersRequisicoes);
+
   // Filtrar requisições por status
-  const requisicoesAguardandoPCP = requisicoes?.filter(r => r.status === 'aguardando_pcp') || [];
-  const requisicoesAprovadas = requisicoes?.filter(r => ['aprovada_pcp', 'em_compra'].includes(r.status || '')) || [];
-  const requisicoesEmTransito = requisicoes?.filter(r => ['pedido_enviado', 'em_transito'].includes(r.status || '')) || [];
-  const requisicoesRecebidas = requisicoes?.filter(r => r.status === 'recebido') || [];
+  const requisicoesAguardandoPCP = requisicoesTodas.filter(r => r.status === 'aguardando_pcp');
+  const requisicoesAprovadas = requisicoesTodas.filter(r => ['aprovada_pcp', 'em_compra'].includes(r.status || ''));
+  const requisicoesEmTransito = requisicoesTodas.filter(r => ['pedido_enviado', 'em_transito'].includes(r.status || ''));
+  const requisicoesRecebidas = requisicoesTodas.filter(r => r.status === 'recebido');
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -73,6 +108,64 @@ export default function Compras() {
     };
     const config = statusMap[status] || { label: status, variant: 'outline' };
     return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  // Fazer pedido (atualizar status para pedido_enviado)
+  const handleFazerPedido = async (requisicaoId: string) => {
+    setProcessando(true);
+    try {
+      const { error } = await supabase
+        .from('requisicoes_compra')
+        .update({
+          status: 'pedido_enviado',
+          data_pedido_enviado: new Date().toISOString(),
+        })
+        .eq('id', requisicaoId);
+
+      if (error) throw error;
+
+      toast.success('Pedido enviado com sucesso!', {
+        description: 'Requisição movida para Em Trânsito',
+      });
+
+      refetchRequisicoes();
+    } catch (error) {
+      console.error('Erro ao fazer pedido:', error);
+      toast.error('Erro ao enviar pedido', {
+        description: 'Tente novamente ou contate o suporte',
+      });
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  // Marcar como recebido
+  const handleMarcarRecebido = async (requisicaoId: string) => {
+    setProcessando(true);
+    try {
+      const { error } = await supabase
+        .from('requisicoes_compra')
+        .update({
+          status: 'recebido',
+          data_recebimento_completo: new Date().toISOString(),
+        })
+        .eq('id', requisicaoId);
+
+      if (error) throw error;
+
+      toast.success('Material marcado como recebido!', {
+        description: 'Requisição concluída',
+      });
+
+      refetchRequisicoes();
+    } catch (error) {
+      console.error('Erro ao marcar recebido:', error);
+      toast.error('Erro ao marcar como recebido', {
+        description: 'Tente novamente ou contate o suporte',
+      });
+    } finally {
+      setProcessando(false);
+    }
   };
 
   return (
@@ -97,6 +190,14 @@ export default function Compras() {
         </div>
       </div>
 
+      {/* Workflow Breadcrumb - Dinâmico baseado na aba ativa */}
+      <div className="mb-6">
+        <WorkflowBreadcrumb
+          currentStage={activeTab === 'cotacao' ? 'aguardando_cotacao_compras' : 'em_compras'}
+          variant="compact"
+        />
+      </div>
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
@@ -119,6 +220,23 @@ export default function Compras() {
 
         {/* Tab 1: Aguardando Cotação */}
         <TabsContent value="cotacao" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por FTC, cliente ou peça...",
+              searchFields: ['numero_ftc', 'cliente', 'nome_peca'],
+              sortOptions: [
+                { value: 'data_ultima_edicao', label: 'Data de edição' },
+                { value: 'numero_ftc', label: 'Número FTC' },
+                { value: 'cliente', label: 'Cliente' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_ultima_edicao'
+            }}
+            onFilterChange={setFiltersCotacao}
+            totalItems={fichasCotacao?.length || 0}
+            filteredItems={fichasCotacaoFiltradas.length}
+          />
+
           <Card>
             <CardHeader>
               <CardTitle>Fichas Aguardando Cotação de Materiais</CardTitle>
@@ -126,9 +244,9 @@ export default function Compras() {
             <CardContent>
               {loadingCotacao ? (
                 <p className="text-center text-muted-foreground py-8">Carregando...</p>
-              ) : fichasCotacao && fichasCotacao.length > 0 ? (
+              ) : fichasCotacaoFiltradas.length > 0 ? (
                 <div className="space-y-4">
-                  {fichasCotacao.map((ficha: any) => (
+                  {fichasCotacaoFiltradas.map((ficha: any) => (
                     <Card key={ficha.id} className="border-l-4 border-l-orange-500">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
@@ -153,6 +271,10 @@ export default function Compras() {
                     </Card>
                   ))}
                 </div>
+              ) : fichasCotacao && fichasCotacao.length > 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhuma ficha encontrada com os filtros aplicados
+                </p>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
                   Nenhuma ficha aguardando cotação
@@ -164,6 +286,22 @@ export default function Compras() {
 
         {/* Tab 2: Requisições (Aguardando PCP) */}
         <TabsContent value="requisicoes" className="space-y-4">
+          <ModuleFilter
+            config={{
+              searchPlaceholder: "Buscar por FTC ou cliente...",
+              searchFields: ['numero_ftc', 'fichas_tecnicas.cliente'],
+              sortOptions: [
+                { value: 'data_criacao', label: 'Data de criação' },
+                { value: 'numero_ftc', label: 'Número FTC' }
+              ],
+              showDateFilter: true,
+              dateField: 'data_criacao'
+            }}
+            onFilterChange={setFiltersRequisicoes}
+            totalItems={requisicoes?.length || 0}
+            filteredItems={requisicoesTodas.length}
+          />
+
           <Card>
             <CardHeader>
               <CardTitle>Requisições de Compra - Aguardando Validação do PCP</CardTitle>
@@ -244,7 +382,12 @@ export default function Compras() {
                           <p className="text-xs text-muted-foreground">
                             Aprovada em: {req.data_aprovacao_pcp ? new Date(req.data_aprovacao_pcp).toLocaleDateString('pt-BR') : 'N/A'}
                           </p>
-                          <Button size="sm" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleFazerPedido(req.id)}
+                            disabled={processando}
+                          >
                             <PackageCheck className="h-4 w-4 mr-2" />
                             Fazer Pedido
                           </Button>
@@ -290,7 +433,12 @@ export default function Compras() {
                             <Truck className="h-4 w-4" />
                             <span>Materiais a caminho</span>
                           </div>
-                          <Button size="sm" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMarcarRecebido(req.id)}
+                            disabled={processando}
+                          >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                             Marcar como Recebido
                           </Button>

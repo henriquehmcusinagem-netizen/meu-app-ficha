@@ -138,19 +138,26 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
   const formatRadio = (value: any): string => {
     if (!value || value === '') return '—';
     const str = String(value).toUpperCase();
-    if (str === 'SIM' || str === 'TRUE') return '✓ Sim';
-    if (str === 'NAO' || str === 'NÃO' || str === 'FALSE') return '✗ Não';
-    return String(value);
+    if (str === 'SIM' || str === 'TRUE') return '✓ SIM';
+    if (str === 'NAO' || str === 'NÃO' || str === 'FALSE') return '✗ NÃO';
+    return String(value).toUpperCase();
   };
 
   const formatHours = (value: any): string => {
     if (!value || value === '' || value === '0') return '0h';
+
+    // Se o valor não é um número (ex: "NAO", "SIM"), formata como radio
+    const numValue = parseFloat(String(value));
+    if (isNaN(numValue)) {
+      return formatRadio(value);
+    }
+
     return `${value}h`;
   };
 
   const formatValue = (value: any): string => {
     if (!value || value === '') return '—';
-    return String(value);
+    return String(value).toUpperCase();
   };
 
   const formatPriority = (value: any): string => {
@@ -170,10 +177,26 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
       'Emergência': '⚠️'
     };
     const icon = icons[priority] || '';
-    return `<span style="color: ${color}; font-weight: 600;">${icon} ${priority}</span>`;
+    return `<span style="color: ${color}; font-weight: 600;">${icon} ${priority.toUpperCase()}</span>`;
   };
 
-  const materiaisComPrecos = ficha.materiais.filter(m =>
+  const formatDate = (value: any): string => {
+    if (!value || value === '') return '—';
+    const dateStr = String(value);
+
+    // Se já está no formato DD/MM/YYYY, retorna como está
+    if (dateStr.includes('/')) return dateStr;
+
+    // Se está no formato YYYY-MM-DD, converte para DD/MM/YYYY
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
+    }
+
+    return dateStr;
+  };
+
+  const materiaisComPrecos = (ficha.materiais || []).filter(m =>
     m.descricao && parseFloat(m.valor_total || '0') > 0
   );
 
@@ -253,14 +276,21 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
             line-height: 1.3;
             color: #000;
             background: #fff;
-            padding: 8mm;
+            padding: 20px;
             font-size: 10pt;
+        }
+
+        .container {
+            max-width: 210mm; /* A4 width */
+            margin: 0 auto;
+            border: 3px solid #000;
+            background: #fff;
         }
 
         .header {
             text-align: center;
             padding: 8px;
-            background: #f8f9fa;
+            background: #fff;
             border: 1px solid #dee2e6;
             border-radius: 4px;
             margin-bottom: 8px;
@@ -333,15 +363,18 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
             font-size: 9pt;
             color: #000;
             padding: 3px 4px;
-            background: #f8f9fa;
+            background: #fff;
             border: 1px solid #e9ecef;
             border-radius: 2px;
             min-height: 20px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         .field-value.highlight {
             font-weight: 600;
-            background: #e7f1ff;
+            background: #fff;
             border-color: #b6d4fe;
         }
 
@@ -354,16 +387,20 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
         }
 
         .materials-table th {
-            background: #e9ecef;
+            background: #000;
+            color: #fff;
             padding: 4px;
             text-align: left;
             font-weight: 600;
-            border: 1px solid #dee2e6;
+            border: 1px solid #000;
         }
 
         .materials-table td {
             padding: 3px 4px;
-            border: 1px solid #dee2e6;
+            border: 1px solid #000;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 300px;
         }
 
         .materials-table tr:nth-child(even) {
@@ -385,6 +422,8 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
             background: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 2px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .hour-label {
@@ -468,8 +507,13 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
 
         @media print {
             body {
-                padding: 5mm;
+                padding: 0;
                 font-size: 9pt;
+            }
+
+            .container {
+                border: none;
+                max-width: 100%;
             }
 
             .header {
@@ -512,8 +556,9 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🔧 FICHA TÉCNICA DE COTAÇÃO - HMC USINAGEM</h1>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 FICHA TÉCNICA DE COTAÇÃO - HMC USINAGEM</h1>
         <div class="subtitle">
             FTC Nº ${ficha.numeroFTC}
             <span class="status-badge">SALVO</span>
@@ -523,30 +568,48 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
     <!-- DADOS DO CLIENTE -->
     <div class="section-card">
         <div class="section-title">👤 DADOS DO CLIENTE</div>
-        <div class="field-grid grid-3">
-            <div class="field">
+
+        <!-- Linha 1: Cliente e CNPJ -->
+        <div class="field-grid grid-3" style="margin-bottom: 4px;">
+            <div class="field" style="grid-column: span 2;">
                 <div class="field-label">Cliente</div>
                 <div class="field-value highlight">${formatValue(ficha.formData.cliente)}</div>
             </div>
+            <div class="field">
+                <div class="field-label">CNPJ</div>
+                <div class="field-value">${formatValue(ficha.formData.cnpj)}</div>
+            </div>
+        </div>
+
+        <!-- Linha 2: Solicitante, Telefone e Email (lado a lado) -->
+        <div class="field-grid grid-3" style="margin-bottom: 4px;">
             <div class="field">
                 <div class="field-label">Solicitante</div>
                 <div class="field-value">${formatValue(ficha.formData.solicitante)}</div>
             </div>
             <div class="field">
-                <div class="field-label">Fone/Email</div>
-                <div class="field-value">${formatValue(ficha.formData.fone_email)}</div>
+                <div class="field-label">Telefone</div>
+                <div class="field-value">${formatValue(ficha.formData.telefone || ficha.formData.fone_email)}</div>
             </div>
             <div class="field">
-                <div class="field-label">Data Visita</div>
-                <div class="field-value">${formatValue(ficha.formData.data_visita)}</div>
+                <div class="field-label">Email</div>
+                <div class="field-value">${formatValue(ficha.formData.email)}</div>
             </div>
-            <div class="field">
-                <div class="field-label">Data Entrega</div>
-                <div class="field-value">${formatValue(ficha.formData.data_entrega)}</div>
-            </div>
+        </div>
+
+        <!-- Linha 3: Prioridade e Datas -->
+        <div class="field-grid grid-3">
             <div class="field">
                 <div class="field-label">Prioridade</div>
                 <div class="field-value">${formatPriority(ficha.formData.prioridade)}</div>
+            </div>
+            <div class="field">
+                <div class="field-label">Data Visita</div>
+                <div class="field-value">${formatDate(ficha.formData.data_visita)}</div>
+            </div>
+            <div class="field">
+                <div class="field-label">Data Entrega</div>
+                <div class="field-value">${formatDate(ficha.formData.data_entrega)}</div>
             </div>
         </div>
     </div>
@@ -583,7 +646,7 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
                 <div class="field-value">${formatRadio(ficha.formData.peca_foi_desmontada)}</div>
             </div>
             <div class="field">
-                <div class="field-label">Condição da peça</div>
+                <div class="field-label">A peça é nova ou usada?</div>
                 <div class="field-value">${formatValue(ficha.formData.peca_condicao) || 'Nova'}</div>
             </div>
             <div class="field">
@@ -602,27 +665,19 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
     <!-- MATERIAIS -->
     ${materiaisComPrecos.length > 0 ? `
     <div class="section-card">
-        <div class="section-title">📦 MATERIAL PARA COTAÇÃO</div>
+        <div class="section-title">📦 MATERIAIS USADOS NA DEMANDA</div>
         <table class="materials-table">
             <thead>
                 <tr>
-                    <th style="width: 8%;">QTD</th>
-                    <th style="width: 30%;">MATERIAL</th>
-                    <th style="width: 12%;">PREÇO UNIT</th>
-                    <th style="width: 20%;">FORNECEDOR</th>
-                    <th style="width: 15%;">CLIENTE INT</th>
-                    <th style="width: 15%;">VALOR TOTAL</th>
+                    <th style="width: 15%;">QTD</th>
+                    <th style="width: 85%;">MATERIAL</th>
                 </tr>
             </thead>
             <tbody>
                 ${materiaisComPrecos.map(m => `
                     <tr>
-                        <td>${m.quantidade}</td>
-                        <td>${m.descricao}</td>
-                        <td>${m.valor_unitario ? formatCurrency(parseFloat(m.valor_unitario)) : '—'}</td>
-                        <td>${m.fornecedor || '—'}</td>
-                        <td>${m.cliente_interno || '—'}</td>
-                        <td><strong>${formatCurrency(parseFloat(m.valor_total))}</strong></td>
+                        <td>${formatValue(m.quantidade)}</td>
+                        <td>${formatValue(m.descricao)}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -647,10 +702,6 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
                 <div class="field-value">${formatHours(ficha.formData.visita_horas)}</div>
             </div>
             <div class="field">
-                <div class="field-label">Peça Amostra</div>
-                <div class="field-value">${formatRadio(ficha.formData.tem_peca_amostra)}</div>
-            </div>
-            <div class="field">
                 <div class="field-label">Projeto por</div>
                 <div class="field-value">${formatValue(ficha.formData.projeto_desenvolvido_por)}</div>
             </div>
@@ -658,12 +709,12 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
                 <div class="field-label">Desenho</div>
                 <div class="field-value">${formatValue(ficha.formData.desenho_peca)}</div>
             </div>
-        </div>
-        <div class="field-grid grid-3" style="margin-top: 4px;">
             <div class="field">
                 <div class="field-label">Finalizado</div>
                 <div class="field-value">${formatRadio(ficha.formData.desenho_finalizado)}</div>
             </div>
+        </div>
+        <div class="field-grid grid-3" style="margin-top: 4px;">
             <div class="field">
                 <div class="field-label">🚛 Transporte</div>
                 <div class="field-value">
@@ -684,7 +735,7 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
                 <div class="field-value">${formatRadio(ficha.formData.pintura)}</div>
             </div>
             <div class="field">
-                <div class="field-label">Cor Pintura</div>
+                <div class="field-label">Cor</div>
                 <div class="field-value">${formatValue(ficha.formData.cor_pintura)}</div>
             </div>
             <div class="field">
@@ -704,7 +755,7 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
                 <div class="field-value">${formatValue(ficha.formData.peso_peca_trat)}</div>
             </div>
             <div class="field">
-                <div class="field-label">Têmpera/Rev</div>
+                <div class="field-label">Tempera/Reven</div>
                 <div class="field-value">${formatValue(ficha.formData.tempera_reven)}</div>
             </div>
             <div class="field">
@@ -778,7 +829,12 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
             <div class="hours-grid">
                 <div class="hour-item"><span class="hour-label">Plasma/Oxicorte:</span><span class="hour-value">${formatHours(ficha.formData.plasma_oxicorte)}</span></div>
                 <div class="hour-item"><span class="hour-label">Maçarico:</span><span class="hour-value">${formatHours(ficha.formData.macarico)}</span></div>
-                <div class="hour-item"><span class="hour-label">Solda:</span><span class="hour-value">${formatHours(ficha.formData.solda)}</span></div>
+                <div class="hour-item"><span class="hour-label">Solda:</span><span class="hour-value">${(() => {
+                  const val = ficha.formData.solda;
+                  if (!val || val === '') return '0h';
+                  const num = parseFloat(String(val));
+                  return isNaN(num) ? '0h' : `${val}h`;
+                })()}</span></div>
                 <div class="hour-item"><span class="hour-label">Serra:</span><span class="hour-value">${formatHours(ficha.formData.serra)}</span></div>
                 <div class="hour-item"><span class="hour-label">Dobra:</span><span class="hour-value">${formatHours(ficha.formData.dobra)}</span></div>
                 <div class="hour-item"><span class="hour-label">Calandra:</span><span class="hour-value">${formatHours(ficha.formData.calandra)}</span></div>
@@ -821,50 +877,6 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
         </div>
     </div>
     ` : ''}
-
-    <!-- CONTROLE -->
-    <div class="section-card">
-        <div class="section-title">📋 CONTROLE DO PROCESSO</div>
-        <div class="field-grid grid-4">
-            <div class="field">
-                <div class="field-label">Nº Orçamento</div>
-                <div class="field-value">${formatValue(ficha.formData.num_orcamento)}</div>
-            </div>
-            <div class="field">
-                <div class="field-label">Nº OS</div>
-                <div class="field-value">${formatValue(ficha.formData.num_os)}</div>
-            </div>
-            <div class="field">
-                <div class="field-label">Nº DESENHO</div>
-                <div class="field-value">${formatValue(ficha.formData.num_desenho)}</div>
-            </div>
-            <div class="field">
-                <div class="field-label">Nº NF Remessa</div>
-                <div class="field-value">${formatValue(ficha.formData.num_nf_remessa)}</div>
-            </div>
-            <div class="field">
-                <div class="field-label">Status</div>
-                <div class="field-value">${ficha.status ? ficha.status.replace('_', ' ').toUpperCase() : '—'}</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- RESUMO -->
-    <div class="section-card">
-        <div class="section-title">💰 RESUMO DOS CÁLCULOS</div>
-        <div class="summary-box">
-            <div class="summary-item">
-                <div class="summary-label">Horas Total</div>
-                <div class="summary-value">${ficha.calculos.horasTodasPecas.toFixed(1)}h</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Material Total</div>
-                <div class="summary-value">${formatCurrency(ficha.calculos.materialTodasPecas)}</div>
-            </div>
-        </div>
-    </div>
-
-    ${orcamento ? generateBudgetSectionHTML(orcamento) : ''}
 
     <script>
       let currentPhotoIndex = 0;
@@ -935,6 +947,7 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
         }
       });
     </script>
+    </div>
 </body>
 </html>`;
 }
@@ -974,9 +987,31 @@ export async function openHTMLInNewWindow(ficha: FichaSalva): Promise<void> {
 function gerarModaisAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: string, supabaseAnonKey: string, versaoFTC?: number): string {
   return `
     <!-- Modal Aprovar -->
-    <div id="modal-aprovar" class="modal">
+    <div id="modal-aprovar" class="approval-modal">
       <div class="modal-content-approval">
         <button class="modal-close" onclick="fecharModal('aprovar')">&times;</button>
+
+        <!-- Termo de Responsabilidade -->
+        <div class="termo-responsabilidade">
+          <h3>⚖️ Termo de Responsabilidade - Aprovação</h3>
+          <div class="termo-texto">
+            <p>Ao aprovar esta ficha técnica, você declara que:</p>
+            <ul>
+              <li>✅ Revisou todos os dados técnicos e especificações apresentadas</li>
+              <li>✅ Confirma que as informações estão corretas e completas</li>
+              <li>✅ Autoriza o prosseguimento conforme especificado</li>
+              <li>✅ Assume responsabilidade pela aprovação técnica/comercial</li>
+            </ul>
+            <p class="termo-aviso"><strong>⚠️ IMPORTANTE:</strong> Esta aprovação será registrada com seus dados (nome, email, data/hora, IP) e não poderá ser desfeita.</p>
+          </div>
+          <div class="form-group-checkbox">
+            <input type="checkbox" id="checkbox-aprovar" required>
+            <label for="checkbox-aprovar">
+              <strong>Li e concordo com o termo de responsabilidade acima. Autorizo a aprovação desta ficha.</strong>
+            </label>
+          </div>
+        </div>
+
         <div id="form-aprovar">
           <h2 class="modal-title">✅ Aprovar Ficha Técnica</h2>
           <form id="form-aprovacao-aprovar" onsubmit="submitAprovacao(event, 'aprovar')">
@@ -1007,9 +1042,31 @@ function gerarModaisAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: s
     </div>
 
     <!-- Modal Alterar -->
-    <div id="modal-alterar" class="modal">
+    <div id="modal-alterar" class="approval-modal">
       <div class="modal-content-approval">
         <button class="modal-close" onclick="fecharModal('alterar')">&times;</button>
+
+        <!-- Termo de Responsabilidade -->
+        <div class="termo-responsabilidade">
+          <h3>⚖️ Termo de Responsabilidade - Solicitação de Alterações</h3>
+          <div class="termo-texto">
+            <p>Ao solicitar alterações, você declara que:</p>
+            <ul>
+              <li>📝 Revisou a ficha e identificou pontos que necessitam modificação</li>
+              <li>📝 As alterações solicitadas são necessárias e fundamentadas</li>
+              <li>📝 Fornecerá informações claras sobre as mudanças necessárias</li>
+              <li>📝 Compromete-se a revisar a ficha após as alterações serem feitas</li>
+            </ul>
+            <p class="termo-aviso"><strong>⚠️ ATENÇÃO:</strong> Solicitações de alteração podem impactar prazos de entrega. Esta solicitação será registrada e rastreada.</p>
+          </div>
+          <div class="form-group-checkbox">
+            <input type="checkbox" id="checkbox-alterar" required>
+            <label for="checkbox-alterar">
+              <strong>Li e concordo. Solicito as alterações descritas abaixo.</strong>
+            </label>
+          </div>
+        </div>
+
         <div id="form-alterar">
           <h2 class="modal-title">🔄 Solicitar Alterações</h2>
           <form id="form-aprovacao-alterar" onsubmit="submitAprovacao(event, 'alterar')">
@@ -1040,9 +1097,31 @@ function gerarModaisAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: s
     </div>
 
     <!-- Modal Rejeitar -->
-    <div id="modal-rejeitar" class="modal">
+    <div id="modal-rejeitar" class="approval-modal">
       <div class="modal-content-approval">
         <button class="modal-close" onclick="fecharModal('rejeitar')">&times;</button>
+
+        <!-- Termo de Responsabilidade -->
+        <div class="termo-responsabilidade termo-rejeitar">
+          <h3>⚖️ Termo de Responsabilidade - Rejeição</h3>
+          <div class="termo-texto">
+            <p>Ao rejeitar esta ficha técnica, você declara que:</p>
+            <ul>
+              <li>❌ Revisou a ficha e identificou inviabilidades técnicas ou comerciais</li>
+              <li>❌ A rejeição é fundamentada em critérios objetivos</li>
+              <li>❌ Fornecerá justificativa clara e detalhada</li>
+              <li>❌ Entende que a rejeição encerrará este processo de cotação</li>
+            </ul>
+            <p class="termo-aviso"><strong>⚠️ ATENÇÃO:</strong> A rejeição é uma decisão final e irreversível. Esta ação será registrada e notificará toda a equipe comercial.</p>
+          </div>
+          <div class="form-group-checkbox">
+            <input type="checkbox" id="checkbox-rejeitar" required>
+            <label for="checkbox-rejeitar">
+              <strong>Li e concordo. Confirmo a rejeição desta ficha técnica.</strong>
+            </label>
+          </div>
+        </div>
+
         <div id="form-rejeitar">
           <h2 class="modal-title">❌ Rejeitar Ficha Técnica</h2>
           <form id="form-aprovacao-rejeitar" onsubmit="submitAprovacao(event, 'rejeitar')">
@@ -1160,14 +1239,19 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
     window.abrirModalAprovacao = async function(tipo) {
       console.log('🔵 Abrindo modal:', tipo);
 
-      // Validar status antes de abrir modal
-      const statusValido = await window.validarStatusFicha();
-      if (!statusValido) {
-        console.log('❌ Status inválido, modal não será aberto');
-        return;
+      // Tentar validar status, mas não bloquear se falhar
+      try {
+        const statusValido = await window.validarStatusFicha();
+        if (statusValido) {
+          console.log('✅ Status válido, abrindo modal...');
+        } else {
+          console.warn('⚠️ Validação de status falhou, mas modal será aberto mesmo assim');
+        }
+      } catch (error) {
+        console.warn('⚠️ Erro ao validar status, mas modal será aberto mesmo assim:', error);
       }
 
-      console.log('✅ Status válido, abrindo modal...');
+      // Abrir modal independentemente da validação
       const modal = document.getElementById('modal-' + tipo);
       if (modal) {
         modal.style.display = 'block';
@@ -1184,7 +1268,7 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
 
     // Fechar ao clicar fora
     window.onclick = function(event) {
-      if (event.target.classList.contains('modal')) {
+      if (event.target.classList.contains('approval-modal')) {
         event.target.style.display = 'none';
       }
     };
@@ -1192,6 +1276,24 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
     // Submit aprovação
     window.submitAprovacao = async function(event, tipo) {
       event.preventDefault();
+
+      // VALIDAÇÃO DO CHECKBOX
+      const checkbox = document.getElementById('checkbox-' + tipo);
+      if (!checkbox || !checkbox.checked) {
+        alert('⚠️ ATENÇÃO\\n\\nVocê deve ler e concordar com o termo de responsabilidade para prosseguir.\\n\\nPor favor, marque a caixa de confirmação.');
+        return;
+      }
+
+      // Confirmação adicional para rejeição
+      if (tipo === 'rejeitar') {
+        const confirma = confirm(
+          '⚠️ CONFIRMAÇÃO FINAL\\n\\n' +
+          'Você tem certeza que deseja REJEITAR esta ficha técnica?\\n\\n' +
+          'Esta ação é irreversível e encerrará o processo.\\n\\n' +
+          'Clique em OK para confirmar a rejeição.'
+        );
+        if (!confirma) return;
+      }
 
       const responsavel = document.getElementById('responsavel-' + tipo).value;
       const email = document.getElementById('email-' + tipo).value;
@@ -1264,6 +1366,153 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
           abrirModalAprovacao(tipo);
         });
       });
+
+      // 📝 Ler parâmetros URL diretos (nome, email, telefone) e pré-preencher campos
+      function preencherCamposComURL() {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const nome = urlParams.get('nome');
+          const email = urlParams.get('email');
+          const telefone = urlParams.get('telefone');
+
+          // Se não há parâmetros URL, retorna
+          if (!nome && !email && !telefone) {
+            console.log('ℹ️ Nenhum parâmetro de contato na URL');
+            return false; // Indica que não preencheu via URL
+          }
+
+          console.log('📧 Parâmetros de contato detectados na URL:', { nome, email, telefone });
+
+          // Preencher campos de TODOS os 3 modais
+          const tipos = ['aprovar', 'alterar', 'rejeitar'];
+          tipos.forEach(tipo => {
+            const inputNome = document.getElementById(\`responsavel-\${tipo}\`);
+            const inputEmail = document.getElementById(\`email-\${tipo}\`);
+            const inputTelefone = document.getElementById(\`telefone-\${tipo}\`);
+
+            if (inputNome && nome) {
+              inputNome.value = decodeURIComponent(nome);
+            }
+
+            if (inputEmail && email) {
+              inputEmail.value = decodeURIComponent(email);
+            }
+
+            if (inputTelefone && telefone) {
+              inputTelefone.value = decodeURIComponent(telefone);
+            }
+          });
+
+          console.log('✅ Campos pré-preenchidos com parâmetros URL!');
+          return true; // Indica que preencheu via URL
+        } catch (error) {
+          console.error('❌ Erro ao processar parâmetros URL:', error);
+          return false;
+        }
+      }
+
+      // 🔑 Ler token da URL e pré-preencher campos
+      async function preencherCamposComToken() {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const token = urlParams.get('token');
+
+          if (!token) {
+            console.log('ℹ️ Nenhum token fornecido na URL');
+            return;
+          }
+
+          console.log('🔑 Token detectado:', token);
+
+          // Buscar dados do token no Supabase
+          const response = await fetch(\`${supabaseUrl}/rest/v1/aprovacao_tokens?token=eq.\${token}&select=*\`, {
+            headers: {
+              'apikey': '${supabaseAnonKey}',
+              'Authorization': 'Bearer ${supabaseAnonKey}'
+            }
+          });
+
+          if (!response.ok) {
+            console.error('❌ Erro ao buscar token:', response.statusText);
+            return;
+          }
+
+          const tokens = await response.json();
+
+          if (!tokens || tokens.length === 0) {
+            console.warn('⚠️ Token não encontrado ou inválido');
+            return;
+          }
+
+          const tokenData = tokens[0];
+
+          // Verificar se o token já foi usado
+          if (tokenData.usado) {
+            console.warn('⚠️ Token já foi utilizado');
+            alert('Este link de aprovação já foi utilizado. Entre em contato com o fornecedor caso precise fazer alterações.');
+            return;
+          }
+
+          // Verificar se o token está expirado
+          const expiraEm = new Date(tokenData.expira_em);
+          if (expiraEm < new Date()) {
+            console.warn('⚠️ Token expirado');
+            alert('Este link de aprovação expirou. Entre em contato com o fornecedor para receber um novo link.');
+            return;
+          }
+
+          console.log('✅ Token válido! Pré-preenchendo campos...');
+
+          // Pré-preencher campos de TODOS os 3 modais
+          const tipos = ['aprovar', 'alterar', 'rejeitar'];
+          tipos.forEach(tipo => {
+            const inputNome = document.getElementById(\`responsavel-\${tipo}\`);
+            const inputEmail = document.getElementById(\`email-\${tipo}\`);
+            const inputTelefone = document.getElementById(\`telefone-\${tipo}\`);
+
+            if (inputNome && tokenData.contato_nome) {
+              inputNome.value = tokenData.contato_nome;
+              inputNome.setAttribute('readonly', 'readonly');
+              inputNome.style.backgroundColor = '#f0fdf4';
+            }
+
+            if (inputEmail && tokenData.contato_email) {
+              inputEmail.value = tokenData.contato_email;
+              inputEmail.setAttribute('readonly', 'readonly');
+              inputEmail.style.backgroundColor = '#f0fdf4';
+            }
+
+            if (inputTelefone && tokenData.contato_telefone) {
+              inputTelefone.value = tokenData.contato_telefone;
+              inputTelefone.setAttribute('readonly', 'readonly');
+              inputTelefone.style.backgroundColor = '#f0fdf4';
+            }
+          });
+
+          // Mostrar mensagem de sucesso
+          const header = document.querySelector('h1');
+          if (header) {
+            const badge = document.createElement('div');
+            badge.style.cssText = 'background: #10b981; color: white; padding: 8px 16px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: inline-block;';
+            badge.textContent = \`✅ Bem-vindo(a), \${tokenData.contato_nome}! Seus dados foram pré-preenchidos.\`;
+            header.insertAdjacentElement('afterend', badge);
+          }
+
+          console.log('✅ Campos pré-preenchidos com sucesso!');
+
+        } catch (error) {
+          console.error('❌ Erro ao processar token:', error);
+        }
+      }
+
+      // Executar funções de pré-preenchimento
+      // Prioridade: URL parameters > Token
+      const preenchidoComURL = preencherCamposComURL();
+
+      // Se não preencheu com URL, tentar com token
+      if (!preenchidoComURL) {
+        preencherCamposComToken();
+      }
     });
   </script>
   `;
@@ -1307,7 +1556,7 @@ export async function generateHTMLWithApproval(dados: ApprovalSystemData): Promi
     .approval-section {
       margin-top: 40px;
       padding: 30px;
-      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+      background: #fff;
       border-radius: 12px;
       border: 2px solid #10b981;
     }
@@ -1375,7 +1624,7 @@ export async function generateHTMLWithApproval(dados: ApprovalSystemData): Promi
     }
 
     /* Modais de aprovação */
-    .modal {
+    .approval-modal {
       display: none;
       position: fixed;
       z-index: 10000;
@@ -1389,12 +1638,35 @@ export async function generateHTMLWithApproval(dados: ApprovalSystemData): Promi
 
     .modal-content-approval {
       background: white;
-      margin: 10% auto;
+      margin: 2% auto;
       padding: 30px;
       border-radius: 12px;
       max-width: 500px;
+      max-height: 95vh;
+      overflow-y: auto;
       box-shadow: 0 10px 25px rgba(0,0,0,0.2);
       position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #999;
+      background: none;
+      border: none;
+      cursor: pointer;
+      z-index: 1;
+      line-height: 1;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+    }
+
+    .modal-close:hover {
+      color: #333;
     }
 
     .modal-title {
@@ -1480,6 +1752,99 @@ export async function generateHTMLWithApproval(dados: ApprovalSystemData): Promi
       padding: 20px;
       border-radius: 8px;
       text-align: center;
+    }
+
+    /* Estilos do Termo de Responsabilidade */
+    .termo-responsabilidade {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border: 2px solid #dee2e6;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .termo-responsabilidade h3 {
+      color: #495057;
+      margin-bottom: 16px;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .termo-texto {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      max-height: 320px;
+      overflow-y: auto;
+      border: 1px solid #e9ecef;
+    }
+
+    .termo-texto p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+      color: #495057;
+    }
+
+    .termo-texto ul {
+      margin-left: 24px;
+      margin-bottom: 16px;
+    }
+
+    .termo-texto li {
+      margin-bottom: 10px;
+      line-height: 1.7;
+      color: #212529;
+    }
+
+    .termo-aviso {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      margin-top: 16px;
+      border-radius: 4px;
+    }
+
+    .termo-rejeitar {
+      border-color: #dc3545;
+      background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+    }
+
+    .form-group-checkbox {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      border: 2px solid #0d6efd;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .form-group-checkbox:hover {
+      background: #f8f9fa;
+      border-color: #0a58ca;
+    }
+
+    .form-group-checkbox input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      margin-top: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .form-group-checkbox label {
+      flex: 1;
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.6;
+      color: #212529;
     }
 
     .success-message h3 {

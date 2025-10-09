@@ -39,8 +39,7 @@ export const EnviarOrcamentoModal: React.FC<EnviarOrcamentoModalProps> = ({
 }) => {
   const [contatosSelecionados, setContatosSelecionados] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
-  const [assunto, setAssunto] = useState('');
-  const [mensagem, setMensagem] = useState('');
+  const [tipoEnvio, setTipoEnvio] = useState<'ambos' | 'orcamento' | 'ficha'>('ambos');
   const [activeTab, setActiveTab] = useState('contatos');
   const [contatosAdicionais, setContatosAdicionais] = useState<Contato[]>([]);
   const [mostrarFormNovoContato, setMostrarFormNovoContato] = useState(false);
@@ -57,55 +56,35 @@ export const EnviarOrcamentoModal: React.FC<EnviarOrcamentoModalProps> = ({
     if (open) {
       setEnviando(false);
       setActiveTab('contatos');
+      setTipoEnvio('ambos');
 
       // Pré-selecionar contato principal da FTC
       const contatosPrincipal = [];
-      if (fichaTecnica?.formData?.fone_email) {
+      if (fichaTecnica?.formData?.telefone || fichaTecnica?.formData?.email || fichaTecnica?.formData?.fone_email) {
         contatosPrincipal.push('auto-detected');
       }
       setContatosSelecionados(contatosPrincipal);
-
-      // Gerar assunto e mensagem automáticos
-      const numeroFTC = fichaTecnica?.numeroFTC || 'N/A';
-      const nomeCliente = fichaTecnica?.formData?.cliente || 'Cliente';
-      const solicitante = fichaTecnica?.formData?.solicitante || nomeCliente;
-
-      setAssunto(`Orçamento FTC ${numeroFTC} - ${fichaTecnica?.formData?.nome_peca || 'Serviço'}`);
-
-      setMensagem(`Prezado(a) ${solicitante},
-
-Segue em anexo o orçamento solicitado conforme especificações técnicas fornecidas.
-
-📋 FTC: ${numeroFTC}
-👤 Solicitante: ${solicitante}
-🔧 Serviço: ${fichaTecnica?.formData?.nome_peca || 'Conforme especificação'}
-⏰ Prazo: ${orcamento?.config?.prazoEntrega || 'A definir'} dias úteis
-✅ Validade: ${orcamento?.config?.validadeProposta || 30} dias
-
-📋 FICHA TÉCNICA COM APROVAÇÃO
-Incluímos a ficha técnica completa com botões de aprovação direta. Você pode aprovar, solicitar alterações ou rejeitar diretamente pelo link enviado.
-
-⚡ APROVAÇÃO RÁPIDA
-Clique nos botões de aprovação incluídos no link para agilizar o processo.
-
-Ficamos à disposição para esclarecimentos.
-
-Atenciosamente,
-Equipe HMC Usinagem`);
     }
-  }, [open, orcamento, fichaTecnica]);
+  }, [open, fichaTecnica]);
 
   // Contatos disponíveis (auto-detectado + adicionais manuais)
   const contatosDisponiveisComAuto = useMemo(() => {
     const contatosBase: Contato[] = [];
 
     // Adicionar contato auto-detectado da FTC
-    if (fichaTecnica?.formData?.fone_email) {
+    if (fichaTecnica?.formData?.telefone || fichaTecnica?.formData?.email || fichaTecnica?.formData?.fone_email) {
+      const telefone = fichaTecnica.formData.telefone || '';
+      const email = fichaTecnica.formData.email || '';
+
+      // Fallback para compatibilidade com fichas antigas
+      const foneEmail = fichaTecnica.formData.fone_email || '';
+      const isTelefone = /[\(\)\-\+]/.test(foneEmail) || /^\d/.test(foneEmail);
+
       contatosBase.push({
         id: 'auto-detected',
         nome: fichaTecnica.formData.solicitante || fichaTecnica.formData.cliente || 'Contato Principal',
-        email: fichaTecnica.formData.fone_email,
-        telefone: '',
+        email: email || (isTelefone ? '' : foneEmail),
+        telefone: telefone || (isTelefone ? foneEmail : ''),
         cargo: 'Solicitante',
         departamento: 'Auto-detectado'
       });
@@ -182,8 +161,8 @@ Equipe HMC Usinagem`);
 
       const emailsDestino = contatosParaEnvio.map(c => c?.email).filter(Boolean);
 
-      if (emailsDestino.length === 0) {
-        throw new Error('Nenhum email válido encontrado nos contatos selecionados');
+      if (contatosParaEnvio.length === 0) {
+        throw new Error('Nenhum contato selecionado');
       }
 
       // 2. Salvar orçamento no banco
@@ -194,15 +173,55 @@ Equipe HMC Usinagem`);
 
       const orcamentoJSON = JSON.stringify(orcamento);
 
+      // Calcular a nova versão do orçamento ANTES do update
+      const novaVersaoOrcamento = (fichaTecnica.versao_orcamento_atual || 0) + 1;
+
       const { error: updateError } = await supabase
         .from('fichas_tecnicas')
         .update({
           dados_orcamento: orcamentoJSON,
-          status: 'orcamento_enviado_cliente'
+          status: 'orcamento_enviado_cliente',
+          versao_orcamento_atual: novaVersaoOrcamento
         })
         .eq('id', fichaTecnica.id);
 
       if (updateError) throw updateError;
+
+      // 2.5. Gerar tokens únicos para cada contato
+      toast({
+        title: "Gerando tokens de aprovação...",
+        description: "Criando links personalizados para cada contato..."
+      });
+
+      const tokensMap = new Map<string, string>(); // contactId -> token
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30); // Válido por 30 dias
+
+      for (const contato of contatosParaEnvio) {
+        if (!contato) continue;
+
+        const token = crypto.randomUUID();
+
+        const { error: tokenError } = await supabase
+          .from('aprovacao_tokens')
+          .insert({
+            token,
+            ficha_id: fichaTecnica.id,
+            tipo: 'orcamento',
+            contato_nome: contato.nome,
+            contato_email: contato.email,
+            contato_telefone: contato.telefone || null,
+            contato_cargo: contato.cargo || null,
+            expira_em: expiresAt.toISOString()
+          });
+
+        if (tokenError) {
+          console.error(`Erro ao criar token para ${contato.nome}:`, tokenError);
+          throw new Error(`Falha ao criar token de aprovação para ${contato.nome}`);
+        }
+
+        tokensMap.set(contato.id, token);
+      }
 
       // 3. Carregar fotos
       toast({
@@ -211,8 +230,11 @@ Equipe HMC Usinagem`);
       });
 
       const fotos = await carregarFotosFicha(fichaTecnica.id);
+      const numeroFTC = fichaTecnica.numeroFTC || fichaTecnica.numero_ftc || 'SEM-NUMERO';
       const fichaComFotos: FichaSalva = {
         ...fichaTecnica,
+        numeroFTC: numeroFTC,
+        numero_ftc: numeroFTC,
         fotos,
         formData: {
           ...fichaTecnica.formData,
@@ -220,111 +242,194 @@ Equipe HMC Usinagem`);
         }
       };
 
-      // 4. Gerar 2 HTMLs: Técnico (para Engenharia) e Orçamento (para Compras)
+      // 4. Gerar HTMLs conforme seleção do usuário
+      const geraTecnico = tipoEnvio === 'ambos' || tipoEnvio === 'ficha';
+      const geraOrcamento = tipoEnvio === 'ambos' || tipoEnvio === 'orcamento';
+
       toast({
         title: "Gerando HTMLs...",
-        description: "Criando ficha técnica e orçamento com sistema de aprovação..."
+        description: geraTecnico && geraOrcamento
+          ? "Criando ficha técnica e orçamento..."
+          : geraTecnico
+            ? "Criando ficha técnica..."
+            : "Criando orçamento..."
       });
 
       const timestamp = Date.now();
+      let htmlTecnico, htmlOrcamento, filePathTecnico, filePathOrcamento;
 
-      // 4a. HTML Técnico (para ENGENHARIA aprovar)
-      const htmlTecnico = await generateHTMLWithApproval({
-        ficha: fichaComFotos,
-        versaoFTC: fichaTecnica.versao_ftc_atual || 1,
-        supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-        supabaseAnonKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-      });
-
-      // 4b. HTML Orçamento (para COMPRAS aprovar)
-      let htmlOrcamento;
-      try {
-        htmlOrcamento = await generateOrcamentoHTML(
-          fichaComFotos,
-          import.meta.env.VITE_SUPABASE_URL,
-          import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          fichaTecnica.versao_orcamento_atual || 1
-        );
-      } catch (orcError) {
-        console.error('Erro ao gerar HTML de orçamento:', orcError);
-        throw new Error(`Falha ao gerar HTML de orçamento: ${orcError instanceof Error ? orcError.message : 'Erro desconhecido'}`);
+      // 4a. HTML Técnico (se selecionado)
+      if (geraTecnico) {
+        htmlTecnico = await generateHTMLWithApproval({
+          ficha: fichaComFotos,
+          versaoFTC: fichaTecnica.versao_ftc_atual || 1,
+          supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+          supabaseAnonKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        });
       }
 
-      // 5. Upload de AMBOS os HTMLs
+      // 4b. HTML Orçamento (se selecionado)
+      if (geraOrcamento) {
+        try {
+          htmlOrcamento = await generateOrcamentoHTML(
+            fichaComFotos,
+            import.meta.env.VITE_SUPABASE_URL,
+            import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            novaVersaoOrcamento
+          );
+        } catch (orcError) {
+          console.error('Erro ao gerar HTML de orçamento:', orcError);
+          throw new Error(`Falha ao gerar HTML de orçamento: ${orcError instanceof Error ? orcError.message : JSON.stringify(orcError)}`);
+        }
+      }
+
+      // 5. Upload dos HTMLs selecionados
       toast({
         title: "Fazendo upload...",
         description: "Salvando HTMLs no storage..."
       });
 
-      const fileNameTecnico = `ftc-tecnica-${fichaTecnica.numeroFTC}-${timestamp}.html`;
-      const fileNameOrcamento = `ftc-orcamento-${fichaTecnica.numeroFTC}-${timestamp}.html`;
-      const filePathTecnico = `temp/${fileNameTecnico}`;
-      const filePathOrcamento = `temp/${fileNameOrcamento}`;
+      // Upload HTML Técnico (se gerado)
+      if (geraTecnico && htmlTecnico) {
+        const fileNameTecnico = `ftc-tecnica-${numeroFTC}-${timestamp}.html`;
+        filePathTecnico = `temp/${fileNameTecnico}`;
+        const htmlBlobTecnico = new Blob([htmlTecnico], { type: 'text/html;charset=utf-8' });
 
-      const htmlBlobTecnico = new Blob([htmlTecnico], { type: 'text/html;charset=utf-8' });
-      const htmlBlobOrcamento = new Blob([htmlOrcamento], { type: 'text/html;charset=utf-8' });
+        const { error: uploadErrorTecnico } = await supabase.storage
+          .from('ficha-fotos')
+          .upload(filePathTecnico, htmlBlobTecnico, {
+            contentType: 'text/html',
+            upsert: true
+          });
 
-      // Upload HTML Técnico
-      const { error: uploadErrorTecnico } = await supabase.storage
-        .from('ficha-fotos')
-        .upload(filePathTecnico, htmlBlobTecnico, {
-          contentType: 'text/html',
-          upsert: true
-        });
+        if (uploadErrorTecnico) throw uploadErrorTecnico;
+      }
 
-      if (uploadErrorTecnico) throw uploadErrorTecnico;
+      // Upload HTML Orçamento (se gerado)
+      if (geraOrcamento && htmlOrcamento) {
+        const fileNameOrcamento = `ftc-orcamento-${numeroFTC}-${timestamp}.html`;
+        filePathOrcamento = `temp/${fileNameOrcamento}`;
+        const htmlBlobOrcamento = new Blob([htmlOrcamento], { type: 'text/html;charset=utf-8' });
 
-      // Upload HTML Orçamento
-      const { error: uploadErrorOrcamento } = await supabase.storage
-        .from('ficha-fotos')
-        .upload(filePathOrcamento, htmlBlobOrcamento, {
-          contentType: 'text/html',
-          upsert: true
-        });
+        const { error: uploadErrorOrcamento } = await supabase.storage
+          .from('ficha-fotos')
+          .upload(filePathOrcamento, htmlBlobOrcamento, {
+            contentType: 'text/html',
+            upsert: true
+          });
 
-      if (uploadErrorOrcamento) throw uploadErrorOrcamento;
+        if (uploadErrorOrcamento) throw uploadErrorOrcamento;
+      }
 
-      const viewerUrlTecnico = `${getAppBaseUrl()}/view-html/${encodeURIComponent(filePathTecnico)}`;
-      const viewerUrlOrcamento = `${getAppBaseUrl()}/view-html/${encodeURIComponent(filePathOrcamento)}`;
+      const baseUrlTecnico = filePathTecnico ? `${getAppBaseUrl()}/view-html/${encodeURIComponent(filePathTecnico)}` : null;
+      const baseUrlOrcamento = filePathOrcamento ? `${getAppBaseUrl()}/view-html/${encodeURIComponent(filePathOrcamento)}` : null;
 
-      // 6. Enviar WhatsApp com AMBOS os links
-      const msgWhatsApp = `🔧 *Orçamento FTC ${fichaTecnica.numeroFTC}*\n\n` +
-        `📋 Cliente: ${fichaTecnica.formData.cliente}\n` +
-        `⚙️ Serviço: ${fichaTecnica.formData.nome_peca}\n` +
-        `💰 Valor: R$ ${orcamento?.precoVendaFinal.toFixed(2)}\n\n` +
-        `📄 *Aprovações Separadas:*\n\n` +
-        `🔧 *FICHA TÉCNICA* (Engenharia):\n${viewerUrlTecnico}\n\n` +
-        `💰 *ORÇAMENTO COMERCIAL* (Compras):\n${viewerUrlOrcamento}\n\n` +
-        `✅ Cada departamento pode aprovar sua parte diretamente!`;
+      // 6. Gerar links personalizados para cada contato
+      const linksPersonalizados = contatosParaEnvio.map(contato => {
+        if (!contato) return null;
+        const token = tokensMap.get(contato.id);
+        if (!token) return null;
 
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msgWhatsApp)}`, '_blank');
+        return {
+          contato: contato.nome,
+          email: contato.email,
+          urlTecnico: baseUrlTecnico ? `${baseUrlTecnico}?token=${token}` : null,
+          urlOrcamento: baseUrlOrcamento ? `${baseUrlOrcamento}?token=${token}` : null
+        };
+      }).filter(Boolean);
 
-      // 7. Enviar Email (Outlook) com AMBOS os links
-      const emailBody = mensagem +
-        `\n\n📄 LINKS PARA VISUALIZAÇÃO E APROVAÇÃO:\n\n` +
-        `🔧 FICHA TÉCNICA (Aprovação: Engenharia):\n${viewerUrlTecnico}\n\n` +
-        `💰 ORÇAMENTO COMERCIAL (Aprovação: Compras):\n${viewerUrlOrcamento}\n\n` +
-        `Cada departamento pode aprovar sua parte de forma independente.`;
+      // 7. Preparar textos comuns
+      const primeiroLink = linksPersonalizados[0];
+      const nomeCliente = fichaTecnica?.formData?.cliente || 'Cliente';
+      const solicitante = fichaTecnica?.formData?.solicitante || nomeCliente;
+      const servico = fichaTecnica?.formData?.nome_peca || 'Conforme especificação';
+      const prazo = orcamento?.config?.prazoEntrega || 'A definir';
+      const validade = orcamento?.config?.validadeProposta || 30;
 
-      window.location.href = `mailto:${emailsDestino.join(',')}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(emailBody)}`;
+      // 8. Preparar assunto do email
+      const assunto = `Orçamento FTC ${numeroFTC} - ${servico}`;
 
-      // 8. Callback de sucesso
+      // 9. Preparar corpo do email conforme tipo selecionado
+      let linksEmail = '';
+      if (tipoEnvio === 'ambos') {
+        linksEmail = `📄 LINKS PARA VISUALIZAÇÃO E APROVAÇÃO:\n\n` +
+          `🔧 FICHA TÉCNICA:\n${primeiroLink?.urlTecnico}\n\n` +
+          `💰 ORÇAMENTO:\n${primeiroLink?.urlOrcamento}\n\n`;
+      } else if (tipoEnvio === 'orcamento') {
+        linksEmail = `📄 LINK PARA VISUALIZAÇÃO E APROVAÇÃO:\n\n` +
+          `💰 ORÇAMENTO:\n${primeiroLink?.urlOrcamento}\n\n`;
+      } else if (tipoEnvio === 'ficha') {
+        linksEmail = `📄 LINK PARA VISUALIZAÇÃO E APROVAÇÃO:\n\n` +
+          `🔧 FICHA TÉCNICA:\n${primeiroLink?.urlTecnico}\n\n`;
+      }
+
+      let emailBody = `Prezado(a) ${solicitante},\n\n` +
+        `Segue em anexo o orçamento solicitado conforme especificações técnicas fornecidas.\n\n` +
+        `📋 FTC: ${numeroFTC}\n` +
+        `👤 Solicitante: ${solicitante}\n` +
+        `🔧 Serviço: ${servico}\n` +
+        `⏰ Prazo: ${prazo} dias úteis\n` +
+        `✅ Validade: ${validade} dias\n\n` +
+        linksEmail +
+        `Ficamos à disposição para esclarecimentos.\n\n` +
+        `Atenciosamente,\nEquipe HMC Usinagem`;
+
+      // 10. Toast de sucesso ANTES de abrir janelas
+      toast({
+        title: "✅ Orçamento enviado com sucesso!",
+        description: `Abrindo Email e WhatsApp...`
+      });
+
+      // 11. Callback de sucesso
       if (onEnviar) {
         onEnviar({
           contatos: contatosParaEnvio,
           orcamento,
           fichaTecnica: fichaComFotos,
-          link: viewerUrlTecnico, // Link principal (ficha técnica)
-          dataEnvio: new Date().toISOString()
+          link: primeiroLink?.urlTecnico || primeiroLink?.urlOrcamento || baseUrlTecnico || baseUrlOrcamento || '',
+          dataEnvio: new Date().toISOString(),
+          tokensGerados: linksPersonalizados
         });
       }
 
-      toast({
-        title: "✅ Orçamento enviado com sucesso!",
-        description: `Email e WhatsApp preparados. 2 HTMLs gerados (Técnico + Orçamento)`
-      });
+      // 12. Abrir Outlook (PRIMEIRO)
+      if (emailsDestino.length > 0) {
+        const mailtoLink = `mailto:${emailsDestino.join(',')}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(emailBody)}`;
+        console.log('🔍 Abrindo Outlook:', mailtoLink.substring(0, 100) + '...');
+        window.location.href = mailtoLink;
+      }
 
-      onClose();
+      // 13. Preparar mensagem WhatsApp conforme tipo selecionado
+      let linksWhatsApp = '';
+      if (tipoEnvio === 'ambos') {
+        linksWhatsApp = `📄 *LINKS PARA VISUALIZAÇÃO E APROVAÇÃO:*\n\n` +
+          `🔧 *FICHA TÉCNICA:*\n${primeiroLink?.urlTecnico}\n\n` +
+          `💰 *ORÇAMENTO:*\n${primeiroLink?.urlOrcamento}`;
+      } else if (tipoEnvio === 'orcamento') {
+        linksWhatsApp = `📄 *LINK PARA VISUALIZAÇÃO E APROVAÇÃO:*\n\n` +
+          `💰 *ORÇAMENTO:*\n${primeiroLink?.urlOrcamento}`;
+      } else if (tipoEnvio === 'ficha') {
+        linksWhatsApp = `📄 *LINK PARA VISUALIZAÇÃO E APROVAÇÃO:*\n\n` +
+          `🔧 *FICHA TÉCNICA:*\n${primeiroLink?.urlTecnico}`;
+      }
+
+      // 14. Abrir WhatsApp (DEPOIS com delay)
+      setTimeout(() => {
+        let msgWhatsApp = `📋 *FTC: ${numeroFTC}*\n` +
+          `👤 Solicitante: ${solicitante}\n` +
+          `🔧 Serviço: ${servico}\n` +
+          `⏰ Prazo: ${prazo} dias úteis\n` +
+          `✅ Validade: ${validade} dias\n\n` +
+          linksWhatsApp;
+
+        console.log('🔍 Abrindo WhatsApp:', msgWhatsApp.substring(0, 100) + '...');
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msgWhatsApp)}`, '_blank');
+      }, 300);
+
+      // 13. Fechar modal APÓS delay para não cancelar navegação
+      setTimeout(() => {
+        onClose();
+      }, 500);
     } catch (error) {
       console.error('Erro ao enviar:', error);
       toast({
@@ -335,7 +440,7 @@ Equipe HMC Usinagem`);
     } finally {
       setEnviando(false);
     }
-  }, [contatosSelecionados, orcamento, fichaTecnica, mensagem, assunto, onEnviar, onClose, contatosDisponiveisComAuto, toast]);
+  }, [contatosSelecionados, orcamento, fichaTecnica, tipoEnvio, onEnviar, onClose, contatosDisponiveisComAuto, toast]);
 
   if (!open) return null;
 
@@ -353,31 +458,13 @@ Equipe HMC Usinagem`);
           </DialogTitle>
         </DialogHeader>
 
-        {/* Navegação por abas */}
-        <div className="border-b bg-gray-50">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('contatos')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'contatos'
-                  ? 'border-blue-500 text-blue-600 bg-white'
-                  : 'border-transparent text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <User className="h-4 w-4 inline mr-2" />
+        {/* Header com contador */}
+        <div className="border-b bg-gray-50 px-6 py-3">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">
               Contatos ({contatosSelecionados.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('mensagem')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'mensagem'
-                  ? 'border-blue-500 text-blue-600 bg-white'
-                  : 'border-transparent text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <Mail className="h-4 w-4 inline mr-2" />
-              Mensagem
-            </button>
+            </span>
           </div>
         </div>
 
@@ -556,14 +643,71 @@ Equipe HMC Usinagem`);
                 </div>
               )}
 
+              {/* Opções de envio */}
+              {contatosSelecionados.length > 0 && (
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <h4 className="font-medium text-gray-900 mb-3">📤 O que deseja enviar?</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="tipoEnvio"
+                        value="ambos"
+                        checked={tipoEnvio === 'ambos'}
+                        onChange={(e) => setTipoEnvio(e.target.value as 'ambos' | 'orcamento' | 'ficha')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm text-gray-900">Orçamento + Ficha Técnica</div>
+                        <div className="text-xs text-gray-500">Envia ambos os documentos com aprovação</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="tipoEnvio"
+                        value="orcamento"
+                        checked={tipoEnvio === 'orcamento'}
+                        onChange={(e) => setTipoEnvio(e.target.value as 'ambos' | 'orcamento' | 'ficha')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm text-gray-900">Apenas Orçamento</div>
+                        <div className="text-xs text-gray-500">Envia somente o orçamento com valores</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="tipoEnvio"
+                        value="ficha"
+                        checked={tipoEnvio === 'ficha'}
+                        onChange={(e) => setTipoEnvio(e.target.value as 'ambos' | 'orcamento' | 'ficha')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm text-gray-900">Apenas Ficha Técnica</div>
+                        <div className="text-xs text-gray-500">Envia somente a ficha técnica HTML</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {/* Informações sobre envio */}
               {contatosSelecionados.length > 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">Como funciona o envio:</h4>
+                  <h4 className="font-medium text-blue-900 mb-2">
+                    {tipoEnvio === 'ambos' && '📤 Será enviado: Orçamento + Ficha Técnica'}
+                    {tipoEnvio === 'orcamento' && '💰 Será enviado: Apenas Orçamento'}
+                    {tipoEnvio === 'ficha' && '🔧 Será enviado: Apenas Ficha Técnica'}
+                  </h4>
                   <div className="space-y-1 text-xs text-blue-700">
                     <div className="flex items-center gap-2">
                       <Mail className="h-3 w-3" />
-                      <span>Email: Link da ficha técnica com aprovação direta (Outlook)</span>
+                      <span>Email: Link com sistema de aprovação direta (Outlook)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MessageCircle className="h-3 w-3" />
@@ -574,96 +718,35 @@ Equipe HMC Usinagem`);
               )}
             </div>
           )}
-
-          {/* Aba Mensagem */}
-          {activeTab === 'mensagem' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-4">Personalizar Mensagem</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Assunto do Email
-                    </label>
-                    <Input
-                      value={assunto}
-                      onChange={(e) => setAssunto(e.target.value)}
-                      placeholder="Assunto do email..."
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Mensagem Personalizada
-                    </label>
-                    <Textarea
-                      value={mensagem}
-                      onChange={(e) => setMensagem(e.target.value)}
-                      rows={12}
-                      placeholder="Digite sua mensagem personalizada..."
-                      className="w-full"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Esta mensagem será incluída no email junto com o link de aprovação.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer com botões */}
         <div className="border-t p-6 bg-gray-50">
-          <div className="flex items-center justify-between">
-            {activeTab !== 'contatos' && (
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="outline" onClick={onClose} disabled={enviando}>
+              Cancelar
+            </Button>
+
+            {/* Botão de Envio */}
+            {contatosSelecionados.length > 0 && (
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveTab('contatos')}
-                className="text-xs"
+                onClick={handleEnviar}
+                disabled={enviando}
+                className="min-w-[140px] bg-green-600 hover:bg-green-700"
               >
-                ← Voltar aos Contatos
+                {enviando ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Enviar por Email & WhatsApp
+                  </>
+                )}
               </Button>
             )}
-
-            <div className="flex gap-3 ml-auto">
-              <Button variant="outline" onClick={onClose} disabled={enviando}>
-                Cancelar
-              </Button>
-
-              {activeTab === 'contatos' && contatosSelecionados.length > 0 && (
-                <Button
-                  onClick={() => setActiveTab('mensagem')}
-                  variant="outline"
-                >
-                  Próximo: Mensagem →
-                </Button>
-              )}
-
-              {/* Botão de Envio */}
-              {contatosSelecionados.length > 0 && (
-                <Button
-                  onClick={handleEnviar}
-                  disabled={enviando || !assunto.trim() || !mensagem.trim()}
-                  className="min-w-[140px] bg-green-600 hover:bg-green-700"
-                >
-                  {enviando ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      Enviar por Email & WhatsApp
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
           </div>
         </div>
       </DialogContent>

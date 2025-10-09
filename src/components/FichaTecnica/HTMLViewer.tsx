@@ -68,8 +68,45 @@ export function HTMLViewer() {
 
   return (
     <div
+      ref={(node) => {
+        if (node && htmlContent) {
+          // Limpar conteúdo anterior
+          node.innerHTML = '';
+
+          // Criar um template temporário para parsear o HTML
+          const template = document.createElement('template');
+          template.innerHTML = htmlContent;
+
+          // Adicionar todo o conteúdo
+          node.appendChild(template.content.cloneNode(true));
+
+          // Executar scripts manualmente (React não executa scripts via dangerouslySetInnerHTML)
+          const scripts = node.querySelectorAll('script');
+          scripts.forEach((oldScript) => {
+            const newScript = document.createElement('script');
+
+            // Copiar atributos
+            Array.from(oldScript.attributes).forEach((attr) => {
+              newScript.setAttribute(attr.name, attr.value);
+            });
+
+            // Copiar conteúdo
+            newScript.textContent = oldScript.textContent;
+
+            // Substituir script antigo pelo novo (para forçar execução)
+            oldScript.parentNode?.replaceChild(newScript, oldScript);
+          });
+
+          // ✅ DISPARAR DOMContentLoaded após scripts serem executados
+          // Isso garante que funções de pré-preenchimento sejam executadas
+          setTimeout(() => {
+            const event = new Event('DOMContentLoaded');
+            document.dispatchEvent(event);
+            console.log('🔄 DOMContentLoaded disparado manualmente pelo HTMLViewer');
+          }, 100);
+        }
+      }}
       className="w-full min-h-screen bg-background"
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
     />
   );
 }
