@@ -1,7 +1,7 @@
 {
-  "name": "Sistema de Fichas Técnicas HMC",
-  "short_name": "FTC HMC",
-  "description": "Sistema de gerenciamento de fichas técnicas para cotação e orçamento",
+  "name": "FTC Web - HMC Usinagem",
+  "short_name": "FTC Web",
+  "description": "Sistema Web de Fichas Técnicas de Cotação",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#1e40af",

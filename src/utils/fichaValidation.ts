@@ -48,29 +48,14 @@ export function validateFichaFields(
     });
   }
 
-  if (!formData.telefone?.trim()) {
-    errors.push({
-      field: 'telefone',
-      label: 'Telefone',
-      message: 'Telefone é obrigatório',
-      section: 'Dados do Cliente',
-      severity: 'error'
-    });
-  }
+  // Telefone é opcional (pode ter apenas WhatsApp ou outros meios de contato)
 
-  if (!formData.email?.trim()) {
+  // Email é opcional, mas se for fornecido, deve ser válido
+  if (formData.email?.trim() && !isValidEmail(formData.email)) {
     errors.push({
       field: 'email',
       label: 'Email',
-      message: 'Email é obrigatório',
-      section: 'Dados do Cliente',
-      severity: 'error'
-    });
-  } else if (!isValidEmail(formData.email)) {
-    errors.push({
-      field: 'email',
-      label: 'Email',
-      message: 'Email inválido',
+      message: 'Email inválido (formato incorreto)',
       section: 'Dados do Cliente',
       severity: 'error'
     });
@@ -108,100 +93,19 @@ export function validateFichaFields(
   }
 
   // ============================================
-  // 2. CAMPOS OBRIGATÓRIOS APENAS FORA DE RASCUNHO
+  // 2. CAMPOS OPCIONAIS - REMOVIDOS POR DECISÃO DO USUÁRIO
   // ============================================
-
-  if (!isRascunho) {
-    // Data de Entrega
-    if (!formData.data_entrega?.trim()) {
-      errors.push({
-        field: 'data_entrega',
-        label: 'Data de Entrega',
-        message: 'Data de entrega é obrigatória fora do rascunho',
-        section: 'Dados do Cliente',
-        severity: 'error'
-      });
-    }
-
-    // Observações Adicionais
-    if (!formData.observacoes_adicionais?.trim()) {
-      errors.push({
-        field: 'observacoes_adicionais',
-        label: 'Observações Adicionais',
-        message: 'Observações adicionais são obrigatórias fora do rascunho',
-        section: 'Observações',
-        severity: 'error'
-      });
-    }
-
-    // Campos de Controle
-    if (!formData.num_orcamento?.trim()) {
-      errors.push({
-        field: 'num_orcamento',
-        label: 'Nº Orçamento',
-        message: 'Número do orçamento é obrigatório fora do rascunho',
-        section: 'Controle',
-        severity: 'error'
-      });
-    }
-
-    if (!formData.num_os?.trim()) {
-      errors.push({
-        field: 'num_os',
-        label: 'Nº O.S',
-        message: 'Número da O.S é obrigatório fora do rascunho',
-        section: 'Controle',
-        severity: 'error'
-      });
-    }
-
-    if (!formData.num_desenho?.trim()) {
-      errors.push({
-        field: 'num_desenho',
-        label: 'Nº Desenho',
-        message: 'Número do desenho é obrigatório fora do rascunho',
-        section: 'Controle',
-        severity: 'error'
-      });
-    }
-
-    if (!formData.num_nf_remessa?.trim()) {
-      errors.push({
-        field: 'num_nf_remessa',
-        label: 'NF Remessa',
-        message: 'Número da NF de remessa é obrigatório fora do rascunho',
-        section: 'Controle',
-        severity: 'error'
-      });
-    }
-
-    // Validação de Materiais (preço e fornecedor obrigatórios fora de rascunho)
-    const materiaisValidos = materiais.filter(m =>
-      m.descricao?.trim() && parseFloat(m.quantidade) > 0
-    );
-
-    materiaisValidos.forEach((material, index) => {
-      if (!material.valor_unitario || parseFloat(material.valor_unitario) <= 0) {
-        errors.push({
-          field: `material_${material.id}_valor_unitario`,
-          label: `Material ${index + 1} - Preço Unitário`,
-          message: `Preço unitário é obrigatório fora do rascunho`,
-          section: 'Materiais',
-          severity: 'error'
-        });
-      }
-
-      if (!material.fornecedor?.trim()) {
-        errors.push({
-          field: `material_${material.id}_fornecedor`,
-          label: `Material ${index + 1} - Fornecedor`,
-          message: `Fornecedor é obrigatório fora do rascunho`,
-          section: 'Materiais',
-          severity: 'error'
-        });
-      }
-    });
-  }
+  // Os seguintes campos NÃO são mais obrigatórios em nenhum status:
+  // - data_entrega (preenchida quando souber)
+  // - observacoes_adicionais (opcional)
+  // - num_orcamento (preenchido pelo comercial depois)
+  // - num_os (preenchido pela produção depois)
+  // - num_desenho (nem sempre existe)
+  // - num_nf_remessa (preenchido depois)
+  // - materiais.valor_unitario (preenchido pelas compras)
+  // - materiais.fornecedor (preenchido pelas compras)
+  //
+  // Apenas validações condicionais (pintura, galvanização, etc) são mantidas abaixo.
 
   // ============================================
   // 3. VALIDAÇÕES CONDICIONAIS (todos os status)
