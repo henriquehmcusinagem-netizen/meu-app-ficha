@@ -505,6 +505,88 @@ export async function generateCompactHTMLContent(ficha: FichaSalva, orcamento?: 
 
         ${photoGalleryCSS}
 
+        /* RESPONSIVO PARA CELULAR */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                font-size: 9pt;
+            }
+
+            .container {
+                border: 2px solid #000;
+            }
+
+            .header h1 {
+                font-size: 14pt;
+            }
+
+            .header .subtitle {
+                font-size: 10pt;
+            }
+
+            /* Grids responsivos */
+            .grid-2, .grid-3, .grid-4, .grid-6 {
+                grid-template-columns: 1fr !important;
+            }
+
+            .field {
+                grid-column: span 1 !important;
+            }
+
+            /* Horas de produção - 2 colunas no celular */
+            .hours-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 4px;
+                font-size: 7pt;
+            }
+
+            .hour-item {
+                padding: 3px 4px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .hour-label {
+                font-size: 7pt;
+                margin-bottom: 2px;
+            }
+
+            .hour-value {
+                font-size: 8pt;
+            }
+
+            /* Tabela de materiais */
+            .materials-table {
+                font-size: 7pt;
+            }
+
+            .materials-table th,
+            .materials-table td {
+                padding: 4px 3px;
+            }
+
+            /* Photo grid - 2 colunas no celular */
+            .photo-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 4px;
+            }
+
+            /* Seção de aprovação */
+            .approval-section {
+                padding: 20px 15px;
+            }
+
+            .btn-container {
+                grid-template-columns: 1fr !important;
+                gap: 10px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+        }
+
         @media print {
             body {
                 padding: 0;
