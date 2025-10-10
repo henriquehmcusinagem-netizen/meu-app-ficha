@@ -1063,22 +1063,25 @@ export async function generateOrcamentoHTML(
       if (tipo === 'aprovar') {
         modalAtivo = modalAprovar;
         checkboxAceite.checked = false;
-        inputNome.value = '';
-        inputEmail.value = '';
-        inputTelefone.value = '';
+        // ✅ NÃO limpar campos se já estiverem pré-preenchidos (readonly)
+        if (!inputNome.readOnly) inputNome.value = '';
+        if (!inputEmail.readOnly) inputEmail.value = '';
+        if (!inputTelefone.readOnly) inputTelefone.value = '';
         btnConfirmarAprovar.disabled = true;
       } else if (tipo === 'alterar') {
         modalAtivo = modalAlterar;
-        inputNomeAlterar.value = '';
-        inputEmailAlterar.value = '';
-        inputTelefoneAlterar.value = '';
+        // ✅ NÃO limpar campos se já estiverem pré-preenchidos (readonly)
+        if (!inputNomeAlterar.readOnly) inputNomeAlterar.value = '';
+        if (!inputEmailAlterar.readOnly) inputEmailAlterar.value = '';
+        if (!inputTelefoneAlterar.readOnly) inputTelefoneAlterar.value = '';
         textareaAlteracoes.value = '';
         btnConfirmarAlterar.disabled = true;
       } else if (tipo === 'rejeitar') {
         modalAtivo = modalRejeitar;
-        inputNomeRejeitar.value = '';
-        inputEmailRejeitar.value = '';
-        inputTelefoneRejeitar.value = '';
+        // ✅ NÃO limpar campos se já estiverem pré-preenchidos (readonly)
+        if (!inputNomeRejeitar.readOnly) inputNomeRejeitar.value = '';
+        if (!inputEmailRejeitar.readOnly) inputEmailRejeitar.value = '';
+        if (!inputTelefoneRejeitar.readOnly) inputTelefoneRejeitar.value = '';
         textareaMotivo.value = '';
         btnConfirmarRejeitar.disabled = true;
       }
