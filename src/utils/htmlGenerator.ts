@@ -1685,9 +1685,9 @@ export async function generateHTMLWithApproval(dados: ApprovalSystemData): Promi
     .approval-section {
       margin-top: 40px;
       padding: 30px;
-      background: #fff;
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
       border-radius: 12px;
-      border: 2px solid #10b981;
+      text-align: center;
     }
 
     .approval-title {
