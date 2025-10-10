@@ -1065,170 +1065,146 @@ export async function openHTMLInNewWindow(ficha: FichaSalva): Promise<void> {
 
 /**
  * Gera os 3 modais de aprovação (aprovar, alterar, rejeitar)
+ * Estrutura padronizada com modal-overlay (padrão Orçamento)
  */
 function gerarModaisAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: string, supabaseAnonKey: string, versaoFTC?: number): string {
   return `
-    <!-- Modal Aprovar -->
-    <div id="modal-aprovar" class="approval-modal">
-      <div class="modal-content-approval">
-        <button class="modal-close" onclick="fecharModal('aprovar')">&times;</button>
-
-        <!-- Termo de Responsabilidade -->
-        <div class="termo-responsabilidade">
-          <h3>⚖️ Termo de Responsabilidade - Aprovação</h3>
-          <div class="termo-texto">
-            <p>Ao aprovar esta ficha técnica, você declara que:</p>
-            <ul>
-              <li>✅ Revisou todos os dados técnicos e especificações apresentadas</li>
-              <li>✅ Confirma que as informações estão corretas e completas</li>
-              <li>✅ Autoriza o prosseguimento conforme especificado</li>
-              <li>✅ Assume responsabilidade pela aprovação técnica/comercial</li>
-            </ul>
-            <p class="termo-aviso"><strong>⚠️ IMPORTANTE:</strong> Esta aprovação será registrada com seus dados (nome, email, data/hora, IP) e não poderá ser desfeita.</p>
+    <!-- MODAL DE APROVAÇÃO -->
+    <div id="modalAprovacao" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>✅ Termo de Responsabilidade e Aprovação</h2>
+        </div>
+        <div class="modal-body">
+          <div class="termo-responsabilidade">
+            <h3>DECLARO QUE:</h3>
+            <ol>
+              <li>Revisou todos os dados técnicos e especificações apresentadas nesta ficha;</li>
+              <li>Confirma que as informações estão corretas e completas para a execução dos serviços;</li>
+              <li>Autoriza o prosseguimento dos trabalhos conforme especificado;</li>
+              <li>Assume responsabilidade pela aprovação técnica e/ou comercial desta ficha;</li>
+              <li>Compreende que esta aprovação confirma a intenção de prosseguir com o trabalho especificado;</li>
+              <li>Está ciente de que esta aprovação será registrada e rastreada para fins de auditoria.</li>
+            </ol>
+            <p><strong>Esta aprovação será considerada como aceite formal das especificações técnicas apresentadas pela HMC Usinagem.</strong></p>
           </div>
-          <div class="form-group-checkbox">
-            <input type="checkbox" id="checkbox-aprovar" required>
-            <label for="checkbox-aprovar">
-              <strong>Li e concordo com o termo de responsabilidade acima. Autorizo a aprovação desta ficha.</strong>
+
+          <div class="checkbox-container">
+            <input type="checkbox" id="checkboxAceite" />
+            <label for="checkboxAceite">
+              Declaro que li, entendi e aceito integralmente os termos de responsabilidade acima, confirmando minha autorização para aprovação desta ficha técnica.
             </label>
           </div>
-        </div>
 
-        <div id="form-aprovar">
-          <h2 class="modal-title">✅ Aprovar Ficha Técnica</h2>
-          <form id="form-aprovacao-aprovar" onsubmit="submitAprovacao(event, 'aprovar')">
-            <div class="form-group">
-              <label class="form-label">Nome do Responsável *</label>
-              <input type="text" class="form-input" id="responsavel-aprovar" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Email *</label>
-              <input type="email" class="form-input" id="email-aprovar" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Telefone</label>
-              <input type="tel" class="form-input" id="telefone-aprovar" placeholder="(XX) XXXXX-XXXX">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Observações</label>
-              <textarea class="form-input" id="observacoes-aprovar"></textarea>
-            </div>
-            <button type="submit" class="btn-submit btn-submit-aprovar">✅ Confirmar Aprovação</button>
-          </form>
+          <div class="form-group">
+            <label for="inputNome">Nome Completo *</label>
+            <input type="text" id="inputNome" placeholder="Digite seu nome completo" required />
+          </div>
+
+          <div class="form-group">
+            <label for="inputEmail">E-mail *</label>
+            <input type="email" id="inputEmail" placeholder="seuemail@empresa.com" required />
+          </div>
+
+          <div class="form-group">
+            <label for="inputTelefone">Telefone *</label>
+            <input type="tel" id="inputTelefone" placeholder="(00) 00000-0000" required />
+          </div>
+
+          <div class="termo-footer">
+            ⚠️ ATENÇÃO: Ao confirmar, você está formalizando a aprovação desta ficha técnica sob sua responsabilidade.
+          </div>
         </div>
-        <div id="success-aprovar" class="success-message" style="display: none;">
-          <h3>✅ Ficha Aprovada!</h3>
-          <p>Sua aprovação foi registrada com sucesso. Obrigado!</p>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancelar" onclick="fecharModal()">❌ Cancelar</button>
+          <button type="button" class="btn-confirmar" id="btnConfirmarAprovacao" disabled onclick="confirmarAcao()">
+            ✅ Confirmar Aprovação
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Modal Alterar -->
-    <div id="modal-alterar" class="approval-modal">
-      <div class="modal-content-approval">
-        <button class="modal-close" onclick="fecharModal('alterar')">&times;</button>
+    <!-- MODAL DE SOLICITAR ALTERAÇÕES -->
+    <div id="modalAlterar" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+          <h2>🔄 Solicitar Alterações na Ficha Técnica</h2>
+        </div>
+        <div class="modal-body">
+          <p style="margin-bottom: 20px; line-height: 1.6;">
+            Use este formulário para solicitar alterações ou esclarecimentos sobre a ficha técnica apresentada.
+            Nossa equipe entrará em contato com você em breve.
+          </p>
 
-        <!-- Termo de Responsabilidade -->
-        <div class="termo-responsabilidade">
-          <h3>⚖️ Termo de Responsabilidade - Solicitação de Alterações</h3>
-          <div class="termo-texto">
-            <p>Ao solicitar alterações, você declara que:</p>
-            <ul>
-              <li>📝 Revisou a ficha e identificou pontos que necessitam modificação</li>
-              <li>📝 As alterações solicitadas são necessárias e fundamentadas</li>
-              <li>📝 Fornecerá informações claras sobre as mudanças necessárias</li>
-              <li>📝 Compromete-se a revisar a ficha após as alterações serem feitas</li>
-            </ul>
-            <p class="termo-aviso"><strong>⚠️ ATENÇÃO:</strong> Solicitações de alteração podem impactar prazos de entrega. Esta solicitação será registrada e rastreada.</p>
+          <div class="form-group">
+            <label for="inputNomeAlterar">Nome Completo *</label>
+            <input type="text" id="inputNomeAlterar" placeholder="Digite seu nome completo" required />
           </div>
-          <div class="form-group-checkbox">
-            <input type="checkbox" id="checkbox-alterar" required>
-            <label for="checkbox-alterar">
-              <strong>Li e concordo. Solicito as alterações descritas abaixo.</strong>
-            </label>
+
+          <div class="form-group">
+            <label for="inputEmailAlterar">E-mail *</label>
+            <input type="email" id="inputEmailAlterar" placeholder="seuemail@empresa.com" required />
+          </div>
+
+          <div class="form-group">
+            <label for="inputTelefoneAlterar">Telefone *</label>
+            <input type="tel" id="inputTelefoneAlterar" placeholder="(00) 00000-0000" required />
+          </div>
+
+          <div class="form-group">
+            <label for="textareaAlteracoes">Descreva as alterações desejadas *</label>
+            <textarea id="textareaAlteracoes" rows="6" placeholder="Exemplo: Alterar quantidade de peças, especificações técnicas, prazo de entrega, etc."
+              style="width: 100%; padding: 12px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 11pt; resize: vertical;" required></textarea>
           </div>
         </div>
-
-        <div id="form-alterar">
-          <h2 class="modal-title">🔄 Solicitar Alterações</h2>
-          <form id="form-aprovacao-alterar" onsubmit="submitAprovacao(event, 'alterar')">
-            <div class="form-group">
-              <label class="form-label">Nome do Responsável *</label>
-              <input type="text" class="form-input" id="responsavel-alterar" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Email *</label>
-              <input type="email" class="form-input" id="email-alterar" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Telefone</label>
-              <input type="tel" class="form-input" id="telefone-alterar" placeholder="(XX) XXXXX-XXXX">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Alterações Solicitadas *</label>
-              <textarea class="form-input" id="observacoes-alterar" required placeholder="Descreva as alterações necessárias..."></textarea>
-            </div>
-            <button type="submit" class="btn-submit btn-submit-alterar">🔄 Enviar Solicitação</button>
-          </form>
-        </div>
-        <div id="success-alterar" class="success-message" style="display: none;">
-          <h3>🔄 Alterações Solicitadas!</h3>
-          <p>Sua solicitação foi registrada. Entraremos em contato em breve!</p>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancelar" onclick="fecharModal()">❌ Cancelar</button>
+          <button type="button" class="btn-confirmar" id="btnConfirmarAlterar" disabled onclick="confirmarAcao()"
+            style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+            🔄 Enviar Solicitação
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Modal Rejeitar -->
-    <div id="modal-rejeitar" class="approval-modal">
-      <div class="modal-content-approval">
-        <button class="modal-close" onclick="fecharModal('rejeitar')">&times;</button>
+    <!-- MODAL DE REJEITAR -->
+    <div id="modalRejeitar" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+          <h2>❌ Rejeitar Ficha Técnica</h2>
+        </div>
+        <div class="modal-body">
+          <p style="margin-bottom: 20px; line-height: 1.6; color: #991b1b; font-weight: bold;">
+            ⚠️ Atenção: Esta ação informará que a ficha técnica não foi aceita.
+          </p>
 
-        <!-- Termo de Responsabilidade -->
-        <div class="termo-responsabilidade termo-rejeitar">
-          <h3>⚖️ Termo de Responsabilidade - Rejeição</h3>
-          <div class="termo-texto">
-            <p>Ao rejeitar esta ficha técnica, você declara que:</p>
-            <ul>
-              <li>❌ Revisou a ficha e identificou inviabilidades técnicas ou comerciais</li>
-              <li>❌ A rejeição é fundamentada em critérios objetivos</li>
-              <li>❌ Fornecerá justificativa clara e detalhada</li>
-              <li>❌ Entende que a rejeição encerrará este processo de cotação</li>
-            </ul>
-            <p class="termo-aviso"><strong>⚠️ ATENÇÃO:</strong> A rejeição é uma decisão final e irreversível. Esta ação será registrada e notificará toda a equipe comercial.</p>
+          <div class="form-group">
+            <label for="inputNomeRejeitar">Nome Completo *</label>
+            <input type="text" id="inputNomeRejeitar" placeholder="Digite seu nome completo" required />
           </div>
-          <div class="form-group-checkbox">
-            <input type="checkbox" id="checkbox-rejeitar" required>
-            <label for="checkbox-rejeitar">
-              <strong>Li e concordo. Confirmo a rejeição desta ficha técnica.</strong>
-            </label>
+
+          <div class="form-group">
+            <label for="inputEmailRejeitar">E-mail *</label>
+            <input type="email" id="inputEmailRejeitar" placeholder="seuemail@empresa.com" required />
+          </div>
+
+          <div class="form-group">
+            <label for="inputTelefoneRejeitar">Telefone *</label>
+            <input type="tel" id="inputTelefoneRejeitar" placeholder="(00) 00000-0000" required />
+          </div>
+
+          <div class="form-group">
+            <label for="textareaMotivo">Motivo da rejeição (opcional)</label>
+            <textarea id="textareaMotivo" rows="4" placeholder="Se desejar, informe o motivo da rejeição..."
+              style="width: 100%; padding: 12px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 11pt; resize: vertical;"></textarea>
           </div>
         </div>
-
-        <div id="form-rejeitar">
-          <h2 class="modal-title">❌ Rejeitar Ficha Técnica</h2>
-          <form id="form-aprovacao-rejeitar" onsubmit="submitAprovacao(event, 'rejeitar')">
-            <div class="form-group">
-              <label class="form-label">Nome do Responsável *</label>
-              <input type="text" class="form-input" id="responsavel-rejeitar" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Email *</label>
-              <input type="email" class="form-input" id="email-rejeitar" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Telefone</label>
-              <input type="tel" class="form-input" id="telefone-rejeitar" placeholder="(XX) XXXXX-XXXX">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Motivo da Rejeição *</label>
-              <textarea class="form-input" id="observacoes-rejeitar" required placeholder="Por favor, explique o motivo da rejeição..."></textarea>
-            </div>
-            <button type="submit" class="btn-submit btn-submit-rejeitar">❌ Confirmar Rejeição</button>
-          </form>
-        </div>
-        <div id="success-rejeitar" class="success-message" style="display: none;">
-          <h3>❌ Ficha Rejeitada</h3>
-          <p>Sua resposta foi registrada. Entraremos em contato em breve!</p>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancelar" onclick="fecharModal()">Voltar</button>
+          <button type="button" class="btn-confirmar" id="btnConfirmarRejeitar" disabled onclick="confirmarAcao()"
+            style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+            ❌ Confirmar Rejeição
+          </button>
         </div>
       </div>
     </div>
@@ -1239,190 +1215,194 @@ function gerarModaisAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: s
  * Gera os scripts JavaScript para o sistema de aprovação
  */
 function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: string, supabaseAnonKey: string, versaoFTC?: number): string {
-  // Usar string normal ao invés de template literal para evitar conflito de interpolação
   return `
   <script>
-    // Validação de status da ficha
-    window.validarStatusFicha = async function() {
-      console.log('🔍 Validando status da ficha...');
+    // Sistema de aprovação com modais - PADRÃO ORÇAMENTO
+    const supabaseUrl = '${escapeJs(supabaseUrl)}';
+    const supabaseAnonKey = '${escapeJs(supabaseAnonKey)}';
+    const fichaId = '${escapeJs(fichaId)}';
+    const numeroFTC = '${escapeJs(numeroFTC)}';
+    const versaoFTC = ${versaoFTC !== undefined ? versaoFTC : 'null'};
+
+    // Elementos do DOM - Modal Aprovar
+    const modalAprovar = document.getElementById('modalAprovacao');
+    const checkboxAceite = document.getElementById('checkboxAceite');
+    const btnConfirmarAprovar = document.getElementById('btnConfirmarAprovacao');
+    const inputNome = document.getElementById('inputNome');
+    const inputEmail = document.getElementById('inputEmail');
+    const inputTelefone = document.getElementById('inputTelefone');
+
+    // Elementos do DOM - Modal Alterar
+    const modalAlterar = document.getElementById('modalAlterar');
+    const btnConfirmarAlterar = document.getElementById('btnConfirmarAlterar');
+    const inputNomeAlterar = document.getElementById('inputNomeAlterar');
+    const inputEmailAlterar = document.getElementById('inputEmailAlterar');
+    const inputTelefoneAlterar = document.getElementById('inputTelefoneAlterar');
+    const textareaAlteracoes = document.getElementById('textareaAlteracoes');
+
+    // Elementos do DOM - Modal Rejeitar
+    const modalRejeitar = document.getElementById('modalRejeitar');
+    const btnConfirmarRejeitar = document.getElementById('btnConfirmarRejeitar');
+    const inputNomeRejeitar = document.getElementById('inputNomeRejeitar');
+    const inputEmailRejeitar = document.getElementById('inputEmailRejeitar');
+    const inputTelefoneRejeitar = document.getElementById('inputTelefoneRejeitar');
+    const textareaMotivo = document.getElementById('textareaMotivo');
+
+    let modalAtivo = null;
+    let tipoAtual = null;
+
+    // Função para abrir modal
+    function abrirModalAprovacao(tipo) {
+      tipoAtual = tipo;
+
+      if (tipo === 'aprovar') {
+        modalAtivo = modalAprovar;
+        checkboxAceite.checked = false;
+        // ✅ NÃO limpar campos se já estiverem pré-preenchidos (readonly)
+        if (!inputNome.readOnly) inputNome.value = '';
+        if (!inputEmail.readOnly) inputEmail.value = '';
+        if (!inputTelefone.readOnly) inputTelefone.value = '';
+        btnConfirmarAprovar.disabled = true;
+      } else if (tipo === 'alterar') {
+        modalAtivo = modalAlterar;
+        // ✅ NÃO limpar campos se já estiverem pré-preenchidos (readonly)
+        if (!inputNomeAlterar.readOnly) inputNomeAlterar.value = '';
+        if (!inputEmailAlterar.readOnly) inputEmailAlterar.value = '';
+        if (!inputTelefoneAlterar.readOnly) inputTelefoneAlterar.value = '';
+        textareaAlteracoes.value = '';
+        btnConfirmarAlterar.disabled = true;
+      } else if (tipo === 'rejeitar') {
+        modalAtivo = modalRejeitar;
+        // ✅ NÃO limpar campos se já estiverem pré-preenchidos (readonly)
+        if (!inputNomeRejeitar.readOnly) inputNomeRejeitar.value = '';
+        if (!inputEmailRejeitar.readOnly) inputEmailRejeitar.value = '';
+        if (!inputTelefoneRejeitar.readOnly) inputTelefoneRejeitar.value = '';
+        textareaMotivo.value = '';
+        btnConfirmarRejeitar.disabled = true;
+      }
+
+      modalAtivo.classList.add('active');
+    }
+
+    // Função para fechar modal
+    function fecharModal() {
+      if (modalAtivo) {
+        modalAtivo.classList.remove('active');
+        modalAtivo = null;
+        tipoAtual = null;
+      }
+    }
+
+    // Fechar modal ao clicar fora
+    [modalAprovar, modalAlterar, modalRejeitar].forEach(modal => {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          fecharModal();
+        }
+      });
+    });
+
+    // Validação Modal Aprovar
+    function validarAprovar() {
+      const aceite = checkboxAceite.checked;
+      const nome = inputNome.value.trim();
+      const email = inputEmail.value.trim();
+      const telefone = inputTelefone.value.trim();
+      btnConfirmarAprovar.disabled = !(aceite && nome && email && telefone);
+    }
+
+    // Validação Modal Alterar
+    function validarAlterar() {
+      const nome = inputNomeAlterar.value.trim();
+      const email = inputEmailAlterar.value.trim();
+      const telefone = inputTelefoneAlterar.value.trim();
+      const alteracoes = textareaAlteracoes.value.trim();
+      btnConfirmarAlterar.disabled = !(nome && email && telefone && alteracoes);
+    }
+
+    // Validação Modal Rejeitar
+    function validarRejeitar() {
+      const nome = inputNomeRejeitar.value.trim();
+      const email = inputEmailRejeitar.value.trim();
+      const telefone = inputTelefoneRejeitar.value.trim();
+      btnConfirmarRejeitar.disabled = !(nome && email && telefone);
+    }
+
+    // Event listeners
+    checkboxAceite.addEventListener('change', validarAprovar);
+    inputNome.addEventListener('input', validarAprovar);
+    inputEmail.addEventListener('input', validarAprovar);
+    inputTelefone.addEventListener('input', validarAprovar);
+
+    inputNomeAlterar.addEventListener('input', validarAlterar);
+    inputEmailAlterar.addEventListener('input', validarAlterar);
+    inputTelefoneAlterar.addEventListener('input', validarAlterar);
+    textareaAlteracoes.addEventListener('input', validarAlterar);
+
+    inputNomeRejeitar.addEventListener('input', validarRejeitar);
+    inputEmailRejeitar.addEventListener('input', validarRejeitar);
+    inputTelefoneRejeitar.addEventListener('input', validarRejeitar);
+
+    // Função confirmar ação
+    async function confirmarAcao() {
+      let nome, email, telefone, observacoes = '';
+      let btnAtivo;
+
+      if (tipoAtual === 'aprovar') {
+        nome = inputNome.value.trim();
+        email = inputEmail.value.trim();
+        telefone = inputTelefone.value.trim();
+        btnAtivo = btnConfirmarAprovar;
+      } else if (tipoAtual === 'alterar') {
+        nome = inputNomeAlterar.value.trim();
+        email = inputEmailAlterar.value.trim();
+        telefone = inputTelefoneAlterar.value.trim();
+        observacoes = textareaAlteracoes.value.trim();
+        btnAtivo = btnConfirmarAlterar;
+      } else if (tipoAtual === 'rejeitar') {
+        nome = inputNomeRejeitar.value.trim();
+        email = inputEmailRejeitar.value.trim();
+        telefone = inputTelefoneRejeitar.value.trim();
+        observacoes = textareaMotivo.value.trim() || 'Sem motivo informado';
+        btnAtivo = btnConfirmarRejeitar;
+      }
+
+      btnAtivo.disabled = true;
+      const textoOriginal = btnAtivo.textContent;
+      btnAtivo.textContent = '⏳ Processando...';
+
+      await enviarAprovacao(tipoAtual, nome, email, telefone, observacoes);
+
+      btnAtivo.textContent = textoOriginal;
+    }
+
+    // Função para enviar aprovação
+    async function enviarAprovacao(tipo, responsavel, email, telefone, observacoes) {
 
       try {
-        const response = await fetch(
-          '${supabaseUrl}' + '/rest/v1/fichas_tecnicas?id=eq.' + '${fichaId}' + '&select=status,versao_ftc_atual',
-          {
-            method: 'GET',
-            headers: {
-              'apikey': '${supabaseAnonKey}',
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        if (!response.ok) {
-          console.error('❌ Erro ao consultar status da ficha');
-          return false;
-        }
-
-        const fichas = await response.json();
-
-        if (!fichas || fichas.length === 0) {
-          console.error('❌ Ficha não encontrada');
-          return false;
-        }
-
-        const ficha = fichas[0];
-        const statusValidos = ['orcamento_enviado_cliente', 'aguardando_orcamento_comercial'];
-
-        console.log('📋 Status atual:', ficha.status);
-        console.log('📦 Versão FTC atual:', ficha.versao_ftc_atual);
-        console.log('📦 Versão desta FTC:', ${versaoFTC !== undefined ? versaoFTC : 'null'});
-
-        // Validar status
-        if (!statusValidos.includes(ficha.status)) {
-          console.warn('⚠️ Ficha não está em status válido');
-          alert(
-            '⚠️ FICHA TÉCNICA DESATUALIZADA\\n\\n' +
-            'Esta ficha técnica foi estornada ou modificada.\\n\\n' +
-            'Por favor, entre em contato conosco para obter uma versão atualizada.\\n\\n' +
-            'Contato: contato@hmcusinagem.com.br'
-          );
-          return false;
-        }
-
-        // Validar versão FTC
-        if (${versaoFTC !== undefined ? 'true' : 'false'}) {
-          if (ficha.versao_ftc_atual !== ${versaoFTC || 0}) {
-            console.warn('⚠️ Versão FTC desatualizada');
-            alert(
-              '⚠️ FICHA TÉCNICA DESATUALIZADA\\n\\n' +
-              'Esta é uma versão antiga da ficha técnica.\\n' +
-              'Uma versão mais recente foi gerada.\\n\\n' +
-              'Por favor, solicite a versão atualizada.\\n\\n' +
-              'Contato: contato@hmcusinagem.com.br'
-            );
-            return false;
-          }
-        }
-
-        console.log('✅ Status e versão válidos');
-        return true;
-      } catch (error) {
-        console.error('❌ Erro ao validar status:', error);
-        alert(
-          '⚠️ ERRO DE CONEXÃO\\n\\n' +
-          'Não foi possível validar o status desta ficha técnica.\\n\\n' +
-          'Por favor, tente novamente mais tarde ou entre em contato conosco.'
-        );
-        return false;
-      }
-    };
-
-    // Abrir modal
-    window.abrirModalAprovacao = async function(tipo) {
-      console.log('🔵 Abrindo modal:', tipo);
-
-      // Tentar validar status, mas não bloquear se falhar
-      try {
-        const statusValido = await window.validarStatusFicha();
-        if (statusValido) {
-          console.log('✅ Status válido, abrindo modal...');
-        } else {
-          console.warn('⚠️ Validação de status falhou, mas modal será aberto mesmo assim');
-        }
-      } catch (error) {
-        console.warn('⚠️ Erro ao validar status, mas modal será aberto mesmo assim:', error);
-      }
-
-      // Abrir modal independentemente da validação
-      const modal = document.getElementById('modal-' + tipo);
-      if (modal) {
-        modal.style.display = 'block';
-      }
-    };
-
-    // Fechar modal
-    window.fecharModal = function(tipo) {
-      const modal = document.getElementById('modal-' + tipo);
-      if (modal) {
-        modal.style.display = 'none';
-      }
-    };
-
-    // Fechar ao clicar fora
-    window.onclick = function(event) {
-      if (event.target.classList.contains('approval-modal')) {
-        event.target.style.display = 'none';
-      }
-    };
-
-    // Submit aprovação
-    window.submitAprovacao = async function(event, tipo) {
-      event.preventDefault();
-
-      // VALIDAÇÃO DO CHECKBOX
-      const checkbox = document.getElementById('checkbox-' + tipo);
-      if (!checkbox || !checkbox.checked) {
-        alert('⚠️ ATENÇÃO\\n\\nVocê deve ler e concordar com o termo de responsabilidade para prosseguir.\\n\\nPor favor, marque a caixa de confirmação.');
-        return;
-      }
-
-      // Confirmação adicional para rejeição
-      if (tipo === 'rejeitar') {
-        const confirma = confirm(
-          '⚠️ CONFIRMAÇÃO FINAL\\n\\n' +
-          'Você tem certeza que deseja REJEITAR esta ficha técnica?\\n\\n' +
-          'Esta ação é irreversível e encerrará o processo.\\n\\n' +
-          'Clique em OK para confirmar a rejeição.'
-        );
-        if (!confirma) return;
-      }
-
-      const responsavel = document.getElementById('responsavel-' + tipo).value;
-      const email = document.getElementById('email-' + tipo).value;
-      const telefone = document.getElementById('telefone-' + tipo).value || null;
-      const observacoes = document.getElementById('observacoes-' + tipo).value || null;
-
-      try {
-        // Enviar para Supabase (tabela aprovacoes_ftc_cliente)
-        const response = await fetch(
-          '${supabaseUrl}' + '/rest/v1/aprovacoes_ftc_cliente',
-          {
-            method: 'POST',
-            headers: {
-              'apikey': '${supabaseAnonKey}',
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              ficha_id: '${fichaId}',
-              numero_ftc: '${numeroFTC}',
-              tipo: tipo,
-              responsavel: responsavel,
-              email: email,
-              telefone: telefone,
-              observacoes: observacoes,
-              versao_ftc: ${versaoFTC || 0},
-              ip_address: null,
-              user_agent: navigator.userAgent
-            })
-          }
-        );
+        const response = await fetch(supabaseUrl + '/rest/v1/aprovacoes_ftc_cliente', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseAnonKey,
+            'Authorization': 'Bearer ' + supabaseAnonKey,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            ficha_id: fichaId,
+            numero_ftc: numeroFTC,
+            tipo: tipo,
+            responsavel: responsavel,
+            email: email,
+            telefone: telefone,
+            observacoes: observacoes || null,
+            versao_ftc: versaoFTC
+          })
+        });
 
         if (response.ok) {
-          // Esconder formulário, mostrar sucesso
-          document.getElementById('form-' + tipo).style.display = 'none';
-          document.getElementById('success-' + tipo).style.display = 'block';
-
-          // Fechar modal após 3 segundos
-          setTimeout(() => {
-            fecharModal(tipo);
-            // Resetar para próxima vez
-            setTimeout(() => {
-              document.getElementById('form-' + tipo).style.display = 'block';
-              document.getElementById('success-' + tipo).style.display = 'none';
-              document.getElementById('form-aprovacao-' + tipo).reset();
-            }, 500);
-          }, 3000);
+          alert('✅ Sua resposta foi registrada com sucesso! Obrigado.');
+          window.location.reload();
         } else {
           const errorData = await response.json();
           console.error('Erro ao enviar aprovação:', errorData);
@@ -1432,7 +1412,7 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
         console.error('Erro ao enviar aprovação:', error);
         alert('Erro ao enviar aprovação. Por favor, verifique sua conexão e tente novamente.');
       }
-    };
+    }
 
     // Verificar se já existe aprovação e ocultar botões
     async function verificarAprovacaoExistente() {
@@ -1440,11 +1420,11 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
         console.log('🔍 Verificando aprovações existentes para FTC:', numeroFTC);
 
         const response = await fetch(
-          '${supabaseUrl}' + '/rest/v1/aprovacoes_ftc_cliente?ficha_id=eq.' + '${fichaId}',
+          supabaseUrl + '/rest/v1/aprovacoes_ftc_cliente?ficha_id=eq.' + fichaId,
           {
             method: 'GET',
             headers: {
-              'apikey': '${supabaseAnonKey}',
+              'apikey': supabaseAnonKey,
               'Content-Type': 'application/json'
             }
           }
@@ -1467,17 +1447,12 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
           }
 
           // Mostrar mensagem de que já foi respondido
-          const header = document.querySelector('h1');
-          if (header) {
+          const container = document.querySelector('.container');
+          if (container) {
             const badge = document.createElement('div');
-            badge.style.cssText = 'background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; margin: 20px 0; text-align: center;';
+            badge.style.cssText = 'background: #10b981; color: white; padding: 16px 24px; border-radius: 8px; font-size: 14px; margin: 20px; text-align: center; border: 2px solid #059669;';
             badge.innerHTML = '✅ <strong>Esta ficha técnica já recebeu resposta.</strong> Não é possível enviar nova aprovação.';
-
-            // Inserir após o cabeçalho
-            const container = document.querySelector('.container');
-            if (container && container.firstChild) {
-              container.insertBefore(badge, container.firstChild.nextSibling);
-            }
+            container.appendChild(badge);
           }
         } else {
           console.log('ℹ️ Nenhuma aprovação encontrada. Botões disponíveis.');
@@ -1492,15 +1467,10 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
       // Verificar se já existe aprovação antes de habilitar botões
       verificarAprovacaoExistente();
 
-      const botoesAprovacao = document.querySelectorAll('.btn[data-tipo]');
-      console.log('🔘 Botões de aprovação encontrados:', botoesAprovacao.length);
-
-      botoesAprovacao.forEach(btn => {
-        const tipo = btn.getAttribute('data-tipo');
-        console.log('✅ Adicionando listener para botão:', tipo);
-
+      const botoes = document.querySelectorAll('.btn[data-tipo]');
+      botoes.forEach(btn => {
         btn.addEventListener('click', function() {
-          console.log('🖱️ Botão clicado:', tipo);
+          const tipo = this.getAttribute('data-tipo');
           abrirModalAprovacao(tipo);
         });
       });
@@ -1516,17 +1486,22 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
           // Se não há parâmetros URL, retorna
           if (!nome && !email && !telefone) {
             console.log('ℹ️ Nenhum parâmetro de contato na URL');
-            return false; // Indica que não preencheu via URL
+            return false;
           }
 
           console.log('📧 Parâmetros de contato detectados na URL:', { nome, email, telefone });
 
           // Preencher campos de TODOS os 3 modais
-          const tipos = ['aprovar', 'alterar', 'rejeitar'];
-          tipos.forEach(tipo => {
-            const inputNome = document.getElementById(\`responsavel-\${tipo}\`);
-            const inputEmail = document.getElementById(\`email-\${tipo}\`);
-            const inputTelefone = document.getElementById(\`telefone-\${tipo}\`);
+          const tipos = [
+            { ids: { nome: 'inputNome', email: 'inputEmail', telefone: 'inputTelefone' } },
+            { ids: { nome: 'inputNomeAlterar', email: 'inputEmailAlterar', telefone: 'inputTelefoneAlterar' } },
+            { ids: { nome: 'inputNomeRejeitar', email: 'inputEmailRejeitar', telefone: 'inputTelefoneRejeitar' } }
+          ];
+
+          tipos.forEach(({ ids }) => {
+            const inputNome = document.getElementById(ids.nome);
+            const inputEmail = document.getElementById(ids.email);
+            const inputTelefone = document.getElementById(ids.telefone);
 
             if (inputNome && nome) {
               inputNome.value = decodeURIComponent(nome);
@@ -1542,7 +1517,7 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
           });
 
           console.log('✅ Campos pré-preenchidos com parâmetros URL!');
-          return true; // Indica que preencheu via URL
+          return true;
         } catch (error) {
           console.error('❌ Erro ao processar parâmetros URL:', error);
           return false;
@@ -1563,10 +1538,10 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
           console.log('🔑 Token detectado:', token);
 
           // Buscar dados do token no Supabase
-          const response = await fetch(\`${supabaseUrl}/rest/v1/aprovacao_tokens?token=eq.\${token}&select=*\`, {
+          const response = await fetch(supabaseUrl + '/rest/v1/aprovacao_tokens?token=eq.' + token + '&select=*', {
             headers: {
-              'apikey': '${supabaseAnonKey}',
-              'Authorization': 'Bearer ${supabaseAnonKey}'
+              'apikey': supabaseAnonKey,
+              'Authorization': 'Bearer ' + supabaseAnonKey
             }
           });
 
@@ -1602,11 +1577,16 @@ function gerarScriptsAprovacao(numeroFTC: string, fichaId: string, supabaseUrl: 
           console.log('✅ Token válido! Pré-preenchendo campos...');
 
           // Pré-preencher campos de TODOS os 3 modais
-          const tipos = ['aprovar', 'alterar', 'rejeitar'];
-          tipos.forEach(tipo => {
-            const inputNome = document.getElementById(\`responsavel-\${tipo}\`);
-            const inputEmail = document.getElementById(\`email-\${tipo}\`);
-            const inputTelefone = document.getElementById(\`telefone-\${tipo}\`);
+          const tipos = [
+            { ids: { nome: 'inputNome', email: 'inputEmail', telefone: 'inputTelefone' } },
+            { ids: { nome: 'inputNomeAlterar', email: 'inputEmailAlterar', telefone: 'inputTelefoneAlterar' } },
+            { ids: { nome: 'inputNomeRejeitar', email: 'inputEmailRejeitar', telefone: 'inputTelefoneRejeitar' } }
+          ];
+
+          tipos.forEach(({ ids }) => {
+            const inputNome = document.getElementById(ids.nome);
+            const inputEmail = document.getElementById(ids.email);
+            const inputTelefone = document.getElementById(ids.telefone);
 
             if (inputNome && tokenData.contato_nome) {
               inputNome.value = tokenData.contato_nome;
@@ -1726,274 +1706,248 @@ export async function generateHTMLWithApproval(dados: ApprovalSystemData): Promi
     }
 
     .btn-aprovar {
-      background: #10b981;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: white;
-    }
-
-    .btn-aprovar:hover {
-      background: #059669;
     }
 
     .btn-alterar {
-      background: #f59e0b;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: white;
-    }
-
-    .btn-alterar:hover {
-      background: #d97706;
     }
 
     .btn-rejeitar {
-      background: #ef4444;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: white;
     }
 
-    .btn-rejeitar:hover {
-      background: #dc2626;
-    }
-
-    /* Modais de aprovação */
-    .approval-modal {
+    /* MODAL DE APROVAÇÃO - Padrão Orçamento */
+    .modal-overlay {
       display: none;
       position: fixed;
-      z-index: 10000;
-      left: 0;
       top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
     }
 
-    .modal-content-approval {
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
       background: white;
-      margin: 2% auto;
-      padding: 30px;
       border-radius: 12px;
-      max-width: 500px;
-      max-height: 95vh;
+      max-width: 700px;
+      width: 90%;
+      max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: modalSlideIn 0.3s ease-out;
     }
 
-    .modal-close {
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      font-size: 28px;
-      font-weight: bold;
-      color: #999;
-      background: none;
-      border: none;
-      cursor: pointer;
-      z-index: 1;
-      line-height: 1;
-      padding: 0;
-      width: 30px;
-      height: 30px;
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
-    .modal-close:hover {
-      color: #333;
-    }
-
-    .modal-title {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 20px;
-      color: #111827;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 8px;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 10px 12px;
-      font-size: 14px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-family: inherit;
-    }
-
-    .form-input:focus {
-      outline: none;
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    }
-
-    textarea.form-input {
-      min-height: 100px;
-      resize: vertical;
-    }
-
-    .btn-submit {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .btn-submit-aprovar {
-      background: #10b981;
+    .modal-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: white;
+      padding: 20px 30px;
+      border-radius: 12px 12px 0 0;
     }
 
-    .btn-submit-aprovar:hover {
-      background: #059669;
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20pt;
     }
 
-    .btn-submit-alterar {
-      background: #f59e0b;
-      color: white;
+    .modal-body {
+      padding: 30px;
     }
 
-    .btn-submit-alterar:hover {
-      background: #d97706;
-    }
-
-    .btn-submit-rejeitar {
-      background: #ef4444;
-      color: white;
-    }
-
-    .btn-submit-rejeitar:hover {
-      background: #dc2626;
-    }
-
-    .success-message {
-      background: #d1fae5;
-      border: 2px solid #10b981;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    /* Estilos do Termo de Responsabilidade */
     .termo-responsabilidade {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border: 2px solid #dee2e6;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background: #f9fafb;
+      border-left: 4px solid #10b981;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
     }
 
     .termo-responsabilidade h3 {
-      color: #495057;
-      margin-bottom: 16px;
-      font-size: 18px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      margin-top: 0;
+      color: #1f2937;
+      font-size: 14pt;
     }
 
-    .termo-texto {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      max-height: 320px;
-      overflow-y: auto;
-      border: 1px solid #e9ecef;
+    .termo-responsabilidade ol {
+      margin: 15px 0;
+      padding-left: 20px;
     }
 
-    .termo-texto p {
-      margin-bottom: 12px;
+    .termo-responsabilidade li {
+      margin: 10px 0;
       line-height: 1.6;
-      color: #495057;
+      color: #374151;
     }
 
-    .termo-texto ul {
-      margin-left: 24px;
-      margin-bottom: 16px;
-    }
-
-    .termo-texto li {
-      margin-bottom: 10px;
-      line-height: 1.7;
-      color: #212529;
-    }
-
-    .termo-aviso {
-      background: #fff3cd;
-      border-left: 4px solid #ffc107;
-      padding: 12px;
-      margin-top: 16px;
-      border-radius: 4px;
-    }
-
-    .termo-rejeitar {
-      border-color: #dc3545;
-      background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
-    }
-
-    .form-group-checkbox {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      background: white;
-      padding: 16px;
+    .termo-footer {
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      padding: 15px;
       border-radius: 8px;
-      border: 2px solid #0d6efd;
+      margin: 20px 0;
+      font-weight: bold;
+      color: #92400e;
+      text-align: center;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: start;
+      gap: 12px;
+      margin: 20px 0;
+      padding: 15px;
+      background: #ecfdf5;
+      border-radius: 8px;
+      border: 2px solid #10b981;
+    }
+
+    .checkbox-container input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+
+    .checkbox-container label {
+      flex: 1;
+      cursor: pointer;
+      line-height: 1.6;
+      color: #1f2937;
+      font-weight: 500;
+    }
+
+    .form-group {
+      margin: 15px 0;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 11pt;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #10b981;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      padding: 20px 30px;
+      background: #f9fafb;
+      border-radius: 0 0 12px 12px;
+    }
+
+    .modal-footer button {
+      flex: 1;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 12pt;
+      font-weight: bold;
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    .form-group-checkbox:hover {
-      background: #f8f9fa;
-      border-color: #0a58ca;
+    .modal-footer button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
-    .form-group-checkbox input[type="checkbox"] {
-      width: 22px;
-      height: 22px;
-      margin-top: 2px;
-      cursor: pointer;
-      flex-shrink: 0;
+    .btn-cancelar {
+      background: #e5e7eb;
+      color: #374151;
     }
 
-    .form-group-checkbox label {
-      flex: 1;
-      cursor: pointer;
-      user-select: none;
-      line-height: 1.6;
-      color: #212529;
+    .btn-cancelar:hover:not(:disabled) {
+      background: #d1d5db;
     }
 
-    .success-message h3 {
-      color: #065f46;
-      font-size: 20px;
-      margin-bottom: 10px;
+    .btn-confirmar {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
     }
 
-    .success-message p {
-      color: #047857;
+    .btn-confirmar:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
     }
 
     @media (max-width: 768px) {
       .btn-container {
         grid-template-columns: 1fr;
       }
+
+      .modal-content {
+        width: 95%;
+        margin: 5% auto;
+      }
+
+      .modal-header h2 {
+        font-size: 16pt;
+      }
+
+      .modal-body {
+        padding: 20px;
+      }
+
+      .form-group input,
+      .form-group textarea {
+        font-size: 10pt;
+      }
+
+      .modal-footer {
+        flex-direction: column;
+        padding: 15px 20px;
+      }
+
+      .modal-footer button {
+        width: 100%;
+        font-size: 11pt;
+      }
     }
 
     @media print {
       .approval-section {
+        display: none !important;
+      }
+
+      .modal-overlay {
         display: none !important;
       }
     }
